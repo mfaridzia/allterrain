@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s | ALLTERRAIN",
   },
   description:
-    "Platform analitik performa atlet COROS dengan pemodelan beban Bannister PMC (Fitness, Fatigue, Form), simulasi profil elevasi rute trail running, dan AI Coach cerdas.",
+    "Advanced COROS endurance analytics & trail planning platform. Bannister PMC modeling (Fitness, Fatigue, Form), interactive GPX elevation simulation, and intelligent AI Coaching.",
   applicationName: "ALLTERRAIN",
   authors: [{ name: "Muh Farid Zia", url: "https://allterrain.muhfaridzia.live" }],
   creator: "Muh Farid Zia",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ALLTERRAIN - COROS Training Analytics & Trail Planner",
     description:
-      "Platform analitik performa atlet COROS dengan pemodelan beban Bannister PMC (Fitness, Fatigue, Form), simulasi profil elevasi rute trail running, dan AI Coach cerdas.",
+      "Advanced COROS endurance analytics & trail planning platform. Bannister PMC modeling (Fitness, Fatigue, Form), interactive GPX elevation simulation, and intelligent AI Coaching.",
     url: "https://allterrain.muhfaridzia.live",
     siteName: "ALLTERRAIN",
     images: [
@@ -75,14 +75,14 @@ export const metadata: Metadata = {
         alt: "ALLTERRAIN - COROS Training Analytics & Trail Elevation Suite",
       },
     ],
-    locale: "id_ID",
+    locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "ALLTERRAIN - COROS Training Analytics & Trail Planner",
     description:
-      "Platform analitik performa atlet COROS dengan pemodelan beban Bannister PMC, simulasi rute trail running, dan AI Coach cerdas.",
+      "Advanced COROS endurance analytics & trail planning platform. Bannister PMC modeling (Fitness, Fatigue, Form), interactive GPX elevation simulation, and intelligent AI Coaching.",
     images: ["/og-image.png"],
     creator: "@mfaridzia",
   },
