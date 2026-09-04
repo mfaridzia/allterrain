@@ -335,21 +335,21 @@ export const TrailMap: React.FC<TrailMapProps> = ({
   }, [hoverDistanceKm, points]);
 
   return (
-    <div className="relative w-full h-[460px] sm:h-[520px] rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-950">
+    <div className="relative w-full h-[460px] sm:h-[520px] rounded-2xl overflow-hidden border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] bg-zinc-100">
       {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full z-10" />
 
       {/* Map Header Floating Overlay */}
-      <div className="absolute top-3 left-3 z-20 flex items-center gap-2 bg-zinc-950/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-zinc-800/90 text-xs shadow-xl">
-        <Mountain className="h-4 w-4 text-cyan-400" />
-        <span className="font-bold text-white tracking-tight">{raceName}</span>
-        <span className="text-[10px] text-zinc-400 font-mono hidden sm:inline">
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border-2 border-zinc-950 text-xs shadow-[2px_2px_0px_0px_#09090b]">
+        <Mountain className="h-4 w-4 text-zinc-950" />
+        <span className="font-black text-zinc-950 tracking-tight">{raceName}</span>
+        <span className="text-[10px] text-zinc-600 font-mono font-bold hidden sm:inline">
           ({points.length} GPS pts)
         </span>
       </div>
 
       {/* Layer Switcher Floating Controls */}
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-zinc-950/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800 shadow-xl">
+      <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
         {[
           { id: "topo", label: "Topografi" },
           { id: "satellite", label: "Satelit" },
@@ -358,10 +358,10 @@ export const TrailMap: React.FC<TrailMapProps> = ({
           <button
             key={layer.id}
             onClick={() => setActiveLayer(layer.id as any)}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all ${
+            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
               activeLayer === layer.id
-                ? "bg-cyan-500 text-black font-black shadow-md shadow-cyan-500/20"
-                : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                ? "bg-amber-400 text-zinc-950 font-black border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
             }`}
           >
             {layer.label}
@@ -371,40 +371,40 @@ export const TrailMap: React.FC<TrailMapProps> = ({
 
       {/* Bottom Gradient Legend */}
       <div className="absolute bottom-3 left-3 right-3 z-20 pointer-events-none">
-        <div className="bg-zinc-950/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-zinc-800/90 shadow-xl flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono pointer-events-auto">
-          <div className="flex items-center gap-1.5 font-sans text-zinc-300 font-bold text-[11px]">
-            <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+        <div className="bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono pointer-events-auto">
+          <div className="flex items-center gap-1.5 font-sans text-zinc-950 font-black text-[11px]">
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
             <span>Kecuraman Jalur:</span>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap font-bold">
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-zinc-300">Datar (-3 s/d +3%)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-zinc-950" />
+              <span className="text-zinc-800">Datar (-3 s/d +3%)</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-lime-400" />
-              <span className="text-zinc-300">Nanjak Landai (3-8%)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-lime-400 border border-zinc-950" />
+              <span className="text-zinc-800">Nanjak Landai (3-8%)</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-              <span className="text-zinc-300">Nanjak Sedang (8-15%)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 border border-zinc-950" />
+              <span className="text-zinc-800">Nanjak Sedang (8-15%)</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
-              <span className="text-zinc-300">Power Hike (15-25%)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 border border-zinc-950" />
+              <span className="text-zinc-800">Power Hike (15-25%)</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-              <span className="text-zinc-300">Tanjakan Ekstrem (&gt;25%)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 border border-zinc-950" />
+              <span className="text-zinc-800">Tanjakan Ekstrem (&gt;25%)</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
-              <span className="text-zinc-300">Turunan (-3 s/d -15%)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-sky-400 border border-zinc-950" />
+              <span className="text-zinc-800">Turunan (-3 s/d -15%)</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-              <span className="text-zinc-300">Turunan Curam (&lt;-15%)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-500 border border-zinc-950" />
+              <span className="text-zinc-800">Turunan Curam (&lt;-15%)</span>
             </div>
           </div>
         </div>

@@ -22,13 +22,13 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
   date,
 }) => {
   let readiness = "Fully Recovered";
-  let readinessColor = "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
+  let readinessColor = "bg-emerald-300 text-zinc-950 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]";
   if (recoveryScore < 50) {
     readiness = "Fatigued - Rest";
-    readinessColor = "text-red-400 border-red-500/30 bg-red-500/10";
+    readinessColor = "bg-rose-400 text-zinc-950 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]";
   } else if (recoveryScore < 75) {
     readiness = "Moderate Base";
-    readinessColor = "text-amber-400 border-amber-500/30 bg-amber-500/10";
+    readinessColor = "bg-amber-300 text-zinc-950 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]";
   }
 
   // Format date display (e.g. 2026-09-04 -> "4 Sep")
@@ -44,28 +44,28 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
   }
 
   return (
-    <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800/80 p-5 space-y-4 shadow-xl backdrop-blur-sm flex flex-col justify-between">
+    <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-            <BatteryCharging className="h-4 w-4" />
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg bg-emerald-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+            <BatteryCharging className="h-4 w-4 stroke-[2.5]" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
+            <h3 className="text-sm font-black text-zinc-950 tracking-tight flex items-center gap-2">
               <span>Recovery & Health</span>
               {formattedDate && (
-                <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border-2 border-zinc-950 bg-zinc-100 text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
                   {formattedDate}
                 </span>
               )}
             </h3>
-            <p className="text-[11px] text-zinc-400">HRV • Resting HR • Sleep</p>
+            <p className="text-[11px] font-mono text-zinc-600 font-semibold">HRV • Resting HR • Sleep</p>
           </div>
         </div>
 
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border shrink-0 whitespace-nowrap ${readinessColor}`}>
-          <Sparkles className="h-3 w-3" />
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0 whitespace-nowrap ${readinessColor}`}>
+          <Sparkles className="h-3 w-3 stroke-[2.5]" />
           <span>{readiness}</span>
         </span>
       </div>
@@ -73,53 +73,53 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
       {/* 2x2 Metric Grid */}
       <div className="grid grid-cols-2 gap-3">
         {/* Recovery Score */}
-        <div className="p-3 rounded-xl bg-zinc-950/70 border border-zinc-800/90 space-y-1">
+        <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
           <MetricTooltip term="recovery_score">
-            <span className="text-[11px] text-zinc-400 block truncate">Recovery Index</span>
+            <span className="text-[11px] font-bold text-zinc-700 block truncate">Recovery Index</span>
           </MetricTooltip>
-          <div className="text-2xl font-black text-emerald-400">{recoveryScore}%</div>
-          <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+          <div className="text-2xl font-black font-mono text-zinc-950">{recoveryScore}%</div>
+          <div className="h-2.5 w-full bg-zinc-200 border-2 border-zinc-950 rounded-full overflow-hidden">
             <div
-              className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+              className="h-full bg-emerald-400 rounded-full transition-all duration-500"
               style={{ width: `${recoveryScore}%` }}
             />
           </div>
         </div>
 
         {/* HRV */}
-        <div className="p-3 rounded-xl bg-zinc-950/70 border border-zinc-800/90 space-y-1">
+        <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
           <div className="flex items-center justify-between gap-1">
             <MetricTooltip term="hrv">
-              <span className="text-[11px] text-zinc-400 truncate">HRV (rMSSD)</span>
+              <span className="text-[11px] font-bold text-zinc-700 truncate">HRV (rMSSD)</span>
             </MetricTooltip>
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 font-bold border border-emerald-800/40 shrink-0">
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-950 font-black border border-zinc-950 shrink-0">
               {hrvStatus}
             </span>
           </div>
-          <div className="text-2xl font-black text-white font-mono">
-            {hrvRmssd} <span className="text-xs font-normal text-zinc-400">ms</span>
+          <div className="text-2xl font-black text-zinc-950 font-mono">
+            {hrvRmssd} <span className="text-xs font-normal text-zinc-500">ms</span>
           </div>
-          <p className="text-[10px] text-zinc-400 truncate">Autonomic balance</p>
+          <p className="text-[10px] text-zinc-600 font-medium truncate">Autonomic balance</p>
         </div>
 
         {/* Resting HR */}
-        <div className="p-3 rounded-xl bg-zinc-950/70 border border-zinc-800/90 space-y-1">
+        <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
           <MetricTooltip term="resting_hr">
-            <span className="text-[11px] text-zinc-400 block truncate">Resting HR</span>
+            <span className="text-[11px] font-bold text-zinc-700 block truncate">Resting HR</span>
           </MetricTooltip>
-          <div className="text-2xl font-black text-white font-mono">
-            {restingHr} <span className="text-xs font-normal text-zinc-400">bpm</span>
+          <div className="text-2xl font-black text-zinc-950 font-mono">
+            {restingHr} <span className="text-xs font-normal text-zinc-500">bpm</span>
           </div>
-          <p className="text-[10px] text-zinc-400 truncate">Baseline heart rate</p>
+          <p className="text-[10px] text-zinc-600 font-medium truncate">Baseline heart rate</p>
         </div>
 
         {/* Sleep */}
-        <div className="p-3 rounded-xl bg-zinc-950/70 border border-zinc-800/90 space-y-1">
-          <span className="text-[11px] text-zinc-400 block truncate">Total Sleep</span>
-          <div className="text-2xl font-black text-white font-mono">
-            {sleepHours} <span className="text-xs font-normal text-zinc-400">hrs</span>
+        <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
+          <span className="text-[11px] font-bold text-zinc-700 block truncate">Total Sleep</span>
+          <div className="text-2xl font-black text-zinc-950 font-mono">
+            {sleepHours} <span className="text-xs font-normal text-zinc-500">hrs</span>
           </div>
-          <p className="text-[10px] text-zinc-400 truncate">Recovery duration</p>
+          <p className="text-[10px] text-zinc-600 font-medium truncate">Recovery duration</p>
         </div>
       </div>
     </div>

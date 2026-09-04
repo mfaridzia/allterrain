@@ -9,6 +9,7 @@ import { TidCard } from "@/components/TidCard";
 import { TrailSuite } from "@/components/TrailSuite";
 import { EvoLabSuite } from "@/components/EvoLabSuite";
 import { RecoveryRadar } from "@/components/RecoveryRadar";
+import { TrainingReadinessCard } from "@/components/TrainingReadinessCard";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { AiCoachDrawer } from "@/components/AiCoachDrawer";
 import { SettingsModal } from "@/components/SettingsModal";
@@ -63,16 +64,18 @@ export default function DashboardPage() {
   const handleDisconnect = async () => {
     if (!confirm("Are you sure you want to disconnect your COROS account?")) return;
     await fetch("/api/auth/coros/status", { method: "POST" });
-    window.location.reload();
+    window.location.href = "/";
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center space-y-4">
-        <div className="h-10 w-10 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-500 animate-spin">
-          <RefreshCw className="h-5 w-5" />
+      <div className="min-h-screen bg-[#F6F4EE] flex flex-col items-center justify-center space-y-4">
+        <div className="h-12 w-12 rounded-2xl bg-orange-400 border-2 border-zinc-950 shadow-[3px_3px_0px_0px_#09090b] flex items-center justify-center text-black animate-spin">
+          <RefreshCw className="h-6 w-6" />
         </div>
-        <p className="text-xs font-semibold text-zinc-400">Loading Athlete Intelligence Engine...</p>
+        <p className="text-xs font-black text-zinc-900 uppercase tracking-wider">
+          Loading Athlete Intelligence Engine...
+        </p>
       </div>
     );
   }
@@ -84,11 +87,12 @@ export default function DashboardPage() {
     pmcSeries: dashboardData?.pmcSeries || [],
     acwr: dashboardData?.acwr || { acwr: 1.0, status: "sweet_spot", label: "Optimal Sweet Spot", description: "" },
     monotony: dashboardData?.monotony || { monotony: 0, strain: 0, monotonyAlert: false },
+    readiness: dashboardData?.readiness,
     scaleDescription: "",
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="min-h-screen bg-[#F6F4EE] text-zinc-950 flex flex-col font-sans">
       <Header
         connected={isConnected}
         onSync={handleSync}
@@ -101,8 +105,8 @@ export default function DashboardPage() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {syncMessage && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-zinc-900 border border-orange-500/30 text-xs text-orange-300">
-            <Sparkles className="h-4 w-4 text-orange-400 shrink-0" />
+          <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-amber-100 border-2 border-zinc-950 text-xs font-bold text-amber-950 shadow-[3px_3px_0px_0px_#09090b]">
+            <Sparkles className="h-4 w-4 text-orange-600 shrink-0" />
             <span>{syncMessage}</span>
           </div>
         )}
@@ -123,6 +127,9 @@ export default function DashboardPage() {
               onToggleMode={setScaleMode}
               scaleDescription={activeModeData.scaleDescription}
             />
+
+            {/* Daily Science Prescription: Training Readiness & Suggestion */}
+            <TrainingReadinessCard readiness={activeModeData.readiness} />
 
             {/* Middle Grid: Injury Risk & Load Balance + Intensity & Recovery */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -165,28 +172,28 @@ export default function DashboardPage() {
 
             {/* Suite Tabs: Road EvoLab vs Trail & Mountain */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+              <div className="flex items-center gap-2.5 pb-1">
                 <button
                   onClick={() => setActiveTab("evolab")}
-                  className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all ${
                     activeTab === "evolab"
-                      ? "bg-orange-500/10 text-orange-400 border border-orange-500/30"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                      ? "bg-orange-400 text-black shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
+                      : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b]"
                   }`}
                 >
-                  <Trophy className="h-4 w-4" />
+                  <Trophy className="h-4 w-4 text-zinc-950" />
                   <span>Road EvoLab & Race Predictor</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab("trail")}
-                  className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all ${
                     activeTab === "trail"
-                      ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                      ? "bg-cyan-400 text-black shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
+                      : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b]"
                   }`}
                 >
-                  <Mountain className="h-4 w-4" />
+                  <Mountain className="h-4 w-4 text-zinc-950" />
                   <span>Trail & Mountain Running Suite</span>
                 </button>
               </div>

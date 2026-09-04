@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Neo-Brutalist Badge Box -->
+  <rect x="1.5" y="1.5" width="29" height="29" rx="7" fill="#ea580c" stroke="#09090b" stroke-width="2" />
+  
+  <!-- Centered Vector Glyph Group: ▲ L T -->
+  <g fill="#ffffff">
+    <!-- Delta Triangle (A / Peak) -->
+    <polygon points="4,21.5 8,11 12,21.5" />
+    
+    <!-- Bold Letter L -->
+    <path d="M13.5 11 h2.6 v7.8 h3.9 v2.7 h-6.5 z" />
+    
+    <!-- Bold Letter T -->
+    <path d="M21.5 11 h6.5 v2.6 h-1.9 v7.9 h-2.7 v-7.9 h-1.9 z" />
+  </g>
+</svg>

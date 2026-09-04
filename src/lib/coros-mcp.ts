@@ -306,13 +306,23 @@ export async function syncCorosData(): Promise<{
         const sportTypeCode = idMatch ? parseInt(idMatch[2], 10) : 100;
         
         let sportType = "run";
-        if (sportTypeCode === 102 || rawType.toLowerCase().includes("trail")) {
+        const lowerRaw = rawType.toLowerCase();
+        if (sportTypeCode === 102 || lowerRaw.includes("trail")) {
           sportType = "trail_run";
-        } else if (sportTypeCode === 103) {
+        } else if (sportTypeCode === 103 || lowerRaw.includes("track")) {
           sportType = "track_run";
-        } else if (sportTypeCode >= 200 && sportTypeCode <= 299) {
+        } else if (sportTypeCode === 101 || lowerRaw.includes("indoor run") || lowerRaw.includes("treadmill")) {
+          sportType = "indoor_run";
+        } else if ((sportTypeCode >= 200 && sportTypeCode <= 299) || lowerRaw.includes("bike") || lowerRaw.includes("cycl")) {
           sportType = "bike";
-        } else if (sportTypeCode === 402) {
+        } else if (
+          sportTypeCode === 402 ||
+          sportTypeCode === 400 ||
+          sportTypeCode === 401 ||
+          lowerRaw.includes("strength") ||
+          lowerRaw.includes("gym") ||
+          lowerRaw.includes("weight")
+        ) {
           sportType = "strength";
         }
 

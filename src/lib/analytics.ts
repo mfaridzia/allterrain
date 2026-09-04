@@ -1,6 +1,6 @@
 /**
  * Athletic Analytics Engine
- * Implements Bannister Impulse-Response PMC, Intervals.icu advanced metrics,
+ * Implements Bannister Impulse-Response PMC, endurance sports science metrics,
  * and Trail/Mountain performance calculations.
  */
 
@@ -571,6 +571,234 @@ export function calculateRacePreparationVolume(
     minWeeklyVertTarget,
     maxWeeklyVertTarget,
     methodologyTip: "Standar Finisher Realistis: Mengutamakan metode Back-to-Back Weekend (Sabtu nanjak + Minggu nanjak saat kaki lelah) dan latihan kekuatan paha (ME) agar aman dari cedera.",
+  };
+}
+
+// ---------------------------------------------------------------------------
+// TRAINING READINESS & DAILY SUGGESTION ENGINE (SCIENTIFIC DETERMINISTIC)
+// Based on:
+// - Banister & Coggan: TSB Form Thresholds (-30, -10, +5, +25)
+// - Tim Gabbett (2016): ACWR Workload Governor (Safe ceiling < 1.3)
+// - Kiviniemi & Plews (2007, 2013): Autonomic Nervous System & Recovery Balance
+// ---------------------------------------------------------------------------
+
+export interface TrainingReadinessParams {
+  ctl: number;
+  atl: number;
+  tsb: number;
+  todayLoad: number;
+  acwr: number;
+  recoveryScore?: number;
+  hrvStatus?: string;
+  sleepHours?: number;
+  rampRate?: number;
+}
+
+export interface TrainingReadinessResult {
+  score: number; // 0 - 100
+  tier: "PRIME" | "OPTIMAL" | "MODERATE" | "RECOVERY" | "REST";
+  label: string;
+  badgeBg: string;
+  badgeBorder: string;
+  textColor: string;
+  suggestion: {
+    title: string;
+    category: "REST" | "RECOVERY" | "BASE" | "TEMPO" | "QUALITY" | "RACE";
+    durationMinutes: string;
+    targetLoad: string;
+    intensityZone: string;
+    heartRateGuide: string;
+    description: string;
+  };
+  governor: {
+    maxSafeLoadTomorrow: number;
+    nextQualityWindow: string;
+    scientificRationale: string;
+  };
+  factors: {
+    fatigueImpact: "HIGH" | "MODERATE" | "LOW";
+    formReadiness: "FRESH" | "OPTIMAL" | "OVERREACHING" | "DETRAINING";
+    injuryRisk: "SAFE" | "ELEVATED" | "CRITICAL";
+  };
+}
+
+export function calculateTrainingReadiness(params: TrainingReadinessParams): TrainingReadinessResult {
+  const {
+    ctl,
+    atl,
+    tsb,
+    todayLoad,
+    acwr,
+    recoveryScore = 75,
+    hrvStatus = "NORMAL",
+  } = params;
+
+  // Safe Load Ceiling from Gabbett ACWR Governor:
+  // To keep ACWR <= 1.3: ChronicLoad * 1.3
+  const safeLoadCeiling = Math.max(25, Math.round(ctl * 1.25));
+
+  // Determine factor states
+  const fatigueImpact: "HIGH" | "MODERATE" | "LOW" =
+    atl > ctl * 1.2 || todayLoad >= 80 ? "HIGH" : atl > ctl ? "MODERATE" : "LOW";
+
+  const formReadiness: "FRESH" | "OPTIMAL" | "OVERREACHING" | "DETRAINING" =
+    tsb < -30
+      ? "OVERREACHING"
+      : tsb <= -10
+      ? "OPTIMAL"
+      : tsb <= 25
+      ? "FRESH"
+      : "DETRAINING";
+
+  const injuryRisk: "SAFE" | "ELEVATED" | "CRITICAL" =
+    acwr > 1.5 || tsb < -35 ? "CRITICAL" : acwr > 1.3 || tsb < -25 ? "ELEVATED" : "SAFE";
+
+  // CASE 1: CRITICAL RECOVERY / MANDATORY REST
+  // Either TSB severely negative (< -30) or ACWR in danger zone (> 1.5)
+  if (tsb < -30 || acwr > 1.5 || recoveryScore < 30) {
+    return {
+      score: Math.max(15, Math.min(35, Math.round(30 + tsb * 0.4))),
+      tier: "REST",
+      label: "Rest Required",
+      badgeBg: "bg-rose-100 text-rose-950",
+      badgeBorder: "border-rose-950",
+      textColor: "text-rose-600",
+      suggestion: {
+        title: "Complete Rest Day (No Training)",
+        category: "REST",
+        durationMinutes: "0 mins",
+        targetLoad: "0 Load",
+        intensityZone: "Rest & Recovery",
+        heartRateGuide: "Resting Heart Rate baseline",
+        description:
+          "Your acute fatigue is critically elevated relative to fitness. Continuing to push carries high probability of tendon/joint overuse injury or immune suppression. Take a full rest day with ample hydration and sleep.",
+      },
+      governor: {
+        maxSafeLoadTomorrow: 15,
+        nextQualityWindow: "In 48 – 72 hours",
+        scientificRationale:
+          "Banister & Friel protocols identify TSB < -30 as non-functional overreaching. Gabbett (2016) shows ACWR > 1.5 increases injury relative risk by 2x to 4x.",
+      },
+      factors: { fatigueImpact, formReadiness, injuryRisk },
+    };
+  }
+
+  // CASE 2: TODAY WAS A HARD / HIGH LOAD WORKOUT (todayLoad >= 80)
+  // Even if Form is positive, muscular glycogen & sarcomere repair requires 24-36h buffer
+  if (todayLoad >= 80) {
+    const score = Math.max(45, Math.min(60, Math.round(55 + (recoveryScore - 50) * 0.2)));
+    return {
+      score,
+      tier: "RECOVERY",
+      label: "Active Recovery Priority",
+      badgeBg: "bg-amber-100 text-amber-950",
+      badgeBorder: "border-zinc-950",
+      textColor: "text-amber-700",
+      suggestion: {
+        title: "Active Recovery Jog or Rest Day",
+        category: "RECOVERY",
+        durationMinutes: "20 – 30 mins (or Off)",
+        targetLoad: "15 – 25 Load",
+        intensityZone: "Zone 1 (Easy Aerobic / Flush)",
+        heartRateGuide: "< 72% Max HR (< 132 bpm)",
+        description: `You absorbed a high workload today (${Math.round(todayLoad)} Load). Prioritize cellular adaptation and glycogen re-synthesis before attempting another intense session.`,
+      },
+      governor: {
+        maxSafeLoadTomorrow: Math.round(safeLoadCeiling * 0.5),
+        nextQualityWindow: "In 24 – 36 hours",
+        scientificRationale:
+          "Following high acute training impulses, muscular supercompensation requires 24–36h. Active recovery stimulates vascular flushing without adding eccentric mechanical micro-tears.",
+      },
+      factors: { fatigueImpact, formReadiness, injuryRisk },
+    };
+  }
+
+  // CASE 3: PRIME FOR QUALITY & HIGH INTENSITY (TSB +5 to +25, rested today, safe ACWR)
+  if (tsb >= 5 && tsb <= 25 && todayLoad < 40 && acwr <= 1.25) {
+    const score = Math.min(96, Math.max(85, Math.round(88 + tsb * 0.35)));
+    return {
+      score,
+      tier: "PRIME",
+      label: "Prime for Speed & Quality",
+      badgeBg: "bg-cyan-100 text-cyan-950",
+      badgeBorder: "border-zinc-950",
+      textColor: "text-sky-700",
+      suggestion: {
+        title: "Intervals, Threshold, or Race Effort",
+        category: "QUALITY",
+        durationMinutes: "45 – 70 mins",
+        targetLoad: `${Math.round(ctl * 0.9)} – ${Math.round(ctl * 1.3)} Load`,
+        intensityZone: "Zone 4 / Zone 5 (Threshold & VO2Max repeats)",
+        heartRateGuide: "> 85% Max HR (155+ bpm)",
+        description:
+          "Your autonomic readiness is high, chronic form is fresh (+5 to +25), and acute fatigue is low. Ideal window for track repeats, tempo tests, or peak race efforts.",
+      },
+      governor: {
+        maxSafeLoadTomorrow: safeLoadCeiling,
+        nextQualityWindow: "Prime Window Open Now",
+        scientificRationale:
+          "Positive TSB combined with low acute strain maximizes neuromuscular rate of force development (RFD) and cardiac stroke volume (Coggan & Allen).",
+      },
+      factors: { fatigueImpact, formReadiness, injuryRisk },
+    };
+  }
+
+  // CASE 4: OPTIMAL TRAINING SWEET SPOT (-30 <= TSB < -10, sustainable building)
+  if (tsb >= -30 && tsb < -10 && acwr <= 1.35) {
+    const score = Math.min(84, Math.max(70, Math.round(76 + (tsb + 20) * 0.4)));
+    return {
+      score,
+      tier: "OPTIMAL",
+      label: "Productive Building Window",
+      badgeBg: "bg-emerald-100 text-emerald-950",
+      badgeBorder: "border-zinc-950",
+      textColor: "text-emerald-700",
+      suggestion: {
+        title: "Aerobic Base or Tempo Progression",
+        category: "TEMPO",
+        durationMinutes: "45 – 60 mins",
+        targetLoad: `${Math.round(ctl * 0.8)} – ${Math.round(ctl * 1.1)} Load`,
+        intensityZone: "Zone 2 Steady or Zone 3 Tempo",
+        heartRateGuide: "72% – 82% Max HR (135 – 150 bpm)",
+        description:
+          "Your fitness building is right in the sweet spot. Fatigue is present but completely sustainable. Good day for steady aerobic mileage or light progressive tempo.",
+      },
+      governor: {
+        maxSafeLoadTomorrow: safeLoadCeiling,
+        nextQualityWindow: "Today or Tomorrow",
+        scientificRationale:
+          "Friel's sweet spot (-30 to -10 TSB) allows maximal CTL accumulation rate while maintaining immune integrity and tendon tolerance.",
+      },
+      factors: { fatigueImpact, formReadiness, injuryRisk },
+    };
+  }
+
+  // CASE 5: AEROBIC MAINTENANCE / BASE (-10 <= TSB < 5 or TSB > 25 detraining)
+  const score = Math.min(74, Math.max(62, Math.round(68 + (recoveryScore - 50) * 0.1)));
+  return {
+    score,
+    tier: "MODERATE",
+    label: "Aerobic Base Maintenance",
+    badgeBg: "bg-zinc-100 text-zinc-950",
+    badgeBorder: "border-zinc-950",
+    textColor: "text-zinc-800",
+    suggestion: {
+      title: "Zone 2 Conversational Endurance",
+      category: "BASE",
+      durationMinutes: "35 – 50 mins",
+      targetLoad: `${Math.round(ctl * 0.6)} – ${Math.round(ctl * 0.85)} Load`,
+      intensityZone: "Zone 2 (Aerobic Base)",
+      heartRateGuide: "68% – 78% Max HR (128 – 142 bpm)",
+      description:
+        "Maintain capillary density and fat oxidation with an easy, conversational run. Keep intensity strictly under your Aerobic Threshold (AeT).",
+    },
+    governor: {
+      maxSafeLoadTomorrow: safeLoadCeiling,
+      nextQualityWindow: "In 24 hours",
+      scientificRationale:
+        "Kiviniemi & Buchheit show Zone 2 aerobic volume maintains mitochondrial enzyme activity without autonomic nervous system suppression.",
+    },
+    factors: { fatigueImpact, formReadiness, injuryRisk },
   };
 }
 

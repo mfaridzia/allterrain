@@ -64,7 +64,7 @@ export function buildAthleteContext(): string {
   const targetTier = getSetting("trail_training_tier", "finisher");
 
   return `
-[ATHLETE LIVE PHYSIOLOGICAL DATA (COROS & INTERVALS.ICU)]
+[ATHLETE LIVE PHYSIOLOGICAL DATA (COROS & PERFORMANCE SCIENCE)]
 - Active Target Mountain Race: ${targetDist} km with +${targetElev}m D+ (Target Weekly Vert: +${targetVert}m D+, Mode: ${targetTier})
 - Today's Fitness (CTL - 42d EMA): ${ctl}
 - Today's Fatigue (ATL - 7d EMA): ${atl}
@@ -120,7 +120,7 @@ export async function runCoachStream(messages: ChatMessage[]) {
   const athleteContext = buildAthleteContext();
 
   const systemPrompt = `You are "COROS AI Athletic Coach", an elite endurance running & trail performance sports scientist and coach.
-You combine scientific principles from Bannister Impulse-Response (CTL/ATL/TSB), Intervals.icu metrics (ACWR, Decoupling Pa:HR, Foster's Monotony & Strain, Polarized 80/20 TID), and Mountain/Trail metrics (VAM m/h, Naismith/Minetti energetic cost).
+You combine scientific principles from Bannister Impulse-Response (CTL/ATL/TSB), advanced endurance metrics (ACWR, Decoupling Pa:HR, Foster's Monotony & Strain, Polarized 80/20 TID), and Mountain/Trail metrics (VAM m/h, Naismith/Minetti energetic cost).
 
 Current athlete context:
 ${athleteContext}

@@ -22,7 +22,8 @@ export type MetricTerm =
   | "climb_density"
   | "ads"
   | "cumulative_gain"
-  | "cumulative_loss";
+  | "cumulative_loss"
+  | "readiness";
 
 export interface MetricDefinition {
   title: string;
@@ -39,7 +40,7 @@ export const METRIC_GLOSSARY: Record<MetricTerm, MetricDefinition> = {
     definition:
       "Mengukur tabungan kebugaran Anda berdasarkan rata-rata eksponensial beban latihan (Training Load / rTSS) selama 42 hari terakhir. Semakin tinggi angka CTL, semakin besar kapasitas paru-paru dan stamina otot Anda.",
     sweetSpot: "Naik bertahap +5 s/d +8 poin per minggu (jangan loncat drastis).",
-    source: "Dr. Eric Bannister (1975) & Dr. Andrew Coggan (TrainingPeaks / Intervals.icu)",
+    source: "Dr. Eric Bannister (1975) & Dr. Andrew Coggan (PMC Science)",
   },
   atl: {
     title: "ATL (Acute Training Load) — Fatigue",
@@ -64,7 +65,7 @@ export const METRIC_GLOSSARY: Record<MetricTerm, MetricDefinition> = {
     definition:
       "Perubahan angka CTL (Fitness) Anda dalam 7 hari terakhir. Menjadi indikator apakah Anda menambah porsi latihan secara bertahap atau terlalu bernafsu.",
     sweetSpot: "+5 s/d +8 poin/minggu (Aman & Efektif). Kenaikan > +10 poin/minggu berisiko tinggi cedera sendi/tendon.",
-    source: "Intervals.icu & TrainingPeaks Workload Ramp Guidelines",
+    source: "Endurance Sports Science Workload Ramp Guidelines",
   },
   acwr: {
     title: "ACWR (Acute:Chronic Workload Ratio)",
@@ -185,6 +186,14 @@ export const METRIC_GLOSSARY: Record<MetricTerm, MetricDefinition> = {
       "Jumlah total penurunan vertikal (meter D-) dari seluruh aktivitas lari Anda. Lari di turunan memberikan stres benturan eksentrik tinggi pada otot paha depan (quadriceps), yang wajib dilatih agar paha tidak hancur/kram saat balap.",
     sweetSpot: "Volume D- idealnya seimbang dengan D+ untuk melatih 'Quad Armor' tanpa merusak sendi lutut.",
     source: "Eccentric Muscle Contraction Science & Kilian Jornet Quad Armor Model",
+  },
+  readiness: {
+    title: "Training Readiness & Suggestion",
+    subtitle: "Rekomendasi Latihan Harian Berbasis Sains Olahraga",
+    definition:
+      "Kalkulasi murni deterministik (tanpa halusinasi AI) yang menggabungkan status TSB Form (Banister), plafon beban aman ACWR Governor (Gabbett 2016), dan recovery otonom tubuh. Memberikan panduan target beban, durasi, dan zona intensitas optimal untuk hari berikutnya.",
+    sweetSpot: "Ikuti rekomendasi Active Recovery pasca sesi berat (TL ≥ 80) agar adaptasi glikogen dan otot tercapai maksimal tanpa risiko cedera.",
+    source: "Banister (1991), Coggan & Allen (2010), Gabbett (2016 BJSM), Plews et al. (2013)",
   },
 };
 

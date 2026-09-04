@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "COROS Athletic Intelligence | Intervals.icu & AI Coach",
-  description: "Next-gen athletic performance dashboard for COROS athletes featuring Intervals.icu PMC, Trail & Mountain Suite, and AI Coaching.",
+  title: "ALLTERRAIN",
+  description: "Advanced athletic performance dashboard featuring Bannister PMC, Endurance Science Engine, and physiological diagnostics.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

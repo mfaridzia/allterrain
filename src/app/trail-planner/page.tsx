@@ -59,10 +59,10 @@ import { Header } from "@/components/Header";
 const TrailMap = dynamic(() => import("@/components/TrailMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[460px] sm:h-[520px] rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500 text-xs">
+    <div className="w-full h-[460px] sm:h-[520px] rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] flex items-center justify-center text-zinc-700 text-xs">
       <div className="flex flex-col items-center gap-2">
-        <div className="w-7 h-7 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-        <span className="font-mono">Memuat Peta Spasial Topografi (Leaflet & OpenTopoMap)...</span>
+        <div className="w-7 h-7 border-2 border-zinc-950 border-t-amber-500 rounded-full animate-spin" />
+        <span className="font-mono font-bold">Memuat Peta Spasial Topografi (Leaflet & OpenTopoMap)...</span>
       </div>
     </div>
   ),
@@ -168,6 +168,26 @@ export default function TrailPlannerPage() {
   // Current active race profile (Starts as null until user uploads GPX)
   const activeRace = customRace;
 
+  // Redirect to landing page if disconnected
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch("/api/auth/coros/status");
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.connected) {
+            window.location.href = "/";
+          }
+        } else {
+          window.location.href = "/";
+        }
+      } catch {
+        window.location.href = "/";
+      }
+    }
+    checkAuth();
+  }, []);
+
   // Sync official COT when active race changes
   useEffect(() => {
     if (activeRace && activeRace.overallCotHours) {
@@ -252,13 +272,13 @@ export default function TrailPlannerPage() {
 
     // Difficulty Tier
     let difficultyTier = "Moderate Mountain Trail";
-    let difficultyColor = "text-yellow-400 border-yellow-500/40 bg-yellow-950/40";
+    let difficultyColor = "text-zinc-950 border-2 border-zinc-950 bg-amber-300 shadow-[2px_2px_0px_0px_#09090b]";
     if (densityRatio > 80 || activeRace.elevationGainM > 3500) {
       difficultyTier = "Alpine Skyrunning (Ultra Extreme)";
-      difficultyColor = "text-rose-400 border-rose-500/40 bg-rose-950/40";
+      difficultyColor = "text-zinc-950 border-2 border-zinc-950 bg-rose-400 shadow-[2px_2px_0px_0px_#09090b]";
     } else if (densityRatio > 50 || activeRace.elevationGainM > 2000) {
       difficultyTier = "Hard Trail / Steep Alpine";
-      difficultyColor = "text-orange-400 border-orange-500/40 bg-orange-950/40";
+      difficultyColor = "text-zinc-950 border-2 border-zinc-950 bg-orange-400 shadow-[2px_2px_0px_0px_#09090b]";
     }
 
     // Official ITRA Points Scale (0 to 6 Endurance Points based on Km-Effort)
@@ -1281,7 +1301,7 @@ export default function TrailPlannerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
+    <div className="min-h-screen bg-[#F6F4EE] text-zinc-950 antialiased">
       {/* Universal Global Navigation Shell */}
       <Header
         extraActions={
@@ -1293,10 +1313,10 @@ export default function TrailPlannerPage() {
                     setCustomRace(null);
                   }
                 }}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg bg-white border-2 border-zinc-950 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                 title="Ganti atau Hapus Rute GPX"
               >
-                <Upload className="h-3.5 w-3.5 text-zinc-400" />
+                <Upload className="h-3.5 w-3.5 text-zinc-950" />
                 <span className="hidden md:inline">Ganti Rute</span>
               </button>
             )}
@@ -1305,10 +1325,10 @@ export default function TrailPlannerPage() {
               <button
                 onClick={loadDemoGpx}
                 disabled={isUploading}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-cyan-950/60 border border-cyan-700/50 hover:bg-cyan-900/60 text-cyan-300 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-[#F3F0E6] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50"
                 title="Muat Rute Demo Rinjani 100 60K"
               >
-                <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                 <span className="hidden lg:inline">Demo Rinjani 60K</span>
               </button>
             )}
@@ -1316,10 +1336,10 @@ export default function TrailPlannerPage() {
             {activeRace && (
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-900 border border-cyan-700/60 hover:bg-cyan-950/40 text-cyan-300 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg bg-amber-400 border-2 border-zinc-950 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-amber-300 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                 title="Print Wristband Pace Card"
               >
-                <Printer className="h-3.5 w-3.5 text-cyan-400" />
+                <Printer className="h-3.5 w-3.5 text-zinc-950" />
                 <span className="hidden sm:inline">Cetak Cheat-Sheet</span>
               </button>
             )}
@@ -1329,15 +1349,15 @@ export default function TrailPlannerPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Context Page Title Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-850">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b-2 border-zinc-950">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight flex items-center gap-2.5">
               <span>GPX Course & Cut-Off Time (COT) Simulator</span>
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">
+              <span className="text-[10px] uppercase font-black px-2.5 py-0.5 rounded-md bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
                 PRO TRAIL 360
               </span>
             </h1>
-            <p className="text-xs text-zinc-400 mt-1">
+            <p className="text-xs text-zinc-600 mt-1 font-medium">
               Peta spasial topografi interaktif, spektrum gradien lintasan, deteksi tanjakan HC, dan simulasi strategi tiba pos WS.
             </p>
           </div>
@@ -1346,23 +1366,23 @@ export default function TrailPlannerPage() {
         {!activeRace || !trackStats ? (
           <div className="space-y-8 py-6">
             {/* Main Upload Dropzone Hero */}
-            <div className="p-8 sm:p-12 rounded-3xl bg-zinc-900/60 border-2 border-dashed border-zinc-800 hover:border-cyan-500/50 transition-all text-center space-y-6 max-w-3xl mx-auto shadow-2xl backdrop-blur-sm">
-              <div className="mx-auto h-20 w-20 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-lg shadow-cyan-500/10">
+            <div className="p-8 sm:p-12 rounded-2xl bg-white border-4 border-dashed border-zinc-950 shadow-[6px_6px_0px_0px_#09090b] text-center space-y-6 max-w-3xl mx-auto">
+              <div className="mx-auto h-20 w-20 rounded-2xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[4px_4px_0px_0px_#09090b]">
                 <Mountain className="h-10 w-10" />
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight">
                   Unggah File GPX Rute Lomba Anda
                 </h2>
-                <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
-                  Aplikasi ini menganalisis file rute trail running (<code className="text-cyan-400 font-mono">.gpx</code>) secara instan dan lokal di browser Anda. Unggah rute lomba Anda atau coba langsung menggunakan data rute resmi ultra marathon demo.
+                <p className="text-xs sm:text-sm text-zinc-600 max-w-lg mx-auto leading-relaxed">
+                  Aplikasi ini menganalisis file rute trail running (<code className="text-zinc-950 font-black font-mono bg-zinc-100 px-1 py-0.5 rounded border border-zinc-300">.gpx</code>) secara instan dan lokal di browser Anda. Unggah rute lomba Anda atau coba langsung menggunakan data rute resmi ultra marathon demo.
                 </p>
               </div>
 
               {/* Action Buttons: Primary Upload + 1-Click Demo */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                <label className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-black cursor-pointer transition-all shadow-lg shadow-cyan-500/20 hover:scale-[1.02]">
+                <label className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 text-sm font-black cursor-pointer border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">
                   <Upload className="h-4 w-4" />
                   <span>{isUploading ? "Memproses File GPX..." : "Pilih File .GPX Rute Anda"}</span>
                   <input
@@ -1376,20 +1396,20 @@ export default function TrailPlannerPage() {
                 <button
                   onClick={loadDemoGpx}
                   disabled={isUploading}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 text-sm font-bold transition-all shadow-md hover:scale-[1.02] disabled:opacity-50"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 text-sm font-black border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50"
                 >
-                  <Sparkles className="h-4 w-4 text-cyan-400" />
+                  <Sparkles className="h-4 w-4 text-amber-500" />
                   <span>Coba Demo: Rinjani 100 — 60K</span>
                 </button>
               </div>
 
-              <div className="flex items-center justify-center gap-2 text-[11px] text-zinc-500 font-mono">
-                <span>Mendukung koordinat GPS resmi (<code className="text-zinc-400">&lt;trkpt&gt;</code>) dan pos Water Station (<code className="text-zinc-400">&lt;wpt&gt;</code>)</span>
+              <div className="flex items-center justify-center gap-2 text-[11px] text-zinc-600 font-mono font-medium">
+                <span>Mendukung koordinat GPS resmi (<code className="text-zinc-900 font-bold">&lt;trkpt&gt;</code>) dan pos Water Station (<code className="text-zinc-900 font-bold">&lt;wpt&gt;</code>)</span>
               </div>
 
               {uploadError && (
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center justify-center gap-2 max-w-md mx-auto">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                <div className="p-4 rounded-xl bg-red-100 border-2 border-red-500 text-red-950 text-xs flex items-center justify-center gap-2 max-w-md mx-auto font-bold shadow-[2px_2px_0px_0px_#ef4444]">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
                   <span>{uploadError}</span>
                 </div>
               )}
@@ -1397,32 +1417,32 @@ export default function TrailPlannerPage() {
 
             {/* Feature Highlights Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-850 space-y-2">
-                <div className="h-9 w-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+              <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-2">
+                <div className="h-9 w-9 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                   <Compass className="h-5 w-5" />
                 </div>
-                <h3 className="text-sm font-bold text-white">Peta Topografi &amp; Radar Interaktif</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
+                <h3 className="text-sm font-black text-zinc-950">Peta Topografi &amp; Radar Interaktif</h3>
+                <p className="text-xs text-zinc-600 leading-relaxed">
                   Peta spasial OpenTopoMap &amp; Satelit yang sinkron secara dua arah dengan cross-section elevasi. Arahkan kursor di grafik untuk melacak posisi di peta.
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-850 space-y-2">
-                <div className="h-9 w-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-2">
+                <div className="h-9 w-9 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                   <Layers className="h-5 w-5" />
                 </div>
-                <h3 className="text-sm font-bold text-white">Spektrum Gradien 7 Kategori</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
+                <h3 className="text-sm font-black text-zinc-950">Spektrum Gradien 7 Kategori</h3>
+                <p className="text-xs text-zinc-600 leading-relaxed">
                   Deteksi otomatis persentase rute datar, tanjakan landai, power hike, hingga tanjakan dinding ekstrem &gt;25% dengan pewarnaan standar industri.
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-850 space-y-2">
-                <div className="h-9 w-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-2">
+                <div className="h-9 w-9 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                   <Clock className="h-5 w-5" />
                 </div>
-                <h3 className="text-sm font-bold text-white">Simulasi COT &amp; Fisiologi Gunung</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
+                <h3 className="text-sm font-black text-zinc-950">Simulasi COT &amp; Fisiologi Gunung</h3>
+                <p className="text-xs text-zinc-600 leading-relaxed">
                   Perhitungan waktu tiba pos WS berbasis VAM atlet, penalti lari malam, kelelahan paruh kedua, dan waktu istirahat di pos aid station.
                 </p>
               </div>
@@ -1431,26 +1451,26 @@ export default function TrailPlannerPage() {
         ) : (
           <>
             {/* Active GPX Course Info & Action Bar */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 shadow-xl backdrop-blur-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-amber-400 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[2px_2px_0px_0px_#09090b]">
                   <Mountain className="h-5 w-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-extrabold text-white tracking-tight">
+                    <h2 className="text-base font-black text-zinc-950 tracking-tight">
                       {activeRace.name}
                     </h2>
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-[#FAF9F5] text-zinc-950 border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
                       GPX Aktif
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-400 flex flex-wrap items-center gap-2 mt-0.5 font-mono">
+                  <p className="text-xs text-zinc-600 flex flex-wrap items-center gap-2 mt-0.5 font-mono font-bold">
                     <span>{trackStats.distanceKm} km</span>
                     <span>•</span>
-                    <span className="text-emerald-400 font-semibold">+{trackStats.gainM}m D+</span>
+                    <span className="text-emerald-700 font-black">+{trackStats.gainM}m D+</span>
                     <span>•</span>
-                    <span className="text-rose-400 font-semibold">-{trackStats.lossM}m D-</span>
+                    <span className="text-rose-700 font-black">-{trackStats.lossM}m D-</span>
                     <span>•</span>
                     <span>{activeRace.checkpoints.length} Pos/WS</span>
                   </p>
@@ -1458,8 +1478,8 @@ export default function TrailPlannerPage() {
               </div>
 
               <div className="flex items-center gap-2.5 self-start md:self-auto">
-                <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-cyan-500 text-zinc-200 hover:text-cyan-300 text-xs font-bold cursor-pointer transition-all">
-                  <Upload className="h-3.5 w-3.5 text-cyan-400" />
+                <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border-2 border-zinc-950 hover:bg-zinc-100 text-zinc-950 text-xs font-black cursor-pointer shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">
+                  <Upload className="h-3.5 w-3.5 text-zinc-950" />
                   <span>{isUploading ? "Memproses..." : "Ganti File GPX"}</span>
                   <input
                     type="file"
@@ -1471,7 +1491,7 @@ export default function TrailPlannerPage() {
 
                 <button
                   onClick={() => setCustomRace(null)}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-rose-700/80 hover:bg-rose-950/50 text-rose-200/80 hover:text-rose-100 text-xs font-semibold transition-all"
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 hover:bg-rose-50 text-rose-700 text-xs font-black shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                   title="Tutup rute GPX ini dan kembali ke menu upload"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -1481,41 +1501,41 @@ export default function TrailPlannerPage() {
             </div>
 
             {uploadError && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
+              <div className="p-3 rounded-xl bg-red-100 border-2 border-red-500 text-red-950 text-xs flex items-center gap-2 font-bold shadow-[2px_2px_0px_0px_#ef4444]">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
                 <span>{uploadError}</span>
               </div>
             )}
 
         {/* Track Overview & In-Depth Analytics Stats Card */}
-        <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
+        <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-zinc-950 pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+              <div className="h-8 w-8 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                 <Activity className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white tracking-tight">
+                <h3 className="text-sm font-black text-zinc-950 tracking-tight">
                   Track Overview & Altimetry Stats ({activeRace.name})
                 </h3>
-                <p className="text-[11px] text-zinc-400">
+                <p className="text-[11px] text-zinc-600 font-medium">
                   Karakteristik medan, elevasi vertikal, densitas tanjakan, dan beban fisiologis ITRA
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border border-amber-500/40 bg-amber-950/40 text-amber-300 flex items-center gap-1">
-                <Award className="h-3 w-3 text-amber-400" />
+              <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase border-2 border-zinc-950 bg-amber-400 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex items-center gap-1">
+                <Award className="h-3 w-3" />
                 <span>{trackStats.itraPoints} ITRA Points</span>
               </span>
 
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border border-sky-500/40 bg-sky-950/40 text-sky-300 flex items-center gap-1">
-                <Mountain className="h-3 w-3 text-sky-400" />
+              <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase border-2 border-zinc-950 bg-sky-300 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex items-center gap-1">
+                <Mountain className="h-3 w-3" />
                 <span>Mountain Level {trackStats.itraMountainLevel}/12</span>
               </span>
 
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border ${trackStats.difficultyColor}`}>
+              <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] ${trackStats.difficultyColor}`}>
                 {trackStats.difficultyTier}
               </span>
             </div>
@@ -1523,74 +1543,74 @@ export default function TrailPlannerPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-xs font-mono">
             {/* Distance */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-850 space-y-1">
-              <span className="text-[10px] text-zinc-400 font-sans block">Jarak (Distance)</span>
-              <div className="text-lg font-black text-white">{trackStats.distanceKm} <span className="text-xs text-zinc-400 font-normal">km</span></div>
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+              <span className="text-[10px] text-zinc-600 font-sans font-bold block">Jarak (Distance)</span>
+              <div className="text-lg font-black text-zinc-950">{trackStats.distanceKm} <span className="text-xs text-zinc-600 font-normal">km</span></div>
               <p className="text-[10px] text-zinc-500 font-sans">Panjang rute GPX</p>
             </div>
 
             {/* D+ Gain */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-850 space-y-1">
-              <span className="text-[10px] text-emerald-400 font-sans flex items-center gap-1">
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+              <span className="text-[10px] text-emerald-700 font-sans font-bold flex items-center gap-1">
                 <ArrowUpRight className="h-3 w-3" />
                 Elevasi Gain (D+)
               </span>
-              <div className="text-lg font-black text-emerald-400">+{trackStats.gainM} <span className="text-xs text-zinc-400 font-normal">m</span></div>
+              <div className="text-lg font-black text-emerald-700">+{trackStats.gainM} <span className="text-xs text-zinc-600 font-normal">m</span></div>
               <p className="text-[10px] text-zinc-500 font-sans">Total tanjakan</p>
             </div>
 
             {/* D- Loss */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-850 space-y-1">
-              <span className="text-[10px] text-rose-400 font-sans flex items-center gap-1">
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+              <span className="text-[10px] text-rose-700 font-sans font-bold flex items-center gap-1">
                 <ArrowDownRight className="h-3 w-3" />
                 Elevasi Loss (D-)
               </span>
-              <div className="text-lg font-black text-rose-400">-{trackStats.lossM} <span className="text-xs text-zinc-400 font-normal">m</span></div>
+              <div className="text-lg font-black text-rose-700">-{trackStats.lossM} <span className="text-xs text-zinc-600 font-normal">m</span></div>
               <p className="text-[10px] text-zinc-500 font-sans">Ujian otot quad</p>
             </div>
 
             {/* Peaks (High & Low) */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-850 space-y-1">
-              <span className="text-[10px] text-zinc-400 font-sans block">Peak & Valley</span>
-              <div className="text-sm font-bold text-cyan-300">
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+              <span className="text-[10px] text-zinc-600 font-sans font-bold block">Peak & Valley</span>
+              <div className="text-sm font-black text-zinc-950">
                 ▲ {trackStats.highestM}m
               </div>
-              <div className="text-xs text-zinc-500">
+              <div className="text-xs text-zinc-500 font-bold">
                 ▼ {trackStats.lowestM} mdpl
               </div>
             </div>
 
             {/* Climb Density */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-850 space-y-1">
-              <span className="text-[10px] text-amber-300 font-sans block">Climb Density</span>
-              <div className="text-lg font-black text-amber-300">{trackStats.densityRatio} <span className="text-xs text-zinc-400 font-normal">m/km</span></div>
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+              <span className="text-[10px] text-amber-800 font-sans font-bold block">Climb Density</span>
+              <div className="text-lg font-black text-amber-700">{trackStats.densityRatio} <span className="text-xs text-zinc-600 font-normal">m/km</span></div>
               <p className="text-[10px] text-zinc-500 font-sans">&gt;80 = Skyrunning</p>
             </div>
 
             {/* ITRA Km-Effort */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-850 space-y-1">
-              <span className="text-[10px] text-purple-400 font-sans block">ITRA Km-Effort</span>
-              <div className="text-lg font-black text-purple-400">{trackStats.kmEffort} <span className="text-xs text-zinc-400 font-normal">km-eff</span></div>
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+              <span className="text-[10px] text-purple-800 font-sans font-bold block">ITRA Km-Effort</span>
+              <div className="text-lg font-black text-purple-700">{trackStats.kmEffort} <span className="text-xs text-zinc-600 font-normal">km-eff</span></div>
               <p className="text-[10px] text-zinc-500 font-sans">Jarak + D+/100</p>
             </div>
 
             {/* ITRA Points */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-amber-500/30 space-y-1 shadow-md shadow-amber-950/20">
-              <span className="text-[10px] text-amber-400 font-sans flex items-center gap-1">
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+              <span className="text-[10px] text-amber-800 font-sans font-bold flex items-center gap-1">
                 <Award className="h-3 w-3" />
                 ITRA Points
               </span>
-              <div className="text-lg font-black text-amber-300">{trackStats.itraPoints} <span className="text-xs text-zinc-400 font-normal">Pts</span></div>
+              <div className="text-lg font-black text-amber-700">{trackStats.itraPoints} <span className="text-xs text-zinc-600 font-normal">Pts</span></div>
               <p className="text-[10px] text-zinc-500 font-sans">Skala 0–6 Finisher</p>
             </div>
 
             {/* Mountain Level */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-sky-500/30 space-y-1 shadow-md shadow-sky-950/20">
-              <span className="text-[10px] text-sky-400 font-sans flex items-center gap-1">
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+              <span className="text-[10px] text-sky-800 font-sans font-bold flex items-center gap-1">
                 <Mountain className="h-3 w-3" />
                 Mountain Level
               </span>
-              <div className="text-lg font-black text-sky-300">{trackStats.itraMountainLevel} <span className="text-xs text-zinc-400 font-normal">/12</span></div>
+              <div className="text-lg font-black text-sky-700">{trackStats.itraMountainLevel} <span className="text-xs text-zinc-600 font-normal">/12</span></div>
               <p className="text-[10px] text-zinc-500 font-sans">{trackStats.itraMountainLevel >= 11 ? "Ekstrem Alpin" : trackStats.itraMountainLevel >= 8 ? "Sangat Terjal" : "Trail Sedang"}</p>
             </div>
           </div>
@@ -1599,11 +1619,11 @@ export default function TrailPlannerPage() {
         {/* Feature 1: Interactive Geospatial Topographic Map */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-zinc-300">
-              <Compass className="h-4 w-4 text-cyan-400" />
+            <div className="flex items-center gap-2 text-xs font-black text-zinc-950">
+              <Compass className="h-4 w-4 text-zinc-950" />
               <span>Peta Spasial Rute & Pos Water Station (OpenTopoMap & Satelit)</span>
             </div>
-            <span className="text-[11px] text-zinc-400 font-mono hidden sm:inline">
+            <span className="text-[11px] text-zinc-600 font-mono font-bold hidden sm:inline">
               Gerakkan kursor di grafik elevasi untuk menggerakkan radar beacon di peta 📍
             </span>
           </div>
@@ -1618,20 +1638,20 @@ export default function TrailPlannerPage() {
         </div>
 
         {/* Feature 2 & 3: Multi-Colored Elevation Profile Cross-Section & Gradient Strip */}
-        <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-zinc-950 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                <Layers className="h-4 w-4 text-cyan-400" />
+              <h3 className="text-sm font-black text-zinc-950 flex items-center gap-1.5">
+                <Layers className="h-4 w-4 text-zinc-950" />
                 <span>Profil Ketinggian Jalur Berwarna (Multi-Colored Elevation Cross-Section)</span>
               </h3>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[11px] text-zinc-600 font-medium">
                 Warna grafik merefleksikan tingkat kecuraman lereng gunung secara real-time (Merah = Tanjakan Ekstrem, Oranye = Power Hike, Hijau = Datar)
               </p>
             </div>
 
             {hoverDistanceKm !== null && (
-              <div className="px-3 py-1 rounded-lg bg-cyan-950 border border-cyan-700/60 text-cyan-300 text-xs font-mono font-bold animate-pulse">
+              <div className="px-3 py-1 rounded-lg bg-amber-400 border-2 border-zinc-950 text-zinc-950 text-xs font-mono font-black shadow-[2px_2px_0px_0px_#09090b]">
                 KM {hoverDistanceKm.toFixed(1)}
               </div>
             )}
@@ -1673,16 +1693,16 @@ export default function TrailPlannerPage() {
                     ))}
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
                 <XAxis
                   dataKey="distanceKm"
-                  stroke="#71717a"
-                  tick={{ fontSize: 10 }}
+                  stroke="#18181b"
+                  tick={{ fontSize: 10, fill: "#18181b", fontWeight: 700 }}
                   unit=" km"
                 />
                 <YAxis
-                  stroke="#71717a"
-                  tick={{ fontSize: 10 }}
+                  stroke="#18181b"
+                  tick={{ fontSize: 10, fill: "#18181b", fontWeight: 700 }}
                   unit="m"
                   domain={["dataMin - 100", "dataMax + 100"]}
                 />
@@ -1710,10 +1730,10 @@ export default function TrailPlannerPage() {
                           : `${d.gradePct}% (Datar)`;
 
                       return (
-                        <div className="p-2.5 rounded-xl bg-zinc-950/95 border border-cyan-500/50 shadow-2xl text-xs font-mono space-y-1">
-                          <div className="font-bold text-white">Jarak: {d.distanceKm} km</div>
-                          <div className="text-cyan-400 font-extrabold">Ketinggian: {d.elevationM} mdpl</div>
-                          <div className="text-[11px]">
+                        <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] text-xs font-mono space-y-1 text-zinc-950">
+                          <div className="font-black text-zinc-950">Jarak: {d.distanceKm} km</div>
+                          <div className="text-amber-600 font-black">Ketinggian: {d.elevationM} mdpl</div>
+                          <div className="text-[11px] font-bold">
                             Kemiringan: <strong style={{ color: gradeColor }}>{gradeLabel}</strong>
                           </div>
                         </div>
@@ -1732,20 +1752,20 @@ export default function TrailPlannerPage() {
                   isAnimationActive={false}
                 />
                 {hoverDistanceKm !== null && (
-                  <ReferenceLine x={hoverDistanceKm} stroke="#ffffff" strokeWidth={2} strokeDasharray="3 3" />
+                  <ReferenceLine x={hoverDistanceKm} stroke="#18181b" strokeWidth={2} strokeDasharray="3 3" />
                 )}
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
           {/* Synchronized Terrain Gradient Timeline Strip (7 Exact Categories) */}
-          <div className="space-y-1.5 pt-2 border-t border-zinc-850">
+          <div className="space-y-1.5 pt-2 border-t-2 border-zinc-950">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-zinc-300">Pita Kontur Kemiringan Jalur (Terrain Gradient Timeline)</span>
-              <span className="text-[11px] text-zinc-400 font-mono">{activeRace.distanceKm} km total</span>
+              <span className="font-black text-zinc-950">Pita Kontur Kemiringan Jalur (Terrain Gradient Timeline)</span>
+              <span className="text-[11px] text-zinc-600 font-mono font-bold">{activeRace.distanceKm} km total</span>
             </div>
 
-            <div className="h-3.5 w-full bg-zinc-800 rounded-lg overflow-hidden flex">
+            <div className="h-4 w-full bg-zinc-200 border-2 border-zinc-950 rounded-lg overflow-hidden flex">
               <div style={{ width: `${gradientBreakdown.flat}%` }} className="bg-emerald-500 h-full" title={`Datar: ${gradientBreakdown.flat}%`} />
               <div style={{ width: `${gradientBreakdown.gentleUp}%` }} className="bg-lime-400 h-full" title={`Nanjak Landai: ${gradientBreakdown.gentleUp}%`} />
               <div style={{ width: `${gradientBreakdown.moderateUp}%` }} className="bg-yellow-500 h-full" title={`Nanjak Sedang: ${gradientBreakdown.moderateUp}%`} />
@@ -1755,42 +1775,42 @@ export default function TrailPlannerPage() {
               <div style={{ width: `${gradientBreakdown.descentTech}%` }} className="bg-purple-500 h-full" title={`Turunan Curam: ${gradientBreakdown.descentTech}%`} />
             </div>
 
-            <div className="flex flex-wrap items-center justify-between text-[11px] font-mono text-zinc-400 pt-1 gap-2">
-              <span className="text-emerald-400">🟢 Datar (-3 s/d +3%): {gradientBreakdown.flat}%</span>
-              <span className="text-lime-300">🌱 Nanjak Landai (3-8%): {gradientBreakdown.gentleUp}%</span>
-              <span className="text-yellow-400">🟡 Nanjak Sedang (8-15%): {gradientBreakdown.moderateUp}%</span>
-              <span className="text-orange-400">🟠 Power Hike (15-25%): {gradientBreakdown.steepUp}%</span>
-              <span className="text-red-400">🔴 Tanjakan Ekstrem (&gt;25%): {gradientBreakdown.extremeUp}%</span>
-              <span className="text-sky-400">🔵 Turunan (-3 s/d -15%): {gradientBreakdown.descentMod}%</span>
-              <span className="text-purple-400">🟣 Turunan Curam (&lt;-15%): {gradientBreakdown.descentTech}%</span>
+            <div className="flex flex-wrap items-center justify-between text-[11px] font-mono font-bold text-zinc-800 pt-1 gap-2">
+              <span className="text-emerald-700">🟢 Datar (-3 s/d +3%): {gradientBreakdown.flat}%</span>
+              <span className="text-lime-700">🌱 Nanjak Landai (3-8%): {gradientBreakdown.gentleUp}%</span>
+              <span className="text-yellow-700">🟡 Nanjak Sedang (8-15%): {gradientBreakdown.moderateUp}%</span>
+              <span className="text-orange-700">🟠 Power Hike (15-25%): {gradientBreakdown.steepUp}%</span>
+              <span className="text-red-700">🔴 Tanjakan Ekstrem (&gt;25%): {gradientBreakdown.extremeUp}%</span>
+              <span className="text-sky-700">🔵 Turunan (-3 s/d -15%): {gradientBreakdown.descentMod}%</span>
+              <span className="text-purple-700">🟣 Turunan Curam (&lt;-15%): {gradientBreakdown.descentTech}%</span>
             </div>
           </div>
         </div>
 
         {/* Feature: Segment Breakdown & Gradient Distribution (Plan Your Trail Style) */}
-        <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-5 shadow-xl">
+        <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-5">
           {/* Header with Title and Tab Switcher */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-850 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-zinc-950 pb-3">
             <div>
               <div className="flex items-center gap-2">
-                <Split className="h-4 w-4 text-cyan-400" />
-                <h3 className="text-sm font-bold text-white tracking-tight">
+                <Split className="h-4 w-4 text-zinc-950" />
+                <h3 className="text-sm font-black text-zinc-950 tracking-tight">
                   Segment Breakdown
                 </h3>
               </div>
-              <p className="text-xs text-zinc-400 font-mono pt-0.5">
+              <p className="text-xs text-zinc-600 font-mono font-bold pt-0.5">
                 {segmentTab === "checkpoint" ? checkpointSegments.length : gradientSegments.length} segments &bull; Based on {segmentTab === "checkpoint" ? "checkpoint" : "gradient"}
               </p>
             </div>
 
             {/* Segment Tab Toggle Buttons */}
-            <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
+            <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-xl border-2 border-zinc-950 text-xs">
               <button
                 onClick={() => setSegmentTab("checkpoint")}
                 className={`px-4 py-1.5 rounded-lg font-black transition-all ${
                   segmentTab === "checkpoint"
-                    ? "bg-cyan-500 text-black shadow-sm"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
+                    : "text-zinc-600 hover:text-zinc-950 font-bold"
                 }`}
               >
                 Checkpoint
@@ -1799,8 +1819,8 @@ export default function TrailPlannerPage() {
                 onClick={() => setSegmentTab("gradient")}
                 className={`px-4 py-1.5 rounded-lg font-black transition-all ${
                   segmentTab === "gradient"
-                    ? "bg-cyan-500 text-black shadow-sm"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
+                    : "text-zinc-600 hover:text-zinc-950 font-bold"
                 }`}
               >
                 Gradient
@@ -1810,7 +1830,7 @@ export default function TrailPlannerPage() {
 
           {/* Tab 1: Checkpoint Segments */}
           {segmentTab === "checkpoint" && (
-            <div className="divide-y divide-zinc-850 rounded-xl border border-zinc-800/80 overflow-hidden bg-zinc-950/40">
+            <div className="divide-y-2 divide-zinc-950 rounded-xl border-2 border-zinc-950 overflow-hidden bg-white shadow-[2px_2px_0px_0px_#09090b]">
               {checkpointSegments.map((seg) => {
                 const isExpanded = expandedSegmentId === seg.id;
                 return (
@@ -1818,66 +1838,66 @@ export default function TrailPlannerPage() {
                     key={seg.id}
                     onMouseEnter={() => setHoverDistanceKm(seg.startKm)}
                     onMouseLeave={() => setHoverDistanceKm(null)}
-                    className="hover:bg-zinc-850/40 transition-colors"
+                    className="hover:bg-[#FAF9F5] transition-colors"
                   >
                     <div
                       onClick={() => setExpandedSegmentId(isExpanded ? null : seg.id)}
                       className="p-3.5 flex items-center justify-between cursor-pointer select-none"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-white tracking-tight">
+                        <span className="text-xs font-black text-zinc-950 tracking-tight">
                           {seg.title}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-zinc-900 border border-zinc-800 text-zinc-300">
+                        <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-[#FAF9F5] border border-zinc-950 text-zinc-950">
                           {seg.distanceKm.toFixed(2)} km
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-zinc-400 text-xs font-mono">
-                        <span className="hidden sm:inline text-cyan-300 font-semibold">{seg.durationStr}</span>
+                      <div className="flex items-center gap-3 text-zinc-600 text-xs font-mono font-bold">
+                        <span className="hidden sm:inline text-zinc-950 font-black">{seg.durationStr}</span>
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-zinc-400" />
+                          <ChevronDown className="h-4 w-4 text-zinc-950" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-zinc-400" />
+                          <ChevronRight className="h-4 w-4 text-zinc-950" />
                         )}
                       </div>
                     </div>
 
                     {/* Expanded Segment Details */}
                     {isExpanded && (
-                      <div className="px-4 pb-3.5 pt-1 text-xs font-mono border-t border-zinc-850/80 bg-zinc-950/60">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
-                          <div className="p-2 rounded-lg bg-zinc-900/70 border border-zinc-800">
-                            <span className="text-[10px] text-zinc-500 font-sans block">Elevasi (Gain / Loss)</span>
-                            <span className="text-emerald-400 font-bold">+{seg.gainM}m</span> /{" "}
-                            <span className="text-purple-400 font-bold">-{seg.lossM}m</span>
+                      <div className="px-4 pb-3.5 pt-2 text-xs font-mono border-t-2 border-zinc-950 bg-[#FAF9F5]">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                          <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Elevasi (Gain / Loss)</span>
+                            <span className="text-emerald-700 font-black">+{seg.gainM}m</span> /{" "}
+                            <span className="text-rose-700 font-black">-{seg.lossM}m</span>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-zinc-900/70 border border-zinc-800">
-                            <span className="text-[10px] text-zinc-500 font-sans block">Rata-rata Kemiringan</span>
-                            <span className="text-amber-300 font-bold">{seg.avgGradePct}%</span>
+                          <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Rata-rata Kemiringan</span>
+                            <span className="text-amber-700 font-black">{seg.avgGradePct}%</span>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-zinc-900/70 border border-zinc-800">
-                            <span className="text-[10px] text-zinc-500 font-sans block">Estimasi Waktu & Pace</span>
-                            <span className="text-cyan-300 font-bold">{seg.durationStr}</span>{" "}
-                            <span className="text-[10px] text-zinc-400">({seg.paceStr}/km)</span>
+                          <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Estimasi Waktu & Pace</span>
+                            <span className="text-zinc-950 font-black">{seg.durationStr}</span>{" "}
+                            <span className="text-[10px] text-zinc-600 font-bold">({seg.paceStr}/km)</span>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-zinc-900/70 border border-zinc-800">
-                            <span className="text-[10px] text-zinc-500 font-sans block">Target Refill Logistik</span>
+                          <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Target Refill Logistik</span>
                             {seg.waterRefillMl > 0 || seg.carbsTargetGrams > 0 ? (
-                              <span className="text-zinc-200 font-bold">
+                              <span className="text-zinc-950 font-black">
                                 💧 {seg.waterRefillMl}ml • ⚡ {seg.carbsTargetGrams}g
                               </span>
                             ) : (
-                              <span className="text-zinc-500">-</span>
+                              <span className="text-zinc-400 font-bold">-</span>
                             )}
                           </div>
                         </div>
 
                         {seg.notes && (
-                          <p className="mt-2 text-[11px] text-zinc-400 font-sans italic">
+                          <p className="mt-2.5 text-[11px] text-zinc-600 font-sans font-medium italic">
                             Catatan: {seg.notes}
                           </p>
                         )}
@@ -1891,67 +1911,67 @@ export default function TrailPlannerPage() {
 
           {/* Tab 2: Gradient Segments */}
           {segmentTab === "gradient" && (
-            <div className="divide-y divide-zinc-850 rounded-xl border border-zinc-800/80 overflow-hidden bg-zinc-950/40">
+            <div className="divide-y-2 divide-zinc-950 rounded-xl border-2 border-zinc-950 overflow-hidden bg-white shadow-[2px_2px_0px_0px_#09090b]">
               {gradientSegments.map((seg) => {
                 const isExpanded = expandedSegmentId === seg.id;
                 const badgeStyle =
                   seg.type === "Climb"
-                    ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
+                    ? "bg-rose-300 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
                     : seg.type === "Uphill"
-                    ? "bg-orange-500/15 text-orange-400 border-orange-500/30"
+                    ? "bg-orange-300 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
                     : seg.type === "Descent"
-                    ? "bg-sky-500/15 text-sky-400 border-sky-500/30"
-                    : "bg-amber-500/15 text-amber-400 border-amber-500/30";
+                    ? "bg-sky-300 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                    : "bg-amber-300 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]";
 
                 return (
                   <div
                     key={seg.id}
                     onMouseEnter={() => setHoverDistanceKm(seg.startKm)}
                     onMouseLeave={() => setHoverDistanceKm(null)}
-                    className="hover:bg-zinc-850/40 transition-colors"
+                    className="hover:bg-[#FAF9F5] transition-colors"
                   >
                     <div
                       onClick={() => setExpandedSegmentId(isExpanded ? null : seg.id)}
                       className="p-3.5 flex items-center justify-between cursor-pointer select-none"
                     >
                       <div className="flex items-center gap-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badgeStyle}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${badgeStyle}`}>
                           {seg.type}
                         </span>
-                        <span className="text-xs font-mono text-zinc-300">
+                        <span className="text-xs font-mono font-bold text-zinc-950">
                           {seg.rangeLabel}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-zinc-400 text-xs font-mono">
-                        <span className="text-white font-bold">{seg.distanceKm.toFixed(2)} km</span>
-                        <span className="hidden sm:inline text-cyan-300 font-medium">~{seg.durationStr}</span>
+                      <div className="flex items-center gap-3 text-zinc-600 text-xs font-mono font-bold">
+                        <span className="text-zinc-950 font-black">{seg.distanceKm.toFixed(2)} km</span>
+                        <span className="hidden sm:inline text-zinc-700 font-bold">~{seg.durationStr}</span>
                         {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-zinc-400" />
+                          <ChevronDown className="h-4 w-4 text-zinc-950" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-zinc-400" />
+                          <ChevronRight className="h-4 w-4 text-zinc-950" />
                         )}
                       </div>
                     </div>
 
                     {/* Expanded Gradient Segment Details */}
                     {isExpanded && (
-                      <div className="px-4 pb-3.5 pt-1 text-xs font-mono border-t border-zinc-850/80 bg-zinc-950/60">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
-                          <div className="p-2 rounded-lg bg-zinc-900/70 border border-zinc-800">
-                            <span className="text-[10px] text-zinc-500 font-sans block">Total Elevasi</span>
-                            <span className="text-emerald-400 font-bold">+{seg.gainM}m</span> /{" "}
-                            <span className="text-purple-400 font-bold">-{seg.lossM}m</span>
+                      <div className="px-4 pb-3.5 pt-2 text-xs font-mono border-t-2 border-zinc-950 bg-[#FAF9F5]">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+                          <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Total Elevasi</span>
+                            <span className="text-emerald-700 font-black">+{seg.gainM}m</span> /{" "}
+                            <span className="text-rose-700 font-black">-{seg.lossM}m</span>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-zinc-900/70 border border-zinc-800">
-                            <span className="text-[10px] text-zinc-500 font-sans block">Rata-rata Kemiringan</span>
-                            <span className="text-amber-300 font-bold">{seg.avgGradePct}%</span>
+                          <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Rata-rata Kemiringan</span>
+                            <span className="text-amber-700 font-black">{seg.avgGradePct}%</span>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-zinc-900/70 border border-zinc-800">
-                            <span className="text-[10px] text-zinc-500 font-sans block">Estimasi Durasi</span>
-                            <span className="text-cyan-300 font-bold">~{seg.durationStr}</span>
+                          <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Estimasi Durasi</span>
+                            <span className="text-zinc-950 font-black">~{seg.durationStr}</span>
                           </div>
                         </div>
                       </div>
@@ -1963,21 +1983,21 @@ export default function TrailPlannerPage() {
           )}
 
           {/* Gradient Distribution Summary Card (Matching Plan Your Trail) */}
-          <div className="pt-4 border-t border-zinc-850 space-y-3">
+          <div className="pt-4 border-t-2 border-zinc-950 space-y-3">
             <div>
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-cyan-400" />
-                <h4 className="text-xs font-bold text-white tracking-tight">
+                <TrendingUp className="h-4 w-4 text-zinc-950" />
+                <h4 className="text-xs font-black text-zinc-950 tracking-tight">
                   Gradient Distribution
                 </h4>
               </div>
-              <p className="text-[11px] text-zinc-400 pt-0.5">
+              <p className="text-[11px] text-zinc-600 pt-0.5 font-medium">
                 Terrain breakdown calculated from GPX track points
               </p>
             </div>
 
             {/* 3-Color Horizontal Gradient Bar */}
-            <div className="h-3 w-full bg-zinc-800 rounded-lg overflow-hidden flex shadow-inner">
+            <div className="h-4 w-full bg-zinc-200 border-2 border-zinc-950 rounded-lg overflow-hidden flex shadow-inner">
               <div
                 style={{ width: `${gradientSummary.uphillPct}%` }}
                 className="bg-rose-500 h-full transition-all"
@@ -1998,43 +2018,43 @@ export default function TrailPlannerPage() {
             {/* 3 Metric Cards */}
             <div className="grid grid-cols-3 gap-3">
               {/* Uphill Card */}
-              <div className="p-3 rounded-xl bg-zinc-950/80 border border-rose-500/30 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-rose-400 font-medium">
+              <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-rose-700 font-black">
                   <TrendingUp className="h-3.5 w-3.5" />
                   <span>Uphill</span>
                 </div>
-                <div className="text-xl font-black text-rose-400 font-mono">
+                <div className="text-xl font-black text-rose-700 font-mono">
                   {gradientSummary.uphillPct}%
                 </div>
-                <div className="text-[11px] text-zinc-400 font-mono">
+                <div className="text-[11px] text-zinc-600 font-mono font-bold">
                   {gradientSummary.uphillKm} km
                 </div>
               </div>
 
               {/* Flat Card */}
-              <div className="p-3 rounded-xl bg-zinc-950/80 border border-amber-500/30 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-amber-400 font-medium">
+              <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-amber-800 font-black">
                   <Minus className="h-3.5 w-3.5" />
                   <span>Flat</span>
                 </div>
-                <div className="text-xl font-black text-amber-400 font-mono">
+                <div className="text-xl font-black text-amber-700 font-mono">
                   {gradientSummary.flatPct}%
                 </div>
-                <div className="text-[11px] text-zinc-400 font-mono">
+                <div className="text-[11px] text-zinc-600 font-mono font-bold">
                   {gradientSummary.flatKm} km
                 </div>
               </div>
 
               {/* Downhill Card */}
-              <div className="p-3 rounded-xl bg-zinc-950/80 border border-sky-500/30 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-sky-400 font-medium">
+              <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-sky-800 font-black">
                   <ArrowDownRight className="h-3.5 w-3.5" />
                   <span>Downhill</span>
                 </div>
-                <div className="text-xl font-black text-sky-400 font-mono">
+                <div className="text-xl font-black text-sky-700 font-mono">
                   {gradientSummary.downhillPct}%
                 </div>
-                <div className="text-[11px] text-zinc-400 font-mono">
+                <div className="text-[11px] text-zinc-600 font-mono font-bold">
                   {gradientSummary.downhillKm} km
                 </div>
               </div>
@@ -2044,15 +2064,15 @@ export default function TrailPlannerPage() {
 
         {/* Feature 4: Major Mountain Passes & Categorized Climbs Breakdown */}
         {majorClimbs.length > 0 && (
-          <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between">
+          <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-4">
+            <div className="flex items-center justify-between border-b-2 border-zinc-950 pb-3">
               <div className="flex items-center gap-2">
-                <Mountain className="h-4 w-4 text-orange-400" />
-                <h3 className="text-sm font-bold text-white tracking-tight">
+                <Mountain className="h-4 w-4 text-zinc-950" />
+                <h3 className="text-sm font-black text-zinc-950 tracking-tight">
                   Analisis Tanjakan Utama (Major Mountain Passes & Categorized Climbs)
                 </h3>
               </div>
-              <span className="text-xs text-zinc-400 font-mono">
+              <span className="text-xs text-zinc-600 font-mono font-bold">
                 {majorClimbs.length} Tanjakan Terdeteksi
               </span>
             </div>
@@ -2061,44 +2081,44 @@ export default function TrailPlannerPage() {
               {majorClimbs.map((climb) => (
                 <div
                   key={climb.id}
-                  className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 space-y-2 hover:border-zinc-700 transition-colors"
+                  className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-2 hover:bg-white transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-white">{climb.name}</h4>
-                      <p className="text-[10px] text-zinc-400 font-mono">
+                      <h4 className="text-xs font-black text-zinc-950">{climb.name}</h4>
+                      <p className="text-[10px] text-zinc-600 font-mono font-bold">
                         KM {climb.startKm} &rarr; KM {climb.endKm} ({climb.distanceKm} km)
                       </p>
                     </div>
                     <span
-                      className={`text-[9px] font-black px-2 py-0.5 rounded uppercase font-mono ${
+                      className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase font-mono border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] ${
                         climb.category === "HC"
-                          ? "bg-red-500/20 text-red-400 border border-red-500/40"
+                          ? "bg-rose-400 text-zinc-950"
                           : climb.category === "Cat 1"
-                          ? "bg-orange-500/20 text-orange-400 border border-orange-500/40"
-                          : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/40"
+                          ? "bg-orange-400 text-zinc-950"
+                          : "bg-amber-300 text-zinc-950"
                       }`}
                     >
                       {climb.category}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs font-mono pt-1 border-t border-zinc-850">
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono pt-1 border-t-2 border-zinc-950">
                     <div>
-                      <span className="text-[10px] text-zinc-500 font-sans block">Total D+</span>
-                      <span className="text-emerald-400 font-bold">+{climb.gainM}m</span>
+                      <span className="text-[10px] text-zinc-600 font-sans font-bold block">Total D+</span>
+                      <span className="text-emerald-700 font-black">+{climb.gainM}m</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-zinc-500 font-sans block">Rata-rata Slope</span>
-                      <span className="text-amber-300 font-bold">{climb.avgGradePct}%</span>
+                      <span className="text-[10px] text-zinc-600 font-sans font-bold block">Rata-rata Slope</span>
+                      <span className="text-amber-700 font-black">{climb.avgGradePct}%</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-zinc-500 font-sans block">Max Slope</span>
-                      <span className="text-red-400 font-bold">{climb.maxGradePct}%</span>
+                      <span className="text-[10px] text-zinc-600 font-sans font-bold block">Max Slope</span>
+                      <span className="text-rose-700 font-black">{climb.maxGradePct}%</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-zinc-500 font-sans block">Estimasi Nanjak</span>
-                      <span className="text-cyan-300 font-bold">{climb.estimatedMinutes} menit</span>
+                      <span className="text-[10px] text-zinc-600 font-sans font-bold block">Estimasi Nanjak</span>
+                      <span className="text-zinc-950 font-black">{climb.estimatedMinutes} menit</span>
                     </div>
                   </div>
                 </div>
@@ -2108,29 +2128,29 @@ export default function TrailPlannerPage() {
         )}
 
         {/* Feature 5: Advanced Simulation Parameters & Strategy Tiers */}
-        <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-850 pb-3">
+        <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-zinc-950 pb-3">
             <div className="flex items-center gap-2">
-              <Sliders className="h-4 w-4 text-emerald-400" />
-              <h3 className="text-sm font-bold text-white tracking-tight">
+              <Sliders className="h-4 w-4 text-zinc-950" />
+              <h3 className="text-sm font-black text-zinc-950 tracking-tight">
                 Parameter Simulasi Realistis (Night Pacing, Kelelahan & Waktu Singgah)
               </h3>
               <button
                 onClick={() => setShowMethodology(!showMethodology)}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-950 border border-zinc-800 hover:border-cyan-500/50 text-cyan-400 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-black rounded-lg bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 text-zinc-950 transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
                 title="Pelajari dasar sains & formula simulasi"
               >
-                <BookOpen className="h-3.5 w-3.5" />
+                <BookOpen className="h-3.5 w-3.5 text-zinc-950" />
                 <span>{showMethodology ? "Tutup Metodologi" : "Metodologi Sains"}</span>
               </button>
             </div>
 
             {/* Strategy Tier Selector */}
-            <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
+            <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-xl border-2 border-zinc-950 text-xs">
               <button
                 onClick={() => setStrategyTier("finisher")}
-                className={`px-3 py-1 rounded-lg font-black transition-colors ${
-                  strategyTier === "finisher" ? "bg-cyan-500 text-black shadow-sm" : "text-white/70 hover:text-white"
+                className={`px-3 py-1 rounded-lg font-black transition-all ${
+                  strategyTier === "finisher" ? "bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]" : "text-zinc-600 hover:text-zinc-950 font-bold"
                 }`}
                 title="Pace aman & stabil untuk memastikan finish sebelum batas COT"
               >
@@ -2138,8 +2158,8 @@ export default function TrailPlannerPage() {
               </button>
               <button
                 onClick={() => setStrategyTier("intermediate")}
-                className={`px-3 py-1 rounded-lg font-black transition-colors ${
-                  strategyTier === "intermediate" ? "bg-amber-400 text-black shadow-sm" : "text-white/70 hover:text-white"
+                className={`px-3 py-1 rounded-lg font-black transition-all ${
+                  strategyTier === "intermediate" ? "bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]" : "text-zinc-600 hover:text-zinc-950 font-bold"
                 }`}
                 title="Pace menengah agresif (Target Sub-17 Jam)"
               >
@@ -2147,8 +2167,8 @@ export default function TrailPlannerPage() {
               </button>
               <button
                 onClick={() => setStrategyTier("elite")}
-                className={`px-3 py-1 rounded-lg font-black transition-colors ${
-                  strategyTier === "elite" ? "bg-rose-500 text-white shadow-sm" : "text-white/70 hover:text-white"
+                className={`px-3 py-1 rounded-lg font-black transition-all ${
+                  strategyTier === "elite" ? "bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]" : "text-zinc-600 hover:text-zinc-950 font-bold"
                 }`}
                 title="Pace atlet podium / top runner"
               >
@@ -2159,75 +2179,75 @@ export default function TrailPlannerPage() {
 
           {/* Scientific Methodology Explainer Card (Collapsible) */}
           {showMethodology && (
-            <div className="p-4 rounded-xl bg-zinc-950 border border-cyan-500/40 space-y-3.5 text-xs">
-              <div className="flex items-center justify-between border-b border-zinc-850 pb-2">
+            <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[3px_3px_0px_0px_#09090b] space-y-3.5 text-xs text-zinc-950">
+              <div className="flex items-center justify-between border-b-2 border-zinc-950 pb-2">
                 <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4 text-cyan-400" />
-                  <h4 className="font-bold text-white text-sm">
+                  <Info className="h-4 w-4 text-zinc-950" />
+                  <h4 className="font-black text-zinc-950 text-sm">
                     Metodologi Sains & Dasar Formula (Hybrid Naismith + VAM COROS + ITRA Km-Effort)
                   </h4>
                 </div>
                 <button
                   onClick={() => setShowMethodology(false)}
-                  className="text-zinc-500 hover:text-zinc-300 font-mono text-xs"
+                  className="text-zinc-600 hover:text-zinc-950 font-mono text-xs font-bold"
                 >
                   ✕ Tutup
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-zinc-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-zinc-900">
                 {/* 1. Naismith Hybrid */}
-                <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800 space-y-1.5">
-                  <div className="flex items-center gap-2 text-cyan-300 font-bold">
-                    <Award className="h-4 w-4 text-cyan-400" />
+                <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-1.5">
+                  <div className="flex items-center gap-2 text-zinc-950 font-black">
+                    <Award className="h-4 w-4 text-zinc-950" />
                     <span>1. Hybrid Naismith Rule & VAM Personal</span>
                   </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
                     Alih-alih menggunakan formula pejalan kaki seragam (seperti Tobler 6 km/jam atau Naismith 600m/jam statis), kalkulator memisahkan lintasan menjadi <strong>kecepatan lari datar (Flat Pace)</strong> dan <strong>kecepatan vertikal nanjak (VAM / Velocità Ascensionale Media)</strong> yang terkalibrasi dari jam COROS atlet.
                   </p>
-                  <div className="p-2 rounded bg-zinc-950/90 font-mono text-[10px] text-cyan-400 border border-zinc-800">
+                  <div className="p-2 rounded bg-[#FAF9F5] font-mono text-[10px] text-zinc-950 border border-zinc-950 font-bold">
                     Waktu Segmen = (Jarak Datar × Flat Pace) + (D+ Vertikal / VAM)
                   </div>
                 </div>
 
                 {/* 2. ITRA Km-Effort */}
-                <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800 space-y-1.5">
-                  <div className="flex items-center gap-2 text-amber-300 font-bold">
-                    <TrendingUp className="h-4 w-4 text-amber-400" />
+                <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-1.5">
+                  <div className="flex items-center gap-2 text-zinc-950 font-black">
+                    <TrendingUp className="h-4 w-4 text-zinc-950" />
                     <span>2. Alokasi Batas COT Realistis (ITRA Km-Effort)</span>
                   </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
                     Pembagian batas waktu linier jarak datar membuat pelari tampak gagal di pos tanjakan awal (misal KM 11 Senaru Rim +2000m D+). Sistem mengalokasikan batas waktu pos berdasarkan rasio <strong>Km-Effort (Jarak + D+/100)</strong> dengan kurva <em>front-load</em> panitia resmi ((Effort Ratio)^0.88).
                   </p>
-                  <div className="p-2 rounded bg-zinc-950/90 font-mono text-[10px] text-amber-400 border border-zinc-800">
+                  <div className="p-2 rounded bg-[#FAF9F5] font-mono text-[10px] text-zinc-950 border border-zinc-950 font-bold">
                     Km-Effort = Jarak (km) + (D+ / 100) &bull; COT Pos = (Effort Ratio)^0.88 × Batas COT
                   </div>
                 </div>
 
                 {/* 3. Minetti Quad Braking */}
-                <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800 space-y-1.5">
-                  <div className="flex items-center gap-2 text-purple-300 font-bold">
-                    <Activity className="h-4 w-4 text-purple-400" />
+                <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-1.5">
+                  <div className="flex items-center gap-2 text-zinc-950 font-black">
+                    <Activity className="h-4 w-4 text-zinc-950" />
                     <span>3. Minetti Eccentric Quad Braking (Turunan Terjal)</span>
                   </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
                     Turunan gunung vulkanik (seperti pasir & bebatuan Rinjani) tidak dapat dituruni secepat jalan aspal. Sistem menambahkan beban pengereman eksentrik otot kuadrisep per 1.000m D- untuk mengantisipasi penurunan kecepatan akibat medan teknis bebatuan.
                   </p>
-                  <div className="p-2 rounded bg-zinc-950/90 font-mono text-[10px] text-purple-400 border border-zinc-800">
+                  <div className="p-2 rounded bg-[#FAF9F5] font-mono text-[10px] text-zinc-950 border border-zinc-950 font-bold">
                     Waktu Turunan = (D- Vertikal / 1000) × Koefisien Rem Paha (180–380 detik)
                   </div>
                 </div>
 
                 {/* 4. Ultra Physiology */}
-                <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800 space-y-1.5">
-                  <div className="flex items-center gap-2 text-rose-300 font-bold">
-                    <Flame className="h-4 w-4 text-rose-400" />
+                <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-1.5">
+                  <div className="flex items-center gap-2 text-zinc-950 font-black">
+                    <Flame className="h-4 w-4 text-zinc-950" />
                     <span>4. Fisiologi Ultra, Altitude & Headlamp</span>
                   </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
                     Memperhitungkan deplesi kadar oksigen tipis di atas 2.200m dan 3.000m mdpl (-6% s/d -12% VAM), penalti visibilitas lari malam (18:00–06:00), serta kelelahan progresif paruh kedua balapan ultra.
                   </p>
-                  <div className="p-2 rounded bg-zinc-950/90 font-mono text-[10px] text-rose-400 border border-zinc-800">
+                  <div className="p-2 rounded bg-[#FAF9F5] font-mono text-[10px] text-zinc-950 border border-zinc-950 font-bold">
                     Penalti: Altitude (&gt;2200m) + Malam (Headlamp) + Kelelahan Paruh Kedua
                   </div>
                 </div>
@@ -2237,10 +2257,10 @@ export default function TrailPlannerPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
             {/* Batas Resmi COT Panitia Input (Editable!) */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-cyan-500/40 space-y-1.5 shadow-sm">
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-cyan-300 font-bold flex items-center gap-1.5">
-                  <Award className="h-3.5 w-3.5 text-cyan-400" />
+                <span className="text-zinc-950 font-black flex items-center gap-1.5">
+                  <Award className="h-3.5 w-3.5 text-zinc-950" />
                   Batas Resmi COT Panitia
                 </span>
               </div>
@@ -2252,28 +2272,28 @@ export default function TrailPlannerPage() {
                   step={0.5}
                   value={raceOfficialCotHours}
                   onChange={(e) => setRaceOfficialCotHours(parseFloat(e.target.value) || 20)}
-                  className="w-full bg-zinc-900 border border-cyan-500/50 text-white font-mono font-black text-sm rounded-lg px-2.5 py-1 text-center focus:border-cyan-400 focus:outline-none"
+                  className="w-full bg-white border-2 border-zinc-950 text-zinc-950 font-mono font-black text-sm rounded-lg px-2.5 py-1 text-center shadow-[1px_1px_0px_0px_#09090b] focus:outline-none"
                 />
-                <span className="text-xs text-zinc-300 font-mono font-bold">Jam</span>
+                <span className="text-xs text-zinc-800 font-mono font-bold">Jam</span>
               </div>
-              <p className="text-[10px] text-zinc-400">
+              <p className="text-[10px] text-zinc-600 font-medium">
                 Rinjani 60K = 20 Jam &bull; 36K = 15 Jam.
               </p>
             </div>
 
             {/* Start Time Picker */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 space-y-1.5">
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-300 font-medium flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-cyan-400" />
+                <span className="text-zinc-950 font-bold flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-zinc-950" />
                   Jam Mulai Lomba
                 </span>
-                <span className="font-mono text-cyan-300 font-bold">{raceStartTime}</span>
+                <span className="font-mono text-zinc-950 font-black">{raceStartTime}</span>
               </div>
               <select
                 value={raceStartTime}
                 onChange={(e) => setRaceStartTime(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg p-1.5 text-xs focus:outline-none focus:border-cyan-400 font-mono"
+                className="w-full bg-white border-2 border-zinc-950 text-zinc-950 rounded-lg p-1.5 text-xs focus:outline-none font-mono font-bold shadow-[1px_1px_0px_0px_#09090b]"
               >
                 <option value="00:00">00:00 (Tengah Malam / Ultra Start)</option>
                 <option value="02:00">02:00 (Subuh Dini Hari)</option>
@@ -2281,19 +2301,19 @@ export default function TrailPlannerPage() {
                 <option value="06:00">06:00 (Pagi Hari)</option>
                 <option value="20:00">20:00 (Malam Hari)</option>
               </select>
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-[10px] text-zinc-600 font-medium">
                 Menghitung transisi gelap vs terang.
               </p>
             </div>
 
             {/* Fatigue Degradation Slider */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 space-y-1.5">
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-300 font-medium flex items-center gap-1.5">
-                  <Flame className="h-3.5 w-3.5 text-orange-400" />
+                <span className="text-zinc-950 font-bold flex items-center gap-1.5">
+                  <Flame className="h-3.5 w-3.5 text-orange-600" />
                   Kelelahan Paruh Kedua
                 </span>
-                <span className="font-mono text-orange-400 font-bold">+{fatigueDegradationPct}%</span>
+                <span className="font-mono text-orange-700 font-black">+{fatigueDegradationPct}%</span>
               </div>
               <input
                 type="range"
@@ -2302,21 +2322,21 @@ export default function TrailPlannerPage() {
                 step={2}
                 value={fatigueDegradationPct}
                 onChange={(e) => setFatigueDegradationPct(Number(e.target.value))}
-                className="w-full accent-orange-400 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                className="w-full accent-zinc-950 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
               />
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-[10px] text-zinc-600 font-medium">
                 Pace melambat setelah 30% jarak tempuh.
               </p>
             </div>
 
             {/* Night Headlamp Penalty Slider */}
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 space-y-1.5">
+            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-300 font-medium flex items-center gap-1.5">
-                  <Moon className="h-3.5 w-3.5 text-purple-400" />
+                <span className="text-zinc-950 font-bold flex items-center gap-1.5">
+                  <Moon className="h-3.5 w-3.5 text-purple-600" />
                   Penalti Lari Malam
                 </span>
-                <span className="font-mono text-purple-400 font-bold">+{nightPenaltyPct}%</span>
+                <span className="font-mono text-purple-700 font-black">+{nightPenaltyPct}%</span>
               </div>
               <input
                 type="range"
@@ -2325,9 +2345,9 @@ export default function TrailPlannerPage() {
                 step={2}
                 value={nightPenaltyPct}
                 onChange={(e) => setNightPenaltyPct(Number(e.target.value))}
-                className="w-full accent-purple-400 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                className="w-full accent-zinc-950 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
               />
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-[10px] text-zinc-600 font-medium">
                 Perlambatan di trek gelap (18:00 - 06:00).
               </p>
             </div>
@@ -2335,25 +2355,25 @@ export default function TrailPlannerPage() {
         </div>
 
         {/* Feature 6: Athlete Finish Prediction & Checkpoint Timetable */}
-        <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-5 shadow-xl">
+        <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-5">
           {/* Header with Show/Hide Toggle */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b-2 border-zinc-950 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+              <h3 className="text-sm font-black text-zinc-950 tracking-tight flex items-center gap-2">
                 <span>Rencana Pos Water Station (WS) & Estimasi Waktu Tiba</span>
                 <span
-                  className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                  className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] ${
                     overallBufferMinutes >= 45
-                      ? "bg-emerald-950 text-emerald-400 border-emerald-800"
+                      ? "bg-emerald-300 text-zinc-950"
                       : overallBufferMinutes >= 0
-                      ? "bg-amber-950 text-amber-400 border-amber-800"
-                      : "bg-red-950 text-red-400 border-red-800"
+                      ? "bg-amber-300 text-zinc-950"
+                      : "bg-rose-300 text-zinc-950"
                   }`}
                 >
                   {formatBufferText(overallBufferMinutes)}
                 </span>
               </h3>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-600 font-medium">
                 Dihitung dari VAM COROS ({athleteVam} m/h), deplesi oksigen di ketinggian, dan batas resmi panitia ({raceOfficialCotHours} jam).
               </p>
             </div>
@@ -2361,16 +2381,16 @@ export default function TrailPlannerPage() {
             {/* Toggle Button */}
             <button
               onClick={() => setShowPacingEstimation(!showPacingEstimation)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-zinc-950 border border-zinc-800 hover:bg-zinc-850 text-zinc-300 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 text-zinc-950 transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
               {showPacingEstimation ? (
                 <>
-                  <EyeOff className="h-3.5 w-3.5 text-zinc-400" />
+                  <EyeOff className="h-3.5 w-3.5 text-zinc-950" />
                   <span>Sembunyikan Estimasi</span>
                 </>
               ) : (
                 <>
-                  <Eye className="h-3.5 w-3.5 text-cyan-400" />
+                  <Eye className="h-3.5 w-3.5 text-zinc-950" />
                   <span>Tampilkan Estimasi</span>
                 </>
               )}
@@ -2379,81 +2399,81 @@ export default function TrailPlannerPage() {
 
           {/* Collapsible Athlete Finish Prediction Card */}
           {showPacingEstimation && (
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-zinc-950 to-zinc-900 border border-cyan-500/30 space-y-3 shadow-lg">
+            <div className="p-4 rounded-2xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[3px_3px_0px_0px_#09090b] space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-cyan-400" />
+                  <Award className="h-5 w-5 text-zinc-950" />
                   <div>
-                    <h4 className="text-sm font-black text-white tracking-tight">
+                    <h4 className="text-sm font-black text-zinc-950 tracking-tight">
                       Estimasi Waktu Finish Atlet (Fisiologi Gunung & VAM COROS Realistis)
                     </h4>
-                    <p className="text-[11px] text-zinc-400">
-                      Batas COT Resmi Panitia: <strong>{raceOfficialCotHours} Jam</strong> &bull; Mode:{" "}
-                      <strong className="text-cyan-300 uppercase">{strategyTier}</strong>
+                    <p className="text-[11px] text-zinc-600 font-medium">
+                      Batas COT Resmi Panitia: <strong className="text-zinc-950">{raceOfficialCotHours} Jam</strong> &bull; Mode:{" "}
+                      <strong className="text-zinc-950 uppercase">{strategyTier}</strong>
                     </p>
                   </div>
                 </div>
 
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-black uppercase border ${
+                  className={`px-3 py-1 rounded-md text-xs font-black uppercase border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] ${
                     overallBufferMinutes >= 45
-                      ? "bg-emerald-950 text-emerald-400 border-emerald-500/40"
+                      ? "bg-emerald-300 text-zinc-950"
                       : overallBufferMinutes >= 0
-                      ? "bg-amber-950 text-amber-400 border-amber-500/40"
-                      : "bg-red-950 text-red-400 border-red-500/40"
+                      ? "bg-amber-300 text-zinc-950"
+                      : "bg-rose-300 text-zinc-950"
                   }`}
                 >
                   {formatBufferText(overallBufferMinutes)}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs pt-1 border-t border-zinc-800/80">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs pt-2 border-t-2 border-zinc-950">
                 {/* Finish Time */}
-                <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-0.5">
-                  <span className="text-[10px] text-zinc-400 font-sans block">Total Waktu Finish</span>
-                  <div className="text-xl font-black text-white">
+                <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-0.5">
+                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">Total Waktu Finish</span>
+                  <div className="text-xl font-black text-zinc-950">
                     {finishHours}j {finishMins}m
                   </div>
-                  <div className="text-[10px] text-cyan-300 font-sans">
+                  <div className="text-[10px] text-zinc-700 font-sans font-bold">
                     Jam Tiba: {finishCheckpoint?.clockTimeStr || "--:--"}
                   </div>
                 </div>
 
                 {/* Avg Trail Speed & Pace */}
-                <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-0.5">
-                  <span className="text-[10px] text-zinc-400 font-sans block">Rata-rata Pace Trail</span>
-                  <div className="text-xl font-black text-zinc-200">
-                    {formatPace(avgOverallPaceSec)}<span className="text-xs font-normal text-zinc-400">/km</span>
+                <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-0.5">
+                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">Rata-rata Pace Trail</span>
+                  <div className="text-xl font-black text-zinc-950">
+                    {formatPace(avgOverallPaceSec)}<span className="text-xs font-normal text-zinc-600">/km</span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 font-sans">
+                  <div className="text-[10px] text-zinc-600 font-sans font-bold">
                     Speed: {avgOverallSpeedKmh} km/jam
                   </div>
                 </div>
 
                 {/* Calibrated VAM */}
-                <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-0.5">
-                  <span className="text-[10px] text-zinc-400 font-sans block">
+                <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-0.5">
+                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">
                     {strategyTier === "elite"
                       ? "VAM Top Runner"
                       : strategyTier === "intermediate"
                       ? "VAM Target Menengah"
                       : "VAM COROS Atlet"}
                   </span>
-                  <div className="text-xl font-black text-amber-300">
-                    {activeStrategyStats.vam} <span className="text-xs font-normal text-zinc-400">m/h</span>
+                  <div className="text-xl font-black text-amber-700">
+                    {activeStrategyStats.vam} <span className="text-xs font-normal text-zinc-600">m/h</span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 font-sans">
+                  <div className="text-[10px] text-zinc-600 font-sans font-bold">
                     Flat Pace: {formatPace(activeStrategyStats.flatPace)}/km
                   </div>
                 </div>
 
                 {/* Nutrition Targets */}
-                <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-0.5">
-                  <span className="text-[10px] text-zinc-400 font-sans block">Total Kebutuhan Nutrisi</span>
-                  <div className="text-lg font-black text-emerald-400">
+                <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-0.5">
+                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">Total Kebutuhan Nutrisi</span>
+                  <div className="text-lg font-black text-emerald-700">
                     💧 ~{Math.round(finishHours * (strategyTier === "elite" ? 0.7 : 0.65) * 10) / 10}L Air
                   </div>
-                  <div className="text-[10px] text-amber-300 font-sans">
+                  <div className="text-[10px] text-amber-700 font-sans font-bold">
                     ⚡ ~{Math.round(finishHours * (strategyTier === "elite" ? 60 : 45))}g Karbo (~{Math.round((finishHours * (strategyTier === "elite" ? 60 : 45)) / 25)} gel)
                   </div>
                 </div>
@@ -2463,9 +2483,9 @@ export default function TrailPlannerPage() {
 
           {/* Timetable of Checkpoints */}
           <div className="space-y-2">
-            <div className="overflow-x-auto rounded-xl border border-zinc-800">
+            <div className="overflow-x-auto rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-zinc-800 text-[11px] text-zinc-400 font-mono uppercase bg-zinc-950/80">
+                <thead className="border-b-2 border-zinc-950 text-[11px] text-zinc-950 font-mono uppercase bg-zinc-100 font-black">
                   <tr>
                     <th className="py-3 px-3">Nama Pos / WS Asli</th>
                     <th className="py-3 px-3">Jarak & Ketinggian</th>
@@ -2476,47 +2496,47 @@ export default function TrailPlannerPage() {
                     <th className="py-3 px-3">Catatan Taktis</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-850">
+                <tbody className="divide-y divide-zinc-200 bg-white">
                   {evaluatedCheckpoints.map((cp) => (
                     <tr
                       key={cp.id}
-                      className="hover:bg-zinc-950/60 transition-colors font-mono"
+                      className="hover:bg-[#FAF9F5] transition-colors font-mono"
                     >
                       <td className="py-3 px-3">
-                        <div className="font-bold text-white font-sans flex items-center gap-1.5">
+                        <div className="font-black text-zinc-950 font-sans flex items-center gap-1.5">
                           {cp.name}
                           {cp.isNight && (
-                            <span className="text-[10px] text-purple-400" title="Zona Lari Malam (Headlamp)">
+                            <span className="text-[10px]" title="Zona Lari Malam (Headlamp)">
                               🌙
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="py-3 px-3">
-                        <div>{cp.distanceKm.toFixed(1)} km</div>
-                        <div className="text-[10px] text-zinc-400">{cp.elevationM} mdpl</div>
+                        <div className="font-bold text-zinc-950">{cp.distanceKm.toFixed(1)} km</div>
+                        <div className="text-[10px] text-zinc-600 font-bold">{cp.elevationM} mdpl</div>
                       </td>
                       <td className="py-3 px-3">
-                        <div className="font-bold text-cyan-300">{cp.predictedTimeStr}</div>
-                        <div className="text-[10px] text-zinc-400 flex items-center gap-1 font-sans">
-                          {cp.isNight ? <Moon className="h-3 w-3 text-purple-400" /> : <Sun className="h-3 w-3 text-amber-400" />}
+                        <div className="font-black text-zinc-950">{cp.predictedTimeStr}</div>
+                        <div className="text-[10px] text-zinc-600 flex items-center gap-1 font-sans font-bold">
+                          {cp.isNight ? <Moon className="h-3 w-3 text-purple-700" /> : <Sun className="h-3 w-3 text-amber-600" />}
                           <span>{cp.clockTimeStr}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-zinc-300">
-                        <div className="font-semibold">{cp.officialCotTime}</div>
+                      <td className="py-3 px-3 text-zinc-950">
+                        <div className="font-black">{cp.officialCotTime}</div>
                         {!cp.isFinish && cp.distanceKm > 0 && (
-                          <div className="text-[9px] text-zinc-500 font-sans">Alokasi Km-Effort</div>
+                          <div className="text-[9px] text-zinc-500 font-sans font-medium">Alokasi Km-Effort</div>
                         )}
                       </td>
                       <td className="py-3 px-3">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-black border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] ${
                             cp.status === "safe"
-                              ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                              ? "bg-emerald-300 text-zinc-950"
                               : cp.status === "caution"
-                              ? "bg-amber-950 text-amber-400 border border-amber-800"
-                              : "bg-red-950 text-red-400 border border-red-800"
+                              ? "bg-amber-300 text-zinc-950"
+                              : "bg-rose-300 text-zinc-950"
                           }`}
                         >
                           {formatBufferText(cp.bufferMinutes)}
@@ -2524,19 +2544,19 @@ export default function TrailPlannerPage() {
                       </td>
                       <td className="py-3 px-3">
                         {cp.waterRefillMl > 0 || cp.carbsTargetGrams > 0 ? (
-                          <div className="text-[11px] text-zinc-300">
-                            <span className="text-cyan-400 font-bold">{cp.waterRefillMl}ml air</span> •{" "}
-                            <span className="text-amber-400 font-bold">{cp.carbsTargetGrams}g karbo</span>
+                          <div className="text-[11px] text-zinc-950 font-bold">
+                            <span className="text-cyan-700 font-black">{cp.waterRefillMl}ml air</span> •{" "}
+                            <span className="text-amber-700 font-black">{cp.carbsTargetGrams}g karbo</span>
                           </div>
                         ) : (
-                          <span className="text-zinc-600">-</span>
+                          <span className="text-zinc-400 font-bold">-</span>
                         )}
                       </td>
                       <td className="py-3 px-3 text-[11px] font-sans min-w-[260px] max-w-sm">
-                        <div className="text-zinc-200 leading-snug">{cp.notes}</div>
+                        <div className="text-zinc-800 leading-snug font-medium">{cp.notes}</div>
                         {cp.rawDesc && cp.rawDesc !== cp.notes && !cp.rawDesc.startsWith("Pos resmi") && (
                           <div className="text-[10px] text-zinc-500 mt-1 flex items-center gap-1 font-mono">
-                            <span className="text-zinc-600">Info GPX:</span>
+                            <span className="text-zinc-600 font-bold">Info GPX:</span>
                             <span className="truncate max-w-[200px]" title={cp.rawDesc}>{cp.rawDesc}</span>
                           </div>
                         )}

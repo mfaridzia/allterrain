@@ -37,21 +37,21 @@ export const AuthGate: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
+    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-[#F6F4EE]">
       <div className="max-w-3xl w-full text-center space-y-8">
         {/* Glow & Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-semibold uppercase tracking-wider">
-          <Zap className="h-4 w-4 text-orange-500" />
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-200 border-2 border-zinc-950 text-orange-950 text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#09090b]">
+          <Zap className="h-4 w-4 text-orange-600 stroke-[2.5]" />
           Official COROS MCP Integration
         </div>
 
         {/* Hero Title */}
         <div className="space-y-4">
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            Unlock Elite <span className="text-orange-500">Intervals.icu</span> & <span className="text-cyan-400">Trail</span> Analytics
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-zinc-950 leading-tight">
+            Unlock Elite <span className="underline decoration-orange-500 decoration-4">Performance Science</span> & <span className="underline decoration-cyan-500 decoration-4">Athletic</span> Analytics
           </h1>
-          <p className="text-zinc-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            Connect your COROS account to stream training loads, compute precise Bannister PMC curves (CTL/ATL/TSB), predict trail finish times with VAM, and get AI-driven coaching insights.
+          <p className="text-zinc-700 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed font-medium">
+            Connect your COROS account to stream training loads, compute precise Bannister PMC curves (CTL/ATL/TSB), evaluate live recovery & readiness, and get AI-driven coaching insights.
           </p>
         </div>
 
@@ -59,25 +59,25 @@ export const AuthGate: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
           <a
             href="/api/auth/coros/login"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-base shadow-xl shadow-orange-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-black text-base border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#09090b] transition-all"
           >
             <span>Connect COROS Account</span>
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-5 w-5 stroke-[2.5]" />
           </a>
 
           <button
             onClick={() => setShowManualInput(!showManualInput)}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 font-medium text-sm transition-all hover:bg-zinc-800"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white border-2 border-zinc-950 text-zinc-950 font-black text-sm shadow-[3px_3px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:bg-zinc-100 transition-all cursor-pointer"
           >
-            <Key className="h-4 w-4 text-zinc-400" />
+            <Key className="h-4 w-4 text-zinc-950 stroke-[2.5]" />
             <span>Manual Bearer Token</span>
           </button>
         </div>
 
         {/* Manual Token Form Drawer */}
         {showManualInput && (
-          <div className="max-w-md mx-auto p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 text-left space-y-3">
-            <label className="block text-xs font-semibold text-zinc-300">
+          <div className="max-w-md mx-auto p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] text-left space-y-3">
+            <label className="block text-xs font-black text-zinc-950">
               Paste COROS Bearer / Access Token
             </label>
             <form onSubmit={handleManualSubmit} className="space-y-3">
@@ -86,13 +86,13 @@ export const AuthGate: React.FC = () => {
                 value={manualToken}
                 onChange={(e) => setManualToken(e.target.value)}
                 placeholder="eyJhbGciOi..."
-                className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-200 focus:outline-none focus:border-orange-500"
+                className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
               />
-              {manualError && <p className="text-xs text-red-400">{manualError}</p>}
+              {manualError && <p className="text-xs text-rose-600 font-bold">{manualError}</p>}
               <button
                 type="submit"
                 disabled={savingManual || !manualToken.trim()}
-                className="w-full py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50 transition-colors"
+                className="w-full py-2.5 text-xs font-black rounded-xl bg-orange-500 hover:bg-orange-600 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 transition-all cursor-pointer"
               >
                 {savingManual ? "Connecting..." : "Save & Load Dashboard"}
               </button>
@@ -102,40 +102,40 @@ export const AuthGate: React.FC = () => {
 
         {/* Value Highlights Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 text-left">
-          <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-2">
-            <div className="h-9 w-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-              <Activity className="h-5 w-5" />
+          <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 space-y-2 shadow-[4px_4px_0px_0px_#09090b]">
+            <div className="h-9 w-9 rounded-xl bg-blue-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+              <Activity className="h-5 w-5 stroke-[2.5]" />
             </div>
-            <h3 className="font-semibold text-zinc-200 text-sm">Intervals.icu Engine</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <h3 className="font-black text-zinc-950 text-sm">Performance Science Engine</h3>
+            <p className="text-xs text-zinc-600 font-medium leading-relaxed">
               Full PMC (Fitness CTL, Fatigue ATL, Form TSB), Form Zones, Ramp Rate, and ACWR Injury Risk analysis.
             </p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-2">
-            <div className="h-9 w-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-              <Mountain className="h-5 w-5" />
+          <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 space-y-2 shadow-[4px_4px_0px_0px_#09090b]">
+            <div className="h-9 w-9 rounded-xl bg-cyan-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+              <Mountain className="h-5 w-5 stroke-[2.5]" />
             </div>
-            <h3 className="font-semibold text-zinc-200 text-sm">Trail & Mountain Suite</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <h3 className="font-black text-zinc-950 text-sm">Trail & Mountain Suite</h3>
+            <p className="text-xs text-zinc-600 font-medium leading-relaxed">
               VAM (vertical ascent rate), cumulative D+/D-, and customizable trail race finish time estimator.
             </p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-2">
-            <div className="h-9 w-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-              <Brain className="h-5 w-5" />
+          <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 space-y-2 shadow-[4px_4px_0px_0px_#09090b]">
+            <div className="h-9 w-9 rounded-xl bg-purple-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+              <Brain className="h-5 w-5 stroke-[2.5]" />
             </div>
-            <h3 className="font-semibold text-zinc-200 text-sm">BYOK AI Training Coach</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Context-aware AI coach powered by Gemini, OpenAI, Claude, or Ollama analyzing your live readiness.
+            <h3 className="font-black text-zinc-950 text-sm">BYOK AI Training Coach</h3>
+            <p className="text-xs text-zinc-600 font-medium leading-relaxed">
+              Context-aware AI coach powered by Gemini, OpenAI, Claude, DeepSeek, or Ollama analyzing your live readiness.
             </p>
           </div>
         </div>
 
         {/* Security & Privacy Badge */}
-        <div className="pt-4 flex items-center justify-center gap-2 text-xs text-zinc-500">
-          <ShieldCheck className="h-4 w-4 text-emerald-500" />
+        <div className="pt-4 flex items-center justify-center gap-2 text-xs text-zinc-600 font-bold">
+          <ShieldCheck className="h-4 w-4 text-emerald-600 stroke-[2.5]" />
           <span>Private & Secure: Tokens & athlete metrics stored locally in your SQLite database.</span>
         </div>
       </div>

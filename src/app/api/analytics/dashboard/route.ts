@@ -5,12 +5,28 @@ import {
   calculateAcwr,
   calculateMonotonyAndStrain,
   calculatePmcSeries,
+  calculateTrainingReadiness,
   PmcPoint,
 } from "@/lib/analytics";
 
 export async function GET() {
   const token = getCorosToken();
   const isConnected = !!token && (!token.expires_at || Date.now() < token.expires_at);
+
+  if (!isConnected) {
+    return NextResponse.json({
+      connected: false,
+      activities: [],
+      pmcSeries: [],
+      current: { ctl: 0, atl: 0, tsb: 0, rampRate: 0, formPct: 0 },
+      acwr: { acwr: 1.0, status: "sweet_spot", label: "Baseline", description: "" },
+      monotony: { monotony: 0, strain: 0, monotonyAlert: false },
+      tid: { z1z2Pct: 80, z3Pct: 15, z4z5Pct: 5, isPolarized: true },
+      trail: { totalGainM: 0, totalLossM: 0, trailRunsCount: 0, avgVam: 0, avgDecoupling: 0, specificTrailHours: 0, totalHours: 0, specificityPct: 0 },
+      recovery: { hrvStatus: "NORMAL", recoveryScore: 100, restingHr: 50, avgSleepDurationMin: 480, sleepRegularityScore: 90, daysLogged: 0 },
+      modes: {},
+    });
+  }
 
   const db = getDb();
 
@@ -154,24 +170,40 @@ export async function GET() {
   const thresholdPaceSec = racePredictor?.fiveKmSeconds ? 282 : 282; // 4:42 /km
   const dailyRtssMap = new Map<string, number>();
 
-  // Map each activity to rTSS
+  // Map each activity to Intervals.icu TSS (rTSS for running, hrTSS for strength / bike)
   for (const act of activities) {
     const dStr = new Date(act.start_time).toISOString().split("T")[0];
     const durHours = (act.duration_seconds || 1800) / 3600;
-    let pace = act.avg_pace_sec || 300;
-    if (pace <= 0 && act.distance_meters > 0) {
-      pace = act.duration_seconds / (act.distance_meters / 1000);
+
+    let tss = 0;
+    if (act.sport_type === "strength" || act.distance_meters <= 0) {
+      // hrTSS for Gym / Strength sessions (Coggan & Allen formula)
+      const thresholdHr = 162;
+      const hrIf = (act.avg_hr || 135) / thresholdHr;
+      tss = Math.max(5, Math.min(250, Math.round(100 * durHours * Math.pow(hrIf, 2))));
+    } else if (act.sport_type === "bike") {
+      // hrTSS for Cycling
+      const thresholdHr = 162;
+      const hrIf = (act.avg_hr || 140) / thresholdHr;
+      tss = Math.max(5, Math.min(350, Math.round(100 * durHours * Math.pow(hrIf, 2))));
+    } else {
+      // Running rTSS (Pace + Gradient Minetti adjustment)
+      let pace = act.avg_pace_sec || 300;
+      if (pace <= 0 && act.distance_meters > 0) {
+        pace = act.duration_seconds / (act.distance_meters / 1000);
+      }
+
+      if (act.sport_type === "trail_run" || act.elevation_gain > 150) {
+        const distKm = act.distance_meters / 1000;
+        const gradient = distKm > 0 ? act.elevation_gain / (distKm * 1000) : 0;
+        pace = pace / (1 + gradient * 4.0);
+      }
+
+      const intensityFactor = thresholdPaceSec / (pace || 300);
+      tss = Math.max(5, Math.min(350, Math.round(100 * durHours * Math.pow(intensityFactor, 2))));
     }
 
-    if (act.sport_type === "trail_run" || act.elevation_gain > 150) {
-      const distKm = act.distance_meters / 1000;
-      const gradient = distKm > 0 ? act.elevation_gain / (distKm * 1000) : 0;
-      pace = pace / (1 + gradient * 4.0);
-    }
-
-    const intensityFactor = thresholdPaceSec / (pace || 300);
-    const rtss = Math.max(5, Math.min(350, Math.round(100 * durHours * Math.pow(intensityFactor, 2))));
-    dailyRtssMap.set(dStr, (dailyRtssMap.get(dStr) || 0) + rtss);
+    dailyRtssMap.set(dStr, (dailyRtssMap.get(dStr) || 0) + tss);
   }
 
   // Generate full continuous calendar days sequence for Intervals.icu rTSS
@@ -199,6 +231,18 @@ export async function GET() {
   const intervalsPast7 = intervalsPmc.slice(-7).map((p: PmcPoint) => p.load);
   const intervalsMonotony = calculateMonotonyAndStrain(intervalsPast7);
 
+  const corosReadiness = calculateTrainingReadiness({
+    ctl,
+    atl,
+    tsb,
+    todayLoad: latestDaily?.training_load || 0,
+    acwr: acwrData.acwr,
+    recoveryScore: latestDaily?.recovery_score || 82,
+    hrvStatus: latestDaily?.hrv_status || "NORMAL",
+    sleepHours: latestDaily?.sleep_duration_seconds ? latestDaily.sleep_duration_seconds / 3600 : 7.5,
+    rampRate,
+  });
+
   const corosModeData = {
     current: {
       date: latestDaily?.date || new Date().toISOString().split("T")[0],
@@ -216,6 +260,7 @@ export async function GET() {
     },
     acwr: acwrData,
     monotony: monotonyData,
+    readiness: corosReadiness,
     pmcSeries: dailyRows.map((d) => ({
       date: d.date,
       load: d.training_load,
@@ -229,6 +274,19 @@ export async function GET() {
     scaleLabel: "COROS Load (TRIMP)",
     scaleDescription: "Heart-rate impulse scale matching your COROS watch screen (Base Fitness ~115).",
   };
+
+  const intervalsTodayLoad = latestIntervals?.load || 0;
+  const intervalsReadiness = calculateTrainingReadiness({
+    ctl: latestIntervals?.ctl || 48,
+    atl: latestIntervals?.atl || 47,
+    tsb: intervalsTsb,
+    todayLoad: intervalsTodayLoad,
+    acwr: intervalsAcwr.acwr,
+    recoveryScore: latestDaily?.recovery_score || 82,
+    hrvStatus: latestDaily?.hrv_status || "NORMAL",
+    sleepHours: latestDaily?.sleep_duration_seconds ? latestDaily.sleep_duration_seconds / 3600 : 7.5,
+    rampRate: latestIntervals?.rampRate || 0.6,
+  });
 
   const intervalsModeData = {
     current: {
@@ -247,6 +305,7 @@ export async function GET() {
     },
     acwr: intervalsAcwr,
     monotony: intervalsMonotony,
+    readiness: intervalsReadiness,
     pmcSeries: intervalsPmc.map((p: PmcPoint) => ({
       date: p.date,
       load: p.load,
@@ -257,8 +316,8 @@ export async function GET() {
       rampRate: p.rampRate,
       acwr: intervalsAcwr.acwr,
     })),
-    scaleLabel: "Intervals.icu (rTSS)",
-    scaleDescription: "Threshold pace/power scale calibrated to Intervals.icu (Threshold: 4:42 /km).",
+    scaleLabel: "Standard rTSS",
+    scaleDescription: "Threshold pace/power scale calibrated to Coggan rTSS model (Threshold: 4:42 /km).",
   };
 
   return NextResponse.json({
@@ -269,6 +328,7 @@ export async function GET() {
       intervals: intervalsModeData,
     },
     current: corosModeData.current,
+    readiness: corosReadiness,
     acwr: acwrData,
     monotony: monotonyData,
     tid,
