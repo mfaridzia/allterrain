@@ -94,11 +94,25 @@ export async function getCurrentAthleteId(req?: NextRequest | Request): Promise<
     }
   }
 
-  if (!sessionId) {
-    return null;
+  if (sessionId) {
+    const athleteId = await getAthleteIdFromSession(sessionId);
+    if (athleteId) return athleteId;
   }
 
-  return getAthleteIdFromSession(sessionId);
+  // Graceful fallback for single-user / local database:
+  // If there's an active token stored in auth_tokens, resolve to that athlete_id
+  try {
+    const db = getDb();
+    const tokenRes = await db.execute({
+      sql: `SELECT athlete_id FROM auth_tokens WHERE provider = 'coros' ORDER BY updated_at DESC LIMIT 1`,
+      args: [],
+    });
+    if (tokenRes.rows.length > 0 && tokenRes.rows[0].athlete_id) {
+      return String(tokenRes.rows[0].athlete_id);
+    }
+  } catch {}
+
+  return null;
 }
 
 /**

@@ -146,15 +146,29 @@ export async function initSchema(client: Client): Promise<void> {
     }
   }
 
-  // 3. Helpful Indexes
+  // 3. Helpful Indexes & Constraints
   try {
     await client.execute(`CREATE INDEX IF NOT EXISTS idx_activities_athlete_time ON activities (athlete_id, start_time DESC);`);
     await client.execute(`CREATE INDEX IF NOT EXISTS idx_daily_metrics_athlete ON daily_metrics (athlete_id, date ASC);`);
+    await client.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_metrics_athlete_date ON daily_metrics (athlete_id, date);`);
     await client.execute(`CREATE INDEX IF NOT EXISTS idx_sessions_athlete ON sessions (athlete_id);`);
     await client.execute(`CREATE INDEX IF NOT EXISTS idx_auth_athlete ON auth_tokens (athlete_id);`);
   } catch {
     // Ignore index creation notices
   }
+
+  // 4. Migrate any unassigned 'athlete_primary' data to active athlete
+  try {
+    const activeAthleteRes = await client.execute(
+      `SELECT athlete_id FROM auth_tokens WHERE athlete_id != 'athlete_primary' ORDER BY updated_at DESC LIMIT 1;`
+    );
+    if (activeAthleteRes.rows.length > 0) {
+      const targetAthlete = String(activeAthleteRes.rows[0].athlete_id);
+      await client.execute({ sql: `UPDATE activities SET athlete_id = ? WHERE athlete_id = 'athlete_primary';`, args: [targetAthlete] });
+      await client.execute({ sql: `UPDATE daily_metrics SET athlete_id = ? WHERE athlete_id = 'athlete_primary';`, args: [targetAthlete] });
+      await client.execute({ sql: `UPDATE user_settings SET athlete_id = ? WHERE athlete_id = 'athlete_primary';`, args: [targetAthlete] });
+    }
+  } catch {}
 }
 
 // Token Helpers

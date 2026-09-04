@@ -333,7 +333,7 @@ export async function syncCorosData(athleteId: string = "athlete_primary"): Prom
         const speedMps = distKm > 0 && durationSec > 0 ? (distKm * 1000) / durationSec : 0;
         const efficiencyFactor = avgHr > 0 && speedMps > 0 ? Math.round((speedMps / avgHr) * 1000) / 1000 : 0;
         const decouplingPct = distKm > 15 ? 4.8 : 2.5;
-        const activityId = `act_${athleteId}_${labelId}`;
+        const activityId = `act_${labelId}`;
 
         await db.execute({
           sql: `
