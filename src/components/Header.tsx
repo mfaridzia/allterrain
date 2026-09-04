@@ -14,6 +14,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { SettingsModal } from "./SettingsModal";
+import { ThemeToggle } from "./ThemeToggle";
 import { useAuthStatus, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
 
 export interface HeaderProps {
@@ -169,73 +170,79 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Right Action Controls - Only visible when connected */}
-          {isConnected && (
-            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-              {/* Custom page actions passed from children */}
-              {extraActions && (
-                <div className="flex items-center gap-1.5 border-r-2 border-zinc-300 pr-1.5 sm:pr-2.5 mr-0.5">
-                  {extraActions}
-                </div>
-              )}
-
-              {/* Connection Status Indicator */}
-              <div
-                className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 border-2 border-zinc-950 text-emerald-950 text-xs font-bold font-mono shadow-[2px_2px_0px_0px_#09090b]"
-                title="COROS MCP terhubung aktif"
-              >
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse border border-zinc-950" />
-                <span>Online</span>
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            {/* Custom page actions passed from children */}
+            {isConnected && extraActions && (
+              <div className="flex items-center gap-1.5 border-r-2 border-zinc-300 dark:border-zinc-700 pr-1.5 sm:pr-2.5 mr-0.5">
+                {extraActions}
               </div>
+            )}
 
-              {/* Manual Sync Button */}
-              <button
-                onClick={handleSync}
-                disabled={isSyncing}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-black rounded-xl bg-white border-2 border-zinc-950 hover:bg-zinc-50 text-zinc-950 transition-all shadow-[2.5px_2.5px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50"
-                title="Sync with COROS MCP"
-              >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin text-orange-600" : ""}`}
-                />
-                <span className="hidden sm:inline">{isSyncing ? "Syncing..." : "Sync"}</span>
-              </button>
+            {/* Dark Mode Theme Toggle */}
+            <ThemeToggle />
 
-              {/* AI Coach Trigger */}
-              {onToggleAi && (
-                <button
-                  onClick={onToggleAi}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all shadow-[2.5px_2.5px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
-                    isAiOpen
-                      ? "bg-orange-500 text-white"
-                      : "bg-white hover:bg-zinc-50 text-zinc-950"
-                  }`}
-                  title="Buka AI Coach Drawer"
+            {/* Authenticated Controls */}
+            {isConnected && (
+              <>
+                {/* Connection Status Indicator */}
+                <div
+                  className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/50 border-2 border-zinc-950 dark:border-zinc-700 text-emerald-950 dark:text-emerald-300 text-xs font-bold font-mono shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000]"
+                  title="COROS MCP terhubung aktif"
                 >
-                  <Bot className={`h-3.5 w-3.5 ${isAiOpen ? "text-white" : "text-orange-600"}`} />
-                  <span className="hidden md:inline">AI Coach</span>
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse border border-zinc-950 dark:border-zinc-700" />
+                  <span>Online</span>
+                </div>
+
+                {/* Manual Sync Button */}
+                <button
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-black rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-950 dark:text-zinc-100 transition-all shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50"
+                  title="Sync with COROS MCP"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin text-orange-600" : ""}`}
+                  />
+                  <span className="hidden sm:inline">{isSyncing ? "Syncing..." : "Sync"}</span>
                 </button>
-              )}
 
-              {/* Settings Trigger */}
-              <button
-                onClick={handleOpenSettings}
-                className="p-1.5 text-zinc-950 bg-white hover:bg-zinc-50 rounded-xl border-2 border-zinc-950 shadow-[2.5px_2.5px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
-                title="Pengaturan & Kunci API"
-              >
-                <Settings className="h-4 w-4" />
-              </button>
+                {/* AI Coach Trigger */}
+                {onToggleAi && (
+                  <button
+                    onClick={onToggleAi}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-black rounded-xl border-2 border-zinc-950 dark:border-zinc-700 transition-all shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
+                      isAiOpen
+                        ? "bg-orange-500 text-white"
+                        : "bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-950 dark:text-zinc-100"
+                    }`}
+                    title="Buka AI Coach Drawer"
+                  >
+                    <Bot className={`h-3.5 w-3.5 ${isAiOpen ? "text-white" : "text-orange-600"}`} />
+                    <span className="hidden md:inline">AI Coach</span>
+                  </button>
+                )}
 
-              {/* Disconnect Button */}
-              <button
-                onClick={handleDisconnect}
-                className="hidden sm:block p-1.5 text-rose-600 bg-white hover:bg-rose-50 rounded-xl border-2 border-zinc-950 shadow-[2.5px_2.5px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
-                title="Putuskan Sambungan COROS"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
-          )}
+                {/* Settings Trigger */}
+                <button
+                  onClick={handleOpenSettings}
+                  className="p-1.5 text-zinc-950 dark:text-zinc-100 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                  title="Pengaturan & Kunci API"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+
+                {/* Disconnect Button */}
+                <button
+                  onClick={handleDisconnect}
+                  className="hidden sm:block p-1.5 text-rose-600 dark:text-rose-400 bg-white dark:bg-zinc-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                  title="Putuskan Sambungan COROS"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 

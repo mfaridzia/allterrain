@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { Activity, Flame, ShieldAlert, Zap, TrendingUp, Info, Calendar, Crosshair } from "lucide-react";
 import { MetricTooltip } from "@/components/MetricTooltip";
+import { useTheme } from "next-themes";
 
 export interface PmcDataPoint {
   date: string;
@@ -291,9 +292,12 @@ export const PmcChart: React.FC<PmcChartProps> = ({
   const isRampOptimal =
     (activePoint?.rampRate ?? rampRate) >= 4 && (activePoint?.rampRate ?? rampRate) <= 8;
 
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
   // Shared tooltip cursor style
   const sharedCursor = {
-    stroke: "#09090b",
+    stroke: isDark ? "#a1a1aa" : "#09090b",
     strokeWidth: 1.5,
     strokeDasharray: "3 3",
   };
@@ -548,8 +552,8 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                     yAxisId="primary"
                     domain={[minTsb, maxFitness]}
                     width={38}
-                    tick={{ fill: "#71717a", fontSize: 11, fontWeight: 700 }}
-                    stroke="#e4e4e7"
+                    tick={{ fill: isDark ? "#a1a1aa" : "#71717a", fontSize: 11, fontWeight: 700 }}
+                    stroke={isDark ? "#3f3f46" : "#e4e4e7"}
                     tickLine={false}
                   />
 
@@ -564,8 +568,8 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                   {/* Formatted Date X-Axis */}
                   <XAxis
                     dataKey="date"
-                    stroke="#a1a1aa"
-                    tick={{ fill: "#18181b", fontSize: 11, fontWeight: 700 }}
+                    stroke={isDark ? "#52525b" : "#a1a1aa"}
+                    tick={{ fill: isDark ? "#e4e4e7" : "#18181b", fontSize: 11, fontWeight: 700 }}
                     tickFormatter={formatChartDate}
                     tickLine={false}
                   />
@@ -584,7 +588,7 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                     y1={25}
                     y2={60}
                     fill="#fef9c3"
-                    fillOpacity={0.35}
+                    fillOpacity={isDark ? 0.12 : 0.35}
                   />
                   {/* Fresh / Race Ready (+5 to +25) */}
                   <ReferenceArea
@@ -592,15 +596,15 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                     y1={5}
                     y2={25}
                     fill="#e0f2fe"
-                    fillOpacity={0.45}
+                    fillOpacity={isDark ? 0.15 : 0.45}
                   />
                   {/* Grey / Maintenance (-10 to +5) */}
                   <ReferenceArea
                     yAxisId="primary"
                     y1={-10}
                     y2={5}
-                    fill="#f4f4f5"
-                    fillOpacity={0.5}
+                    fill={isDark ? "#27272a" : "#f4f4f5"}
+                    fillOpacity={isDark ? 0.3 : 0.5}
                   />
                   {/* Optimal Training (-30 to -10) */}
                   <ReferenceArea
@@ -608,7 +612,7 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                     y1={-30}
                     y2={-10}
                     fill="#dcfce7"
-                    fillOpacity={0.5}
+                    fillOpacity={isDark ? 0.15 : 0.5}
                   />
                   {/* High Risk (< -30) */}
                   <ReferenceArea
@@ -616,14 +620,14 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                     y1={-80}
                     y2={-30}
                     fill="#fee2e2"
-                    fillOpacity={0.5}
+                    fillOpacity={isDark ? 0.15 : 0.5}
                   />
 
                   {/* Form Zero Reference Line */}
                   <ReferenceLine
                     yAxisId="primary"
                     y={0}
-                    stroke="#09090b"
+                    stroke={isDark ? "#71717a" : "#09090b"}
                     strokeWidth={1.5}
                     strokeDasharray="3 3"
                   />

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f6f4ee;
   --foreground: #09090b;
@@ -8,11 +10,21 @@
   --neon-lime: #22c55e;
 }
 
+.dark {
+  --background: #09090b;
+  --foreground: #f4f4f5;
+}
+
 body {
   background-color: #f6f4ee;
   color: #09090b;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow-x: hidden;
+}
+
+.dark body {
+  background-color: #09090b;
+  color: #f4f4f5;
 }
 
 ::selection {
@@ -29,9 +41,20 @@ body {
   transition: all 0.15s ease-out;
 }
 
+.dark .nb-card {
+  background-color: #18181b;
+  border-color: #27272a;
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+
 .nb-card:hover {
   transform: translate(-1px, -1px);
   box-shadow: 5px 5px 0px 0px #09090b;
+}
+
+.dark .nb-card:hover {
+  box-shadow: 5px 5px 0px 0px #000000;
+  border-color: #3f3f46;
 }
 
 .nb-btn {
@@ -41,9 +64,18 @@ body {
   transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.dark .nb-btn {
+  border-color: #3f3f46;
+  box-shadow: 3px 3px 0px 0px #000000;
+}
+
 .nb-btn:hover {
   transform: translate(-1px, -1px);
   box-shadow: 4px 4px 0px 0px #09090b;
+}
+
+.dark .nb-btn:hover {
+  box-shadow: 4px 4px 0px 0px #000000;
 }
 
 .nb-btn:active {
@@ -51,10 +83,19 @@ body {
   box-shadow: 1px 1px 0px 0px #09090b;
 }
 
+.dark .nb-btn:active {
+  box-shadow: 1px 1px 0px 0px #000000;
+}
+
 .nb-pill {
   border: 2px solid #09090b;
   border-radius: 9999px;
   box-shadow: 1.5px 1.5px 0px 0px #09090b;
+}
+
+.dark .nb-pill {
+  border-color: #3f3f46;
+  box-shadow: 1.5px 1.5px 0px 0px #000000;
 }
 
 /* Custom sleek scrollbar */
@@ -72,5 +113,210 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #09090b;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #18181b;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border: 1px solid #27272a;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #71717a;
+}
+
+/* =========================================================
+   ONYX TECHNICAL LAB - DARK MODE NEO-BRUTALIST SYSTEM
+   Applies ONLY when .dark is present on <html>.
+   Zero visual impact on light mode.
+   ========================================================= */
+.dark {
+  color-scheme: dark;
+}
+
+/* Base Surfaces & Cards */
+.dark .bg-white {
+  background-color: #18181b;
+}
+
+.dark .bg-\[\#FAF9F5\],
+.dark .bg-\[\#faf9f5\],
+.dark .bg-\[\#FAF8F5\],
+.dark .bg-\[\#faf8f5\] {
+  background-color: #202024;
+}
+
+.dark .bg-\[\#F6F4EE\],
+.dark .bg-\[\#f6f4ee\] {
+  background-color: #09090b;
+}
+
+.dark .bg-\[\#F0EDE4\],
+.dark .bg-\[\#f0ede4\],
+.dark .bg-\[\#F3F0E6\],
+.dark .bg-\[\#f3f0e6\] {
+  background-color: #27272a;
+}
+
+.dark .bg-zinc-50 {
+  background-color: #1c1c20;
+}
+
+.dark .bg-zinc-100 {
+  background-color: #27272a;
+}
+
+.dark .bg-zinc-200 {
+  background-color: #27272a;
+}
+
+/* Icon & Accent Containers in Dark Mode */
+.dark .bg-orange-100 {
+  background-color: rgba(255, 87, 34, 0.2);
+  color: #ffedd5;
+}
+
+.dark .bg-cyan-100,
+.dark .bg-cyan-50 {
+  background-color: rgba(6, 182, 212, 0.2);
+  color: #cffafe;
+}
+
+.dark .bg-emerald-100,
+.dark .bg-emerald-50 {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #dcfce7;
+}
+
+.dark .bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #dbeafe;
+}
+
+.dark .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.2);
+  color: #f3e8ff;
+}
+
+.dark .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fef3c7;
+}
+
+.dark .bg-rose-100 {
+  background-color: rgba(244, 63, 94, 0.2);
+  color: #ffe4e6;
+}
+
+/* Hover States */
+.dark .hover\:bg-white:hover {
+  background-color: #27272a;
+}
+
+.dark .hover\:bg-zinc-50:hover,
+.dark .hover\:bg-zinc-100:hover,
+.dark .hover\:bg-zinc-200:hover {
+  background-color: #3f3f46;
+}
+
+/* Borders */
+.dark .border-zinc-950 {
+  border-color: #3f3f46;
+}
+
+.dark .border-zinc-200,
+.dark .border-zinc-100 {
+  border-color: #27272a;
+}
+
+.dark .border-zinc-950\/20 {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark .border-zinc-300\/80 {
+  border-color: #27272a;
+}
+
+/* Typography & Contrast */
+.dark .text-zinc-950 {
+  color: #f4f4f5;
+}
+
+.dark .text-zinc-900 {
+  color: #e4e4e7;
+}
+
+.dark .text-zinc-800 {
+  color: #d4d4d8;
+}
+
+.dark .text-zinc-700 {
+  color: #a1a1aa;
+}
+
+.dark .text-zinc-600 {
+  color: #a1a1aa;
+}
+
+.dark .text-zinc-500 {
+  color: #71717a;
+}
+
+.dark .text-amber-950 {
+  color: #fef3c7;
+}
+
+.dark .text-cyan-950 {
+  color: #cffafe;
+}
+
+.dark .text-emerald-950 {
+  color: #dcfce7;
+}
+
+.dark .text-rose-950 {
+  color: #ffe4e6;
+}
+
+/* Dark Mode Shadows (Sharp Onyx Brutalist Depth) */
+.dark .shadow-\[8px_8px_0px_0px_\#09090b\] {
+  box-shadow: 8px 8px 0px 0px #000000;
+}
+.dark .shadow-\[6px_6px_0px_0px_\#09090b\] {
+  box-shadow: 6px 6px 0px 0px #000000;
+}
+.dark .shadow-\[4px_4px_0px_0px_\#09090b\] {
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+.dark .shadow-\[3px_3px_0px_0px_\#09090b\] {
+  box-shadow: 3px 3px 0px 0px #000000;
+}
+.dark .shadow-\[2px_2px_0px_0px_\#09090b\] {
+  box-shadow: 2px 2px 0px 0px #000000;
+}
+.dark .shadow-\[1\.5px_1\.5px_0px_0px_\#09090b\] {
+  box-shadow: 1.5px 1.5px 0px 0px #000000;
+}
+.dark .shadow-\[1px_1px_0px_0px_\#09090b\] {
+  box-shadow: 1px 1px 0px 0px #000000;
+}
+.dark .shadow-\[5px_5px_0px_0px_\#09090b\] {
+  box-shadow: 5px 5px 0px 0px #000000;
+}
+.dark .hover\:shadow-\[3px_3px_0px_0px_\#09090b\]:hover {
+  box-shadow: 3px 3px 0px 0px #000000;
+}
+.dark .hover\:shadow-\[5px_5px_0px_0px_\#09090b\]:hover {
+  box-shadow: 5px 5px 0px 0px #000000;
+}
+.dark .shadow-\[-8px_0px_0px_0px_rgba\(9\,9\,11\,0\.15\)\] {
+  box-shadow: -8px 0px 0px 0px rgba(0, 0, 0, 0.6);
+}
+.dark .shadow-\[0_2px_0px_0px_\#09090b\] {
+  box-shadow: 0 2px 0px 0px #000000;
+}
+.dark .shadow-\[0_-2px_0px_0px_\#09090b\] {
+  box-shadow: 0 -2px 0px 0px #000000;
 }
 

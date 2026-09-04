@@ -169,7 +169,7 @@ export default function DashboardPage() {
                   className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all ${
                     activeTab === "evolab"
                       ? "bg-orange-400 text-black shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
-                      : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b]"
+                      : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b] dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <Trophy className="h-4 w-4 text-zinc-950" />
@@ -181,7 +181,7 @@ export default function DashboardPage() {
                   className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all ${
                     activeTab === "trail"
                       ? "bg-cyan-400 text-black shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
-                      : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b]"
+                      : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b] dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <Mountain className="h-4 w-4 text-zinc-950" />
