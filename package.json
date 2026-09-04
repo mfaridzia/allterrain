@@ -12,6 +12,7 @@
     "@ai-sdk/anthropic": "^4.0.49",
     "@ai-sdk/google": "^4.0.63",
     "@ai-sdk/openai": "^4.0.57",
+    "@libsql/client": "^0.18.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "ai": "^7.0.91",
     "better-sqlite3": "^13.0.3",

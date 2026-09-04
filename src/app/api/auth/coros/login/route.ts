@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const state = generateRandomState();
 
     // Persist state and verifier in DB
-    savePkceState(state, codeVerifier);
+    await savePkceState(state, codeVerifier);
 
     const authUrl = await getCorosAuthUrl(redirectUri, state, codeChallenge);
     return NextResponse.redirect(authUrl);

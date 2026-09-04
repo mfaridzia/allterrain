@@ -28,7 +28,7 @@ export function generateRandomState(): string {
  */
 export async function getOrRegisterClientId(redirectUri: string): Promise<string> {
   const settingKey = `coros_client_id_${redirectUri}`;
-  const existingClientId = getSetting(settingKey);
+  const existingClientId = await getSetting(settingKey);
   if (existingClientId) {
     return existingClientId;
   }
@@ -62,14 +62,14 @@ export async function getOrRegisterClientId(redirectUri: string): Promise<string
       throw new Error("No client_id returned from COROS registration");
     }
 
-    setSetting(settingKey, registeredClientId);
-    setSetting("coros_last_client_id", registeredClientId);
-    setSetting("coros_last_redirect_uri", redirectUri);
+    await setSetting(settingKey, registeredClientId);
+    await setSetting("coros_last_client_id", registeredClientId);
+    await setSetting("coros_last_redirect_uri", redirectUri);
     return registeredClientId;
   } catch (err) {
     console.error("Error during COROS client registration:", err);
     // Fallback to last registered client id if available
-    const fallback = getSetting("coros_last_client_id", "2ce02fb7-a269-4dce-9ef6-a28c69cac029");
+    const fallback = await getSetting("coros_last_client_id", "2ce02fb7-a269-4dce-9ef6-a28c69cac029");
     return fallback;
   }
 }
@@ -100,6 +100,7 @@ export async function exchangeCodeForTokens(params: {
   token_type: string;
   expires_in?: number;
   scope?: string;
+  [key: string]: any;
 }> {
   const clientId = await getOrRegisterClientId(params.redirectUri);
 
@@ -129,13 +130,13 @@ export async function exchangeCodeForTokens(params: {
   return data;
 }
 
-export async function refreshCorosToken(): Promise<string> {
-  const current = getCorosToken();
+export async function refreshCorosToken(athleteId: string = "athlete_primary"): Promise<string> {
+  const current = await getCorosToken(athleteId);
   if (!current || !current.refresh_token) {
     throw new Error("No refresh token available. Please reconnect COROS.");
   }
 
-  const redirectUri = getSetting("coros_last_redirect_uri", "http://localhost:3000/api/auth/coros/callback");
+  const redirectUri = await getSetting("coros_last_redirect_uri", "http://localhost:3000/api/auth/coros/callback");
   const clientId = await getOrRegisterClientId(redirectUri);
 
   const bodyParams = new URLSearchParams({
@@ -159,26 +160,29 @@ export async function refreshCorosToken(): Promise<string> {
   }
 
   const data = await response.json();
-  saveCorosToken({
-    access_token: data.access_token,
-    refresh_token: data.refresh_token || current.refresh_token,
-    expires_in: data.expires_in,
-    token_type: data.token_type,
-    scope: data.scope,
-  });
+  await saveCorosToken(
+    {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || current.refresh_token,
+      expires_in: data.expires_in,
+      token_type: data.token_type,
+      scope: data.scope,
+    },
+    athleteId
+  );
 
   return data.access_token;
 }
 
-export async function getValidAccessToken(): Promise<string | null> {
-  const tokenRecord = getCorosToken();
+export async function getValidAccessToken(athleteId: string = "athlete_primary"): Promise<string | null> {
+  const tokenRecord = await getCorosToken(athleteId);
   if (!tokenRecord) return null;
 
   // Check if expired or within 60s of expiring
   const now = Date.now();
   if (tokenRecord.expires_at && tokenRecord.expires_at - now < 60000) {
     try {
-      return await refreshCorosToken();
+      return await refreshCorosToken(athleteId);
     } catch {
       return null;
     }

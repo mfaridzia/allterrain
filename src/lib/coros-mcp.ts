@@ -5,7 +5,6 @@ import {
   calculateAcwr,
   calculateMonotonyAndStrain,
   calculateVam,
-  calculateDecoupling,
 } from "./analytics";
 
 export const COROS_MCP_URL = "https://mcp.coros.com/mcp";
@@ -13,8 +12,12 @@ export const COROS_MCP_URL = "https://mcp.coros.com/mcp";
 /**
  * Call COROS MCP Server tool via JSON-RPC over HTTP
  */
-export async function callCorosMcpTool(toolName: string, toolArguments: Record<string, any> = {}): Promise<any> {
-  const token = await getValidAccessToken();
+export async function callCorosMcpTool(
+  toolName: string,
+  toolArguments: Record<string, any> = {},
+  athleteId: string = "athlete_primary"
+): Promise<any> {
+  const token = await getValidAccessToken(athleteId);
   if (!token) {
     throw new Error("No active COROS token found. Please connect your COROS account.");
   }
@@ -95,12 +98,12 @@ function parsePredictionToSeconds(timeStr: string): number {
 /**
  * High-level sync function that syncs real workouts and physiological metrics from COROS MCP.
  */
-export async function syncCorosData(): Promise<{
+export async function syncCorosData(athleteId: string = "athlete_primary"): Promise<{
   syncedActivities: number;
   syncedDays: number;
   latestPmc: any;
 }> {
-  const token = await getValidAccessToken();
+  const token = await getValidAccessToken(athleteId);
   if (!token) {
     throw new Error("No COROS account connected.");
   }
@@ -110,7 +113,7 @@ export async function syncCorosData(): Promise<{
   // 1. Fetch Fitness Assessment Overview
   let evolabRacePredictor: any = null;
   try {
-    const fitnessText = await callCorosMcpTool("queryFitnessAssessmentOverview", {});
+    const fitnessText = await callCorosMcpTool("queryFitnessAssessmentOverview", {}, athleteId);
     if (typeof fitnessText === "string") {
       const vo2Match = fitnessText.match(/VO2max:\s*(\d+)/i);
       const levelMatch = fitnessText.match(/Running Level:\s*(\d+)/i);
@@ -129,7 +132,7 @@ export async function syncCorosData(): Promise<{
         marathonSeconds: pFmMatch ? parsePredictionToSeconds(pFmMatch[1]) : 13415,
       };
 
-      setSetting("coros_evolab_cache", JSON.stringify(evolabRacePredictor));
+      await setSetting("coros_evolab_cache", JSON.stringify(evolabRacePredictor), athleteId);
     }
   } catch (err) {
     console.warn("Could not fetch fitness assessment overview:", err);
@@ -138,7 +141,7 @@ export async function syncCorosData(): Promise<{
   // 2. Fetch Recovery Status
   let recoveryScore = 100;
   try {
-    const recoveryText = await callCorosMcpTool("queryRecoveryStatus", {});
+    const recoveryText = await callCorosMcpTool("queryRecoveryStatus", {}, athleteId);
     if (typeof recoveryText === "string") {
       const recMatch = recoveryText.match(/Recovery:\s*(\d+)%/i);
       if (recMatch) {
@@ -152,7 +155,7 @@ export async function syncCorosData(): Promise<{
   // 3. Fetch Training Load Assessment (ATL, CTL, Load Ratio)
   const trainingLoadDays: { date: string; shortLoad: number; longLoad: number; ratio: number }[] = [];
   try {
-    const loadText = await callCorosMcpTool("queryTrainingLoadAssessment", { days: 30 });
+    const loadText = await callCorosMcpTool("queryTrainingLoadAssessment", { days: 30 }, athleteId);
     if (typeof loadText === "string") {
       const blocks = loadText.split(/\n\s*\n/);
       for (const block of blocks) {
@@ -181,7 +184,7 @@ export async function syncCorosData(): Promise<{
   const dailyHrvMap = new Map<string, number>();
 
   try {
-    const healthText = await callCorosMcpTool("queryDailyHealthData", {});
+    const healthText = await callCorosMcpTool("queryDailyHealthData", {}, athleteId);
     if (typeof healthText === "string") {
       const blocks = healthText.split(/---\s*(\d{8})\s*---/);
       for (let i = 1; i < blocks.length; i += 2) {
@@ -201,7 +204,7 @@ export async function syncCorosData(): Promise<{
   }
 
   try {
-    const rhrText = await callCorosMcpTool("queryRestingHeartRate", {});
+    const rhrText = await callCorosMcpTool("queryRestingHeartRate", {}, athleteId);
     if (typeof rhrText === "string") {
       const lines = rhrText.split("\n");
       for (const line of lines) {
@@ -216,7 +219,7 @@ export async function syncCorosData(): Promise<{
   }
 
   try {
-    const hrvText = await callCorosMcpTool("querySleepHrv", {});
+    const hrvText = await callCorosMcpTool("querySleepHrv", {}, athleteId);
     if (typeof hrvText === "string") {
       const dateBlocks = hrvText.split(/(?=\d{4}-\d{2}-\d{2}:)/);
       for (const block of dateBlocks) {
@@ -245,45 +248,24 @@ export async function syncCorosData(): Promise<{
 
   let parsedActivitiesCount = 0;
   try {
-    const recordsText = await callCorosMcpTool("querySportRecords", {
-      startDate: formatDateStr(past90),
-      endDate: formatDateStr(today),
-      sportTypeCodes: [100, 101, 102, 103, 104, 105, 200, 201, 65535],
-      minDistanceKm: 0,
-      maxDistanceKm: 9999,
-      minDurationMinutes: 0,
-      maxDurationMinutes: 9999,
-      maxAveragePace: "99:00",
-      locationKeyword: "",
-      limit: 100,
-    });
+    const recordsText = await callCorosMcpTool(
+      "querySportRecords",
+      {
+        startDate: formatDateStr(past90),
+        endDate: formatDateStr(today),
+        sportTypeCodes: [100, 101, 102, 103, 104, 105, 200, 201, 65535],
+        minDistanceKm: 0,
+        maxDistanceKm: 9999,
+        minDurationMinutes: 0,
+        maxDurationMinutes: 9999,
+        maxAveragePace: "99:00",
+        locationKeyword: "",
+        limit: 100,
+      },
+      athleteId
+    );
 
     if (typeof recordsText === "string") {
-      const insertActivity = db.prepare(`
-        INSERT INTO activities (
-          id, coros_id, name, sport_type, start_time, end_time,
-          distance_meters, duration_seconds, elevation_gain, elevation_loss,
-          avg_pace_sec, avg_hr, max_hr, avg_cadence, training_load,
-          aerobic_te, anaerobic_te, effort_pace_sec, vam_meters_per_hour,
-          decoupling_pct, efficiency_factor, raw_data, created_at
-        ) VALUES (
-          @id, @coros_id, @name, @sport_type, @start_time, @end_time,
-          @distance_meters, @duration_seconds, @elevation_gain, @elevation_loss,
-          @avg_pace_sec, @avg_hr, @max_hr, @avg_cadence, @training_load,
-          @aerobic_te, @anaerobic_te, @effort_pace_sec, @vam_meters_per_hour,
-          @decoupling_pct, @efficiency_factor, @raw_data, @created_at
-        )
-        ON CONFLICT(coros_id) DO UPDATE SET
-          name = excluded.name,
-          training_load = excluded.training_load,
-          elevation_gain = excluded.elevation_gain,
-          vam_meters_per_hour = excluded.vam_meters_per_hour,
-          decoupling_pct = excluded.decoupling_pct,
-          efficiency_factor = excluded.efficiency_factor
-      `);
-
-      // Match each numbered activity block
-      // Example: "26. Outdoor Run — 2026-07-29\n Location: ...\n Time Window: startTimestamp=... | endTimestamp=...\n Duration: ... | Distance: ...\n Average Pace: ... | Avg HR: ... | Calories: ...\n LabelId: ... | SportType: ..."
       const items = recordsText.split(/\n(?=\d+\.\s+)/);
 
       for (const item of items) {
@@ -299,12 +281,11 @@ export async function syncCorosData(): Promise<{
         const distMatch = item.match(/Distance:\s*([0-9.]+)\s*km/);
         const paceMatch = item.match(/Average Pace:\s*([0-9:]+\s*\/km)/);
         const hrMatch = item.match(/Avg HR:\s*(\d+)\s*bpm/);
-        const calMatch = item.match(/Calories:\s*(\d+)\s*kcal/);
         const idMatch = item.match(/LabelId:\s*([0-9]+)\s*\|\s*SportType:\s*([0-9]+)/);
 
         const labelId = idMatch ? idMatch[1] : `lbl_${dateStr}_${parsedActivitiesCount}`;
         const sportTypeCode = idMatch ? parseInt(idMatch[2], 10) : 100;
-        
+
         let sportType = "run";
         const lowerRaw = rawType.toLowerCase();
         if (sportTypeCode === 102 || lowerRaw.includes("trail")) {
@@ -330,7 +311,7 @@ export async function syncCorosData(): Promise<{
         const endTimestamp = windowMatch ? parseInt(windowMatch[2], 10) * 1000 : startTimestamp + 3600 * 1000;
         const durationSec = durMatch ? parseDurationToSeconds(durMatch[1]) : 1800;
         const distKm = distMatch ? parseFloat(distMatch[1]) : 0;
-        const paceSec = paceMatch ? parsePaceToSeconds(paceMatch[1]) : (distKm > 0 ? durationSec / distKm : 300);
+        const paceSec = paceMatch ? parsePaceToSeconds(paceMatch[1]) : distKm > 0 ? durationSec / distKm : 300;
         const avgHr = hrMatch ? parseInt(hrMatch[1], 10) : 145;
         const name = locMatch ? locMatch[1].trim() : `${rawType} (${dateStr})`;
 
@@ -339,7 +320,6 @@ export async function syncCorosData(): Promise<{
         let elevationLoss = 0;
         let vam = 0;
         if (sportType === "trail_run") {
-          // Trail runs in East Lombok/Rinjani typically feature high elevation
           elevationGain = Math.round(distKm * 85);
           elevationLoss = Math.round(distKm * 85);
           vam = calculateVam(elevationGain, durationSec * 0.6);
@@ -348,38 +328,63 @@ export async function syncCorosData(): Promise<{
           elevationLoss = Math.round(distKm * 6);
         }
 
-        // Training Load calculation (hrLoad approximation based on duration and intensity)
-        const intensityFactor = avgHr / 175; // Approx max HR 175
+        const intensityFactor = avgHr / 175;
         const trainingLoad = Math.round((durationSec / 3600) * 100 * Math.pow(intensityFactor, 2));
-
         const speedMps = distKm > 0 && durationSec > 0 ? (distKm * 1000) / durationSec : 0;
         const efficiencyFactor = avgHr > 0 && speedMps > 0 ? Math.round((speedMps / avgHr) * 1000) / 1000 : 0;
         const decouplingPct = distKm > 15 ? 4.8 : 2.5;
+        const activityId = `act_${athleteId}_${labelId}`;
 
-        insertActivity.run({
-          id: `act_${labelId}`,
-          coros_id: labelId,
-          name: name,
-          sport_type: sportType,
-          start_time: startTimestamp,
-          end_time: endTimestamp,
-          distance_meters: distKm * 1000,
-          duration_seconds: durationSec,
-          elevation_gain: elevationGain,
-          elevation_loss: elevationLoss,
-          avg_pace_sec: paceSec,
-          avg_hr: avgHr,
-          max_hr: Math.round(avgHr * 1.12),
-          avg_cadence: 174,
-          training_load: trainingLoad,
-          aerobic_te: Math.min(5.0, Math.round((2.0 + (distKm / 10)) * 10) / 10),
-          anaerobic_te: paceSec < 300 ? 1.5 : 0.4,
-          effort_pace_sec: paceSec,
-          vam_meters_per_hour: vam,
-          decoupling_pct: decouplingPct,
-          efficiency_factor: efficiencyFactor,
-          raw_data: item,
-          created_at: Date.now(),
+        await db.execute({
+          sql: `
+            INSERT INTO activities (
+              id, athlete_id, coros_id, name, sport_type, start_time, end_time,
+              distance_meters, duration_seconds, elevation_gain, elevation_loss,
+              avg_pace_sec, avg_hr, max_hr, avg_cadence, training_load,
+              aerobic_te, anaerobic_te, effort_pace_sec, vam_meters_per_hour,
+              decoupling_pct, efficiency_factor, raw_data, created_at
+            ) VALUES (
+              ?, ?, ?, ?, ?, ?, ?,
+              ?, ?, ?, ?,
+              ?, ?, ?, ?, ?,
+              ?, ?, ?, ?,
+              ?, ?, ?, ?
+            )
+            ON CONFLICT(id) DO UPDATE SET
+              athlete_id = excluded.athlete_id,
+              name = excluded.name,
+              training_load = excluded.training_load,
+              elevation_gain = excluded.elevation_gain,
+              vam_meters_per_hour = excluded.vam_meters_per_hour,
+              decoupling_pct = excluded.decoupling_pct,
+              efficiency_factor = excluded.efficiency_factor
+          `,
+          args: [
+            activityId,
+            athleteId,
+            labelId,
+            name,
+            sportType,
+            startTimestamp,
+            endTimestamp,
+            distKm * 1000,
+            durationSec,
+            elevationGain,
+            elevationLoss,
+            paceSec,
+            avgHr,
+            Math.round(avgHr * 1.12),
+            174,
+            trainingLoad,
+            Math.min(5.0, Math.round((2.0 + distKm / 10) * 10) / 10),
+            paceSec < 300 ? 1.5 : 0.4,
+            paceSec,
+            vam,
+            decouplingPct,
+            efficiencyFactor,
+            item,
+            Date.now(),
+          ],
         });
 
         parsedActivitiesCount++;
@@ -389,14 +394,23 @@ export async function syncCorosData(): Promise<{
     console.warn("Could not query sport records from COROS MCP:", err);
   }
 
-  // 5. Aggregate daily load and compute continuous PMC across all calendar days (including rest days)
-  const pastDays = db.prepare(`
-    SELECT strftime('%Y-%m-%d', start_time / 1000, 'unixepoch') as date,
-           SUM(training_load) as daily_load
-    FROM activities
-    GROUP BY date
-    ORDER BY date ASC
-  `).all() as { date: string; daily_load: number }[];
+  // 5. Aggregate daily load and compute continuous PMC across all calendar days for this athlete
+  const pastDaysRes = await db.execute({
+    sql: `
+      SELECT strftime('%Y-%m-%d', start_time / 1000, 'unixepoch') as date,
+             SUM(training_load) as daily_load
+      FROM activities
+      WHERE athlete_id = ?
+      GROUP BY date
+      ORDER BY date ASC
+    `,
+    args: [athleteId],
+  });
+
+  const pastDays = pastDaysRes.rows.map((r: any) => ({
+    date: String(r.date),
+    daily_load: Number(r.daily_load || 0),
+  }));
 
   const activityLoadsMap = new Map<string, number>();
   pastDays.forEach((p) => activityLoadsMap.set(p.date, p.daily_load));
@@ -426,34 +440,6 @@ export async function syncCorosData(): Promise<{
     initialAtl
   );
 
-  const insertDaily = db.prepare(`
-    INSERT INTO daily_metrics (
-      date, training_load, ctl, atl, tsb, form_pct, ramp_rate,
-      acwr, monotony, strain, hrv_rmssd, hrv_status, resting_hr,
-      sleep_duration_seconds, sleep_quality_score, recovery_score, created_at
-    ) VALUES (
-      @date, @training_load, @ctl, @atl, @tsb, @form_pct, @ramp_rate,
-      @acwr, @monotony, @strain, @hrv_rmssd, @hrv_status, @resting_hr,
-      @sleep_duration_seconds, @sleep_quality_score, @recovery_score, @created_at
-    )
-    ON CONFLICT(date) DO UPDATE SET
-      training_load = excluded.training_load,
-      ctl = excluded.ctl,
-      atl = excluded.atl,
-      tsb = excluded.tsb,
-      form_pct = excluded.form_pct,
-      ramp_rate = excluded.ramp_rate,
-      acwr = excluded.acwr,
-      monotony = excluded.monotony,
-      strain = excluded.strain,
-      hrv_rmssd = excluded.hrv_rmssd,
-      hrv_status = excluded.hrv_status,
-      resting_hr = excluded.resting_hr,
-      sleep_duration_seconds = excluded.sleep_duration_seconds,
-      sleep_quality_score = excluded.sleep_quality_score,
-      recovery_score = excluded.recovery_score
-  `);
-
   for (let i = 0; i < pmcSeries.length; i++) {
     const p = pmcSeries[i];
     const windowPastLoads = pmcSeries.slice(Math.max(0, i - 6), i + 1).map((x) => x.load);
@@ -465,24 +451,54 @@ export async function syncCorosData(): Promise<{
     const hrv = dailyHrvMap.get(p.date) ?? 68;
     const hrvStatus = hrv >= 60 ? "NORMAL" : hrv >= 45 ? "MODERATE" : "TIRED";
 
-    insertDaily.run({
-      date: p.date,
-      training_load: p.load,
-      ctl: p.ctl,
-      atl: p.atl,
-      tsb: p.tsb,
-      form_pct: p.formPct,
-      ramp_rate: p.rampRate,
-      acwr: acwrCalc.acwr,
-      monotony: monotony,
-      strain: strain,
-      hrv_rmssd: hrv,
-      hrv_status: hrvStatus,
-      resting_hr: rhr,
-      sleep_duration_seconds: sleepSec,
-      sleep_quality_score: Math.min(100, Math.round((sleepSec / 28800) * 100)),
-      recovery_score: i === pmcSeries.length - 1 ? recoveryScore : Math.min(100, Math.max(30, Math.round(70 + p.tsb * 0.8))),
-      created_at: Date.now(),
+    await db.execute({
+      sql: `
+        INSERT INTO daily_metrics (
+          date, athlete_id, training_load, ctl, atl, tsb, form_pct, ramp_rate,
+          acwr, monotony, strain, hrv_rmssd, hrv_status, resting_hr,
+          sleep_duration_seconds, sleep_quality_score, recovery_score, created_at
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?
+        )
+        ON CONFLICT(athlete_id, date) DO UPDATE SET
+          training_load = excluded.training_load,
+          ctl = excluded.ctl,
+          atl = excluded.atl,
+          tsb = excluded.tsb,
+          form_pct = excluded.form_pct,
+          ramp_rate = excluded.ramp_rate,
+          acwr = excluded.acwr,
+          monotony = excluded.monotony,
+          strain = excluded.strain,
+          hrv_rmssd = excluded.hrv_rmssd,
+          hrv_status = excluded.hrv_status,
+          resting_hr = excluded.resting_hr,
+          sleep_duration_seconds = excluded.sleep_duration_seconds,
+          sleep_quality_score = excluded.sleep_quality_score,
+          recovery_score = excluded.recovery_score
+      `,
+      args: [
+        p.date,
+        athleteId,
+        p.load,
+        p.ctl,
+        p.atl,
+        p.tsb,
+        p.formPct,
+        p.rampRate,
+        acwrCalc.acwr,
+        monotony,
+        strain,
+        hrv,
+        hrvStatus,
+        rhr,
+        sleepSec,
+        Math.min(100, Math.round((sleepSec / 28800) * 100)),
+        i === pmcSeries.length - 1 ? recoveryScore : Math.min(100, Math.max(30, Math.round(70 + p.tsb * 0.8))),
+        Date.now(),
+      ],
     });
   }
 

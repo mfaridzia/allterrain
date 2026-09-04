@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { syncCorosData } from "@/lib/coros-mcp";
+import { getCurrentAthleteId } from "@/lib/session";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    const result = await syncCorosData();
+    const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
+    const result = await syncCorosData(athleteId);
     return NextResponse.json({
       success: true,
       ...result,

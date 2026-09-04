@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runCoachStream, ChatMessage } from "@/lib/ai-coach";
+import { getCurrentAthleteId } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +10,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid messages format" }, { status: 400 });
     }
 
-    const result = await runCoachStream(messages);
+    const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
+    const result = await runCoachStream(messages, athleteId);
     return result.toTextStreamResponse();
   } catch (err: any) {
     console.error("AI Coach Chat error:", err);

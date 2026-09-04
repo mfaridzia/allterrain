@@ -1,32 +1,50 @@
-import Database from "better-sqlite3";
+import { createClient, Client } from "@libsql/client";
 import path from "path";
 import fs from "fs";
 
-// Create or connect to SQLite database in project root
-const DB_DIR = path.join(process.cwd(), "data");
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
-}
-
-const DB_PATH = path.join(DB_DIR, "coros_athlete.db");
-
 // Singleton database instance
-let _db: Database.Database | null = null;
+let _client: Client | null = null;
+let _schemaInitPromise: Promise<void> | null = null;
 
-export function getDb(): Database.Database {
-  if (!_db) {
-    _db = new Database(DB_PATH);
-    _db.pragma("journal_mode = WAL");
-    initSchema(_db);
+export function getDb(): Client {
+  if (!_client) {
+    const tursoUrl = process.env.TURSO_DATABASE_URL;
+    const tursoAuthToken = process.env.TURSO_AUTH_TOKEN;
+
+    if (tursoUrl) {
+      _client = createClient({
+        url: tursoUrl,
+        authToken: tursoAuthToken,
+      });
+    } else {
+      // Local SQLite fallback via @libsql/client
+      const dbDir = path.join(process.cwd(), "data");
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
+      const dbPath = path.join(dbDir, "coros_athlete.db");
+      _client = createClient({
+        url: `file:${dbPath}`,
+      });
+    }
   }
-  return _db;
+
+  // Ensure schema runs once
+  if (!_schemaInitPromise) {
+    _schemaInitPromise = initSchema(_client).catch((err) => {
+      console.warn("DB Schema initialization notice:", err);
+    });
+  }
+
+  return _client;
 }
 
-function initSchema(db: Database.Database) {
-  db.exec(`
-    -- OAuth token and session
-    CREATE TABLE IF NOT EXISTS auth_tokens (
+export async function initSchema(client: Client): Promise<void> {
+  // 1. Create Core Tables
+  await client.batch([
+    `CREATE TABLE IF NOT EXISTS auth_tokens (
       id TEXT PRIMARY KEY,
+      athlete_id TEXT,
       provider TEXT NOT NULL,
       access_token TEXT NOT NULL,
       refresh_token TEXT,
@@ -36,19 +54,22 @@ function initSchema(db: Database.Database) {
       athlete_info TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
-    );
-
-    -- OAuth PKCE states
-    CREATE TABLE IF NOT EXISTS oauth_states (
+    );`,
+    `CREATE TABLE IF NOT EXISTS sessions (
+      session_id TEXT PRIMARY KEY,
+      athlete_id TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    );`,
+    `CREATE TABLE IF NOT EXISTS oauth_states (
       state TEXT PRIMARY KEY,
       code_verifier TEXT NOT NULL,
       created_at INTEGER NOT NULL
-    );
-
-    -- Activities (Workouts)
-    CREATE TABLE IF NOT EXISTS activities (
+    );`,
+    `CREATE TABLE IF NOT EXISTS activities (
       id TEXT PRIMARY KEY,
-      coros_id TEXT UNIQUE,
+      athlete_id TEXT NOT NULL DEFAULT 'athlete_primary',
+      coros_id TEXT,
       name TEXT NOT NULL,
       sport_type TEXT NOT NULL,
       start_time INTEGER NOT NULL,
@@ -70,11 +91,10 @@ function initSchema(db: Database.Database) {
       efficiency_factor REAL DEFAULT 0,
       raw_data TEXT,
       created_at INTEGER NOT NULL
-    );
-
-    -- Daily Metrics & PMC
-    CREATE TABLE IF NOT EXISTS daily_metrics (
-      date TEXT PRIMARY KEY, -- YYYY-MM-DD
+    );`,
+    `CREATE TABLE IF NOT EXISTS daily_metrics (
+      date TEXT NOT NULL,
+      athlete_id TEXT NOT NULL DEFAULT 'athlete_primary',
       training_load REAL DEFAULT 0,
       ctl REAL DEFAULT 0,
       atl REAL DEFAULT 0,
@@ -90,29 +110,57 @@ function initSchema(db: Database.Database) {
       sleep_duration_seconds INTEGER DEFAULT 0,
       sleep_quality_score INTEGER DEFAULT 0,
       recovery_score INTEGER DEFAULT 0,
-      created_at INTEGER NOT NULL
-    );
-
-    -- AI Coach Chat History
-    CREATE TABLE IF NOT EXISTS chat_messages (
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (athlete_id, date)
+    );`,
+    `CREATE TABLE IF NOT EXISTS chat_messages (
       id TEXT PRIMARY KEY,
+      athlete_id TEXT NOT NULL DEFAULT 'athlete_primary',
       role TEXT NOT NULL,
       content TEXT NOT NULL,
       created_at INTEGER NOT NULL
-    );
-
-    -- User / App Settings (BYOK keys, preferences)
-    CREATE TABLE IF NOT EXISTS user_settings (
-      key TEXT PRIMARY KEY,
+    );`,
+    `CREATE TABLE IF NOT EXISTS user_settings (
+      key TEXT NOT NULL,
+      athlete_id TEXT NOT NULL DEFAULT 'athlete_primary',
       value TEXT NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-  `);
+      updated_at INTEGER NOT NULL,
+      PRIMARY KEY (athlete_id, key)
+    );`,
+  ]);
+
+  // 2. Safe Column Additions for backward compatibility with existing databases
+  const alterStatements = [
+    "ALTER TABLE activities ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
+    "ALTER TABLE daily_metrics ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
+    "ALTER TABLE user_settings ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
+    "ALTER TABLE chat_messages ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
+    "ALTER TABLE auth_tokens ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
+  ];
+
+  for (const statement of alterStatements) {
+    try {
+      await client.execute(statement);
+    } catch {
+      // Ignore if column already exists
+    }
+  }
+
+  // 3. Helpful Indexes
+  try {
+    await client.execute(`CREATE INDEX IF NOT EXISTS idx_activities_athlete_time ON activities (athlete_id, start_time DESC);`);
+    await client.execute(`CREATE INDEX IF NOT EXISTS idx_daily_metrics_athlete ON daily_metrics (athlete_id, date ASC);`);
+    await client.execute(`CREATE INDEX IF NOT EXISTS idx_sessions_athlete ON sessions (athlete_id);`);
+    await client.execute(`CREATE INDEX IF NOT EXISTS idx_auth_athlete ON auth_tokens (athlete_id);`);
+  } catch {
+    // Ignore index creation notices
+  }
 }
 
 // Token Helpers
 export interface AuthTokenRecord {
   id: string;
+  athlete_id: string;
   provider: string;
   access_token: string;
   refresh_token: string | null;
@@ -124,87 +172,144 @@ export interface AuthTokenRecord {
   updated_at: number;
 }
 
-export function saveCorosToken(token: {
-  access_token: string;
-  refresh_token?: string;
-  token_type?: string;
-  scope?: string;
-  expires_in?: number;
-  athlete_info?: any;
-}) {
+export async function saveCorosToken(
+  token: {
+    access_token: string;
+    refresh_token?: string;
+    token_type?: string;
+    scope?: string;
+    expires_in?: number;
+    athlete_info?: any;
+  },
+  athleteId: string = "athlete_primary"
+): Promise<void> {
   const db = getDb();
   const now = Date.now();
   const expiresAt = token.expires_in ? now + token.expires_in * 1000 : null;
 
-  const stmt = db.prepare(`
-    INSERT INTO auth_tokens (id, provider, access_token, refresh_token, token_type, scope, expires_at, athlete_info, created_at, updated_at)
-    VALUES ('coros_primary', 'coros', @access_token, @refresh_token, @token_type, @scope, @expires_at, @athlete_info, @created_at, @updated_at)
-    ON CONFLICT(id) DO UPDATE SET
-      access_token = excluded.access_token,
-      refresh_token = COALESCE(excluded.refresh_token, auth_tokens.refresh_token),
-      token_type = excluded.token_type,
-      scope = excluded.scope,
-      expires_at = excluded.expires_at,
-      athlete_info = COALESCE(excluded.athlete_info, auth_tokens.athlete_info),
-      updated_at = excluded.updated_at
-  `);
-
-  stmt.run({
-    access_token: token.access_token,
-    refresh_token: token.refresh_token || null,
-    token_type: token.token_type || "Bearer",
-    scope: token.scope || null,
-    expires_at: expiresAt,
-    athlete_info: token.athlete_info ? JSON.stringify(token.athlete_info) : null,
-    created_at: now,
-    updated_at: now,
+  await db.execute({
+    sql: `
+      INSERT INTO auth_tokens (
+        id, athlete_id, provider, access_token, refresh_token, token_type,
+        scope, expires_at, athlete_info, created_at, updated_at
+      ) VALUES (?, ?, 'coros', ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        athlete_id = excluded.athlete_id,
+        access_token = excluded.access_token,
+        refresh_token = COALESCE(excluded.refresh_token, auth_tokens.refresh_token),
+        token_type = excluded.token_type,
+        scope = excluded.scope,
+        expires_at = excluded.expires_at,
+        athlete_info = COALESCE(excluded.athlete_info, auth_tokens.athlete_info),
+        updated_at = excluded.updated_at
+    `,
+    args: [
+      athleteId,
+      athleteId,
+      token.access_token,
+      token.refresh_token || null,
+      token.token_type || "Bearer",
+      token.scope || null,
+      expiresAt,
+      token.athlete_info ? JSON.stringify(token.athlete_info) : null,
+      now,
+      now,
+    ],
   });
 }
 
-export function getCorosToken(): AuthTokenRecord | null {
+export async function getCorosToken(athleteId: string = "athlete_primary"): Promise<AuthTokenRecord | null> {
   const db = getDb();
-  const row = db.prepare("SELECT * FROM auth_tokens WHERE id = 'coros_primary'").get() as AuthTokenRecord | undefined;
-  return row || null;
+  const res = await db.execute({
+    sql: `SELECT * FROM auth_tokens WHERE athlete_id = ? OR id = ? ORDER BY updated_at DESC LIMIT 1`,
+    args: [athleteId, athleteId],
+  });
+
+  if (res.rows.length === 0) return null;
+  return res.rows[0] as unknown as AuthTokenRecord;
 }
 
-export function deleteCorosToken() {
+export async function deleteCorosToken(athleteId: string = "athlete_primary"): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM auth_tokens WHERE id = 'coros_primary'").run();
+  await db.execute({
+    sql: `DELETE FROM auth_tokens WHERE athlete_id = ? OR id = ?`,
+    args: [athleteId, athleteId],
+  });
 }
 
 // PKCE State Helpers
-export function savePkceState(state: string, codeVerifier: string) {
+export async function savePkceState(state: string, codeVerifier: string): Promise<void> {
   const db = getDb();
-  db.prepare("INSERT INTO oauth_states (state, code_verifier, created_at) VALUES (?, ?, ?)")
-    .run(state, codeVerifier, Date.now());
-  
+  const now = Date.now();
+  await db.execute({
+    sql: `INSERT INTO oauth_states (state, code_verifier, created_at) VALUES (?, ?, ?)`,
+    args: [state, codeVerifier, now],
+  });
+
   // Clean states older than 1 hour
-  db.prepare("DELETE FROM oauth_states WHERE created_at < ?").run(Date.now() - 3600 * 1000);
+  try {
+    await db.execute({
+      sql: `DELETE FROM oauth_states WHERE created_at < ?`,
+      args: [now - 3600 * 1000],
+    });
+  } catch {}
 }
 
-export function consumePkceState(state: string): string | null {
+export async function consumePkceState(state: string): Promise<string | null> {
   const db = getDb();
-  const row = db.prepare("SELECT code_verifier FROM oauth_states WHERE state = ?").get(state) as { code_verifier: string } | undefined;
-  if (row) {
-    db.prepare("DELETE FROM oauth_states WHERE state = ?").run(state);
-    return row.code_verifier;
+  const res = await db.execute({
+    sql: `SELECT code_verifier FROM oauth_states WHERE state = ?`,
+    args: [state],
+  });
+
+  if (res.rows.length > 0) {
+    const verifier = String(res.rows[0].code_verifier);
+    await db.execute({
+      sql: `DELETE FROM oauth_states WHERE state = ?`,
+      args: [state],
+    });
+    return verifier;
   }
   return null;
 }
 
 // Settings Helpers
-export function getSetting(key: string, defaultValue: string = ""): string {
+export async function getSetting(
+  key: string,
+  defaultValue: string = "",
+  athleteId: string = "athlete_primary"
+): Promise<string> {
   const db = getDb();
-  const row = db.prepare("SELECT value FROM user_settings WHERE key = ?").get(key) as { value: string } | undefined;
-  return row ? row.value : defaultValue;
+  const res = await db.execute({
+    sql: `
+      SELECT value FROM user_settings 
+      WHERE key = ? AND (athlete_id = ? OR athlete_id = 'athlete_primary') 
+      ORDER BY CASE WHEN athlete_id = ? THEN 0 ELSE 1 END, updated_at DESC 
+      LIMIT 1
+    `,
+    args: [key, athleteId, athleteId],
+  });
+
+  if (res.rows.length === 0) return defaultValue;
+  return String(res.rows[0].value ?? defaultValue);
 }
 
-export function setSetting(key: string, value: string) {
+export async function setSetting(
+  key: string,
+  value: string,
+  athleteId: string = "athlete_primary"
+): Promise<void> {
   const db = getDb();
   const now = Date.now();
-  db.prepare(`
-    INSERT INTO user_settings (key, value, updated_at)
-    VALUES (?, ?, ?)
-    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-  `).run(key, value, now);
+
+  await db.execute({
+    sql: `
+      INSERT INTO user_settings (key, athlete_id, value, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(athlete_id, key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = excluded.updated_at
+    `,
+    args: [key, athleteId, value, now],
+  });
 }

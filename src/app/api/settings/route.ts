@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSetting, setSetting } from "@/lib/db";
+import { getCurrentAthleteId } from "@/lib/session";
 
-export async function GET() {
-  const aiProvider = getSetting("ai_provider", "gemini");
-  const aiModelName = getSetting("ai_model_name", "gemini-2.5-flash");
+export async function GET(req: NextRequest) {
+  const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
 
-  // Do not expose full secret keys to frontend; only return whether they are configured
-  const hasGeminiKey = !!getSetting("gemini_api_key") || !!process.env.GEMINI_API_KEY;
-  const hasOpenAiKey = !!getSetting("openai_api_key") || !!process.env.OPENAI_API_KEY;
-  const hasClaudeKey = !!getSetting("claude_api_key") || !!process.env.ANTHROPIC_API_KEY;
-  const hasDeepseekKey = !!getSetting("deepseek_api_key") || !!process.env.DEEPSEEK_API_KEY;
+  const aiProvider = await getSetting("ai_provider", "gemini", athleteId);
+  const aiModelName = await getSetting("ai_model_name", "gemini-2.5-flash", athleteId);
 
-  const trailTargetRaceDist = Number(getSetting("trail_target_race_dist", "36"));
-  const trailTargetRaceElev = Number(getSetting("trail_target_race_elev", "2200"));
-  const trailWeeklyVertTarget = Number(getSetting("trail_weekly_vert_target", "1000"));
-  const trailTrainingTier = getSetting("trail_training_tier", "finisher");
+  // Check if keys configured either per-athlete in db or globally in process.env
+  const hasGeminiKey = !!(await getSetting("gemini_api_key", "", athleteId)) || !!process.env.GEMINI_API_KEY;
+  const hasOpenAiKey = !!(await getSetting("openai_api_key", "", athleteId)) || !!process.env.OPENAI_API_KEY;
+  const hasClaudeKey = !!(await getSetting("claude_api_key", "", athleteId)) || !!process.env.ANTHROPIC_API_KEY;
+  const hasDeepseekKey = !!(await getSetting("deepseek_api_key", "", athleteId)) || !!process.env.DEEPSEEK_API_KEY;
+
+  const trailTargetRaceDist = Number(await getSetting("trail_target_race_dist", "36", athleteId));
+  const trailTargetRaceElev = Number(await getSetting("trail_target_race_elev", "2200", athleteId));
+  const trailWeeklyVertTarget = Number(await getSetting("trail_weekly_vert_target", "1000", athleteId));
+  const trailTrainingTier = await getSetting("trail_training_tier", "finisher", athleteId);
 
   return NextResponse.json({
     aiProvider,
@@ -36,37 +39,38 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
     const body = await req.json();
 
     if (body.aiProvider) {
-      setSetting("ai_provider", body.aiProvider);
+      await setSetting("ai_provider", body.aiProvider, athleteId);
     }
     if (body.aiModelName) {
-      setSetting("ai_model_name", body.aiModelName);
+      await setSetting("ai_model_name", body.aiModelName, athleteId);
     }
     if (body.geminiApiKey) {
-      setSetting("gemini_api_key", body.geminiApiKey);
+      await setSetting("gemini_api_key", body.geminiApiKey, athleteId);
     }
     if (body.openaiApiKey) {
-      setSetting("openai_api_key", body.openaiApiKey);
+      await setSetting("openai_api_key", body.openaiApiKey, athleteId);
     }
     if (body.claudeApiKey) {
-      setSetting("claude_api_key", body.claudeApiKey);
+      await setSetting("claude_api_key", body.claudeApiKey, athleteId);
     }
     if (body.deepseekApiKey) {
-      setSetting("deepseek_api_key", body.deepseekApiKey);
+      await setSetting("deepseek_api_key", body.deepseekApiKey, athleteId);
     }
     if (body.trailTargetRaceDist !== undefined) {
-      setSetting("trail_target_race_dist", body.trailTargetRaceDist.toString());
+      await setSetting("trail_target_race_dist", body.trailTargetRaceDist.toString(), athleteId);
     }
     if (body.trailTargetRaceElev !== undefined) {
-      setSetting("trail_target_race_elev", body.trailTargetRaceElev.toString());
+      await setSetting("trail_target_race_elev", body.trailTargetRaceElev.toString(), athleteId);
     }
     if (body.trailWeeklyVertTarget !== undefined) {
-      setSetting("trail_weekly_vert_target", body.trailWeeklyVertTarget.toString());
+      await setSetting("trail_weekly_vert_target", body.trailWeeklyVertTarget.toString(), athleteId);
     }
     if (body.trailTrainingTier !== undefined) {
-      setSetting("trail_training_tier", body.trailTrainingTier.toString());
+      await setSetting("trail_training_tier", body.trailTrainingTier.toString(), athleteId);
     }
 
     return NextResponse.json({ success: true });

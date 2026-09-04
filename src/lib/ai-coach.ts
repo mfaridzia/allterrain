@@ -10,58 +10,70 @@ export interface ChatMessage {
   content: string;
 }
 
-export function buildAthleteContext(): string {
+export async function buildAthleteContext(athleteId: string = "athlete_primary"): Promise<string> {
   const db = getDb();
 
-  // 1. Get latest daily metric & PMC
-  const latestMetric = db.prepare(`
-    SELECT * FROM daily_metrics ORDER BY date DESC LIMIT 1
-  `).get() as any;
+  // 1. Get latest daily metric & PMC for athlete
+  const metricRes = await db.execute({
+    sql: `SELECT * FROM daily_metrics WHERE athlete_id = ? ORDER BY date DESC LIMIT 1`,
+    args: [athleteId],
+  });
+  const latestMetric: any = metricRes.rows[0] || null;
 
-  // 2. Get recent 5 activities
-  const recentActivities = db.prepare(`
-    SELECT name, sport_type, strftime('%Y-%m-%d', start_time / 1000, 'unixepoch') as act_date,
-           distance_meters, duration_seconds, elevation_gain, elevation_loss,
-           avg_pace_sec, avg_hr, max_hr, training_load, aerobic_te, anaerobic_te,
-           vam_meters_per_hour, decoupling_pct
-    FROM activities
-    ORDER BY start_time DESC
-    LIMIT 5
-  `).all() as any[];
+  // 2. Get recent 5 activities for athlete
+  const actRes = await db.execute({
+    sql: `
+      SELECT name, sport_type, strftime('%Y-%m-%d', start_time / 1000, 'unixepoch') as act_date,
+             distance_meters, duration_seconds, elevation_gain, elevation_loss,
+             avg_pace_sec, avg_hr, max_hr, training_load, aerobic_te, anaerobic_te,
+             vam_meters_per_hour, decoupling_pct
+      FROM activities
+      WHERE athlete_id = ?
+      ORDER BY start_time DESC
+      LIMIT 5
+    `,
+    args: [athleteId],
+  });
+  const recentActivities: any[] = actRes.rows;
 
   // Format TSB and zone
-  const tsb = latestMetric ? latestMetric.tsb : 0;
+  const tsb = latestMetric ? Number(latestMetric.tsb || 0) : 0;
   const formZone = classifyFormZone(tsb);
-  const ctl = latestMetric ? latestMetric.ctl : 0;
-  const atl = latestMetric ? latestMetric.atl : 0;
-  const rampRate = latestMetric ? latestMetric.ramp_rate : 0;
-  const acwr = latestMetric ? latestMetric.acwr : 1.0;
-  const hrvStatus = latestMetric ? latestMetric.hrv_status : "NORMAL";
-  const recoveryScore = latestMetric ? latestMetric.recovery_score : 80;
+  const ctl = latestMetric ? Number(latestMetric.ctl || 0) : 0;
+  const atl = latestMetric ? Number(latestMetric.atl || 0) : 0;
+  const rampRate = latestMetric ? Number(latestMetric.ramp_rate || 0) : 0;
+  const acwr = latestMetric ? Number(latestMetric.acwr || 1.0) : 1.0;
+  const hrvStatus = latestMetric ? String(latestMetric.hrv_status || "NORMAL") : "NORMAL";
+  const recoveryScore = latestMetric ? Number(latestMetric.recovery_score || 80) : 80;
 
   let activitiesSummary = "No activities recorded yet.";
   if (recentActivities.length > 0) {
     activitiesSummary = recentActivities
       .map((a) => {
-        const distKm = (a.distance_meters / 1000).toFixed(2);
-        const durMin = Math.round(a.duration_seconds / 60);
-        const paceMin = Math.floor(a.avg_pace_sec / 60);
-        const paceSec = Math.floor(a.avg_pace_sec % 60).toString().padStart(2, "0");
-        const paceStr = `${paceMin}:${paceSec}/km`;
-        const trailInfo = a.sport_type === "trail_run" || a.elevation_gain > 200
-          ? ` | Elev: +${Math.round(a.elevation_gain)}m / -${Math.round(a.elevation_loss)}m | VAM: ${a.vam_meters_per_hour} m/h`
+        const distKm = (Number(a.distance_meters || 0) / 1000).toFixed(2);
+        const durMin = Math.round(Number(a.duration_seconds || 0) / 60);
+        const paceSec = Number(a.avg_pace_sec || 0);
+        const paceMin = Math.floor(paceSec / 60);
+        const paceSecRemainder = Math.floor(paceSec % 60).toString().padStart(2, "0");
+        const paceStr = `${paceMin}:${paceSecRemainder}/km`;
+        const elevGain = Math.round(Number(a.elevation_gain || 0));
+        const elevLoss = Math.round(Number(a.elevation_loss || 0));
+        const vam = Number(a.vam_meters_per_hour || 0);
+        const trailInfo = a.sport_type === "trail_run" || elevGain > 200
+          ? ` | Elev: +${elevGain}m / -${elevLoss}m | VAM: ${vam} m/h`
           : "";
-        const decouplingInfo = a.decoupling_pct > 0 ? ` | Decoupling: ${a.decoupling_pct}%` : "";
+        const decoupling = Number(a.decoupling_pct || 0);
+        const decouplingInfo = decoupling > 0 ? ` | Decoupling: ${decoupling}%` : "";
 
         return `- [${a.act_date}] ${a.name} (${a.sport_type}): ${distKm}km in ${durMin}m @ ${paceStr}, HR avg ${a.avg_hr} bpm, Load: ${a.training_load}, TE: ${a.aerobic_te}/${a.anaerobic_te}${trailInfo}${decouplingInfo}`;
       })
       .join("\n");
   }
 
-  const targetDist = getSetting("trail_target_race_dist", "36");
-  const targetElev = getSetting("trail_target_race_elev", "2200");
-  const targetVert = getSetting("trail_weekly_vert_target", "1000");
-  const targetTier = getSetting("trail_training_tier", "finisher");
+  const targetDist = await getSetting("trail_target_race_dist", "36", athleteId);
+  const targetElev = await getSetting("trail_target_race_elev", "2200", athleteId);
+  const targetVert = await getSetting("trail_weekly_vert_target", "1000", athleteId);
+  const targetTier = await getSetting("trail_training_tier", "finisher", athleteId);
 
   return `
 [ATHLETE LIVE PHYSIOLOGICAL DATA (COROS & PERFORMANCE SCIENCE)]
@@ -112,12 +124,12 @@ export function getAiModelInstance(provider: string, apiKey: string, modelName?:
   }
 }
 
-export async function runCoachStream(messages: ChatMessage[]) {
-  const provider = getSetting("ai_provider", "gemini");
-  const apiKey = getSetting(`${provider}_api_key`, "");
-  const modelName = getSetting("ai_model_name", "");
+export async function runCoachStream(messages: ChatMessage[], athleteId: string = "athlete_primary") {
+  const provider = await getSetting("ai_provider", "gemini", athleteId);
+  const apiKey = await getSetting(`${provider}_api_key`, "", athleteId);
+  const modelName = await getSetting("ai_model_name", "", athleteId);
 
-  const athleteContext = buildAthleteContext();
+  const athleteContext = await buildAthleteContext(athleteId);
 
   const systemPrompt = `You are "COROS AI Athletic Coach", an elite endurance running & trail performance sports scientist and coach.
 You combine scientific principles from Bannister Impulse-Response (CTL/ATL/TSB), advanced endurance metrics (ACWR, Decoupling Pa:HR, Foster's Monotony & Strain, Polarized 80/20 TID), and Mountain/Trail metrics (VAM m/h, Naismith/Minetti energetic cost).

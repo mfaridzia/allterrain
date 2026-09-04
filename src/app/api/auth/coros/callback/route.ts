@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForTokens } from "@/lib/coros-auth";
 import { consumePkceState, saveCorosToken } from "@/lib/db";
 import { syncCorosData } from "@/lib/coros-mcp";
+import { extractAthleteIdFromToken, createSession, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${url.origin}/?error=missing_code_or_state`);
   }
 
-  const codeVerifier = consumePkceState(state);
+  const codeVerifier = await consumePkceState(state);
   if (!codeVerifier) {
     return NextResponse.redirect(`${url.origin}/?error=invalid_or_expired_state`);
   }
@@ -31,12 +32,25 @@ export async function GET(req: NextRequest) {
       redirectUri,
     });
 
-    saveCorosToken(tokens);
+    const athleteId = extractAthleteIdFromToken(tokens);
+    await saveCorosToken(tokens, athleteId);
 
-    // Initial sync trigger in background
-    syncCorosData().catch((err) => console.warn("Background initial sync notice:", err));
+    // Create multi-user session
+    const sessionId = await createSession(athleteId);
 
-    return NextResponse.redirect(`${url.origin}/?connected=true`);
+    // Initial sync trigger in background for this specific athlete
+    syncCorosData(athleteId).catch((err) => console.warn("Background initial sync notice:", err));
+
+    const response = NextResponse.redirect(`${url.origin}/?connected=true`);
+    response.cookies.set(SESSION_COOKIE_NAME, sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_MAX_AGE_SECONDS,
+    });
+
+    return response;
   } catch (err: any) {
     console.error("Token exchange error:", err);
     return NextResponse.redirect(`${url.origin}/?error=${encodeURIComponent(err.message || "token_exchange_failed")}`);
