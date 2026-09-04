@@ -1,0 +1,368 @@
+"use client";
+
+import React, { useState, useRef, useEffect } from "react";
+import { HelpCircle, Info, Sparkles, BookOpen } from "lucide-react";
+
+export type MetricTerm =
+  | "ctl"
+  | "atl"
+  | "tsb"
+  | "ramp_rate"
+  | "acwr"
+  | "monotony"
+  | "strain"
+  | "tid"
+  | "decoupling"
+  | "hrv"
+  | "recovery_score"
+  | "resting_hr"
+  | "vam"
+  | "km_effort"
+  | "gap"
+  | "climb_density"
+  | "ads"
+  | "cumulative_gain"
+  | "cumulative_loss";
+
+export interface MetricDefinition {
+  title: string;
+  subtitle: string;
+  definition: string;
+  sweetSpot: string;
+  source: string;
+}
+
+export const METRIC_GLOSSARY: Record<MetricTerm, MetricDefinition> = {
+  ctl: {
+    title: "CTL (Chronic Training Load) — Fitness",
+    subtitle: "Kebugaran Aerobik Jangka Panjang",
+    definition:
+      "Mengukur tabungan kebugaran Anda berdasarkan rata-rata eksponensial beban latihan (Training Load / rTSS) selama 42 hari terakhir. Semakin tinggi angka CTL, semakin besar kapasitas paru-paru dan stamina otot Anda.",
+    sweetSpot: "Naik bertahap +5 s/d +8 poin per minggu (jangan loncat drastis).",
+    source: "Dr. Eric Bannister (1975) & Dr. Andrew Coggan (TrainingPeaks / Intervals.icu)",
+  },
+  atl: {
+    title: "ATL (Acute Training Load) — Fatigue",
+    subtitle: "Kelelahan Fisik Jangka Pendek",
+    definition:
+      "Mengukur tingkat stres dan kelelahan fisiologis tubuh Anda berdasarkan rata-rata beban latihan 7 hari terakhir. ATL bereaksi cepat saat Anda latihan berat dan meluruh drastis saat istirahat.",
+    sweetSpot: "Boleh tinggi saat fase latihan berat, tetapi harus diturunkan saat taper sebelum lomba.",
+    source: "Bannister Impulse-Response Fatigue Model",
+  },
+  tsb: {
+    title: "TSB (Training Stress Balance) — Form",
+    subtitle: "Kesiapan Tempur Hari Ini (CTL - ATL)",
+    definition:
+      "Menggambarkan apakah tubuh Anda sedang segar bugar atau kelelahan. Rumusnya: Kebugaran (CTL) dikurangi Kelelahan (ATL).",
+    sweetSpot:
+      "+5 s/d +15 (Fresh / Siap Balap), -10 s/d -30 (Optimal Training / Produktif), < -30 (Zona Bahaya Cedera / Overreaching).",
+    source: "Joe Friel & Andrew Coggan Athletic Performance Model",
+  },
+  ramp_rate: {
+    title: "Ramp Rate — Kenaikan Kebugaran Mingguan",
+    subtitle: "Kecepatan Menambah Beban Latihan",
+    definition:
+      "Perubahan angka CTL (Fitness) Anda dalam 7 hari terakhir. Menjadi indikator apakah Anda menambah porsi latihan secara bertahap atau terlalu bernafsu.",
+    sweetSpot: "+5 s/d +8 poin/minggu (Aman & Efektif). Kenaikan > +10 poin/minggu berisiko tinggi cedera sendi/tendon.",
+    source: "Intervals.icu & TrainingPeaks Workload Ramp Guidelines",
+  },
+  acwr: {
+    title: "ACWR (Acute:Chronic Workload Ratio)",
+    subtitle: "Rasio Beban Akut vs Kronis (Gabbett)",
+    definition:
+      "Membandingkan kelelahan 7 hari terakhir (beban akut) dengan kebugaran 28 hari terakhir (beban kronis). Menjadi standar emas kedokteran olahraga untuk memprediksi risiko cedera.",
+    sweetSpot: "0.8 – 1.3 (Sweet Spot / Aman Maksimal). Jika > 1.5, risiko cedera melonjak 2–4 kali lipat (*Danger Spike*).",
+    source: "Prof. Tim Gabbett (2016), British Journal of Sports Medicine",
+  },
+  monotony: {
+    title: "Training Monotony (Keseragaman Beban)",
+    subtitle: "Variasi Beban Hari ke Hari",
+    definition:
+      "Rasio rata-rata beban harian dibagi deviasi standarnya dalam 7 hari. Angka tinggi berarti latihan Anda setiap hari 'begitu-begitu saja' tanpa hari istirahat yang benar-benar santai.",
+    sweetSpot: "< 1.5 (Sehat, ada variasi keras & santai). > 2.0 (Terlalu monoton, memicu overtraining syndrome).",
+    source: "Dr. Carl Foster (1998), University of Wisconsin",
+  },
+  strain: {
+    title: "Training Strain (Beban Kumulatif Foster)",
+    subtitle: "Total Beban Fisiologis Mingguan",
+    definition:
+      "Hasil kali antara Total Beban Mingguan dikalikan Angka Monotony. Menunjukkan seberapa dalam stres fisiologis yang dialami sistem imun dan otot Anda.",
+    sweetSpot: "Di bawah 4.000 (Aman). Di atas 6.000 menandakan tubuh sangat rentan terserang flu, demam, atau burnout.",
+    source: "Foster's Athletic Monitoring Model",
+  },
+  tid: {
+    title: "TID (Training Intensity Distribution)",
+    subtitle: "Distribusi Intensitas Latihan (80/20)",
+    definition:
+      "Proporsi waktu latihan di Zona Santai (Z1/Z2 Aerobik), Zona Menengah (Z3 Tempo/Threshold), dan Zona Keras (Z4/Z5 Anaerobik/VO2Max).",
+    sweetSpot: "Polarized / Pyramidal: Minimal 75-80% latihan wajib di Zona 1 & 2 agar fondasi aerobik pembakar lemak terbentuk kokoh.",
+    source: "Dr. Stephen Seiler (2006) & Dr. Matt Fitzgerald (80/20 Running)",
+  },
+  decoupling: {
+    title: "Aerobic Decoupling (Cardiac Drift)",
+    subtitle: "Penyimpangan Detak Jantung vs Pace (Pa:HR)",
+    definition:
+      "Mengukur kestabilan jantung saat lari dengan kecepatan konstan. Jika pace tetap sama tetapi detak jantung perlahan naik tinggi, berarti jantung Anda mengalami stres termal/kelelahan aerobik.",
+    sweetSpot: "< 3.5% – 5.0% (Aerobic Base Kuat / Bebas ADS). > 5.0% (Menandakan kekurangan fondasi aerobik Zona 2).",
+    source: "Joe Friel (Total Heart Rate Training) & Scott Johnston (Uphill Athlete)",
+  },
+  hrv: {
+    title: "HRV (Heart Rate Variability — RMSSD)",
+    subtitle: "Variabilitas Detak Jantung / Sistem Saraf",
+    definition:
+      "Variasi milidetik antar detak jantung saat Anda tidur. HRV tinggi menandakan sistem saraf parasimpatik (pemulihan & regenerasi) aktif bekerja.",
+    sweetSpot: "Status 'NORMAL' sesuai baseline pribadi COROS Anda. Jika drop drastis di bawah normal, tubuh Anda sedang melawan stres/infeksi.",
+    source: "Autonomic Nervous System & COROS EvoLab Science",
+  },
+  recovery_score: {
+    title: "Recovery Score (%)",
+    subtitle: "Kesiapan Fisik Harian Jam COROS",
+    definition:
+      "Indeks komprehensif dari COROS yang menggabungkan kualitas tidur semalam, HRV, resting heart rate, dan beban latihan hari sebelumnya.",
+    sweetSpot: "80% - 100% (Siap Latihan Berat / Race), 60% - 79% (Latihan Sedang), < 60% (Istirahat / Easy Jog).",
+    source: "COROS EvoLab Recovery Algorithm",
+  },
+  resting_hr: {
+    title: "Resting Heart Rate (RHR)",
+    subtitle: "Denyut Nadi Istirahat",
+    definition:
+      "Denyut nadi terendah saat Anda tidur atau beristirahat total. RHR atlet endurance terlatih umumnya sangat rendah (40–55 bpm) karena volume sekuncup jantung (*stroke volume*) yang besar.",
+    sweetSpot: "Jika RHR pagi Anda naik 5–7 bpm di atas rata-rata, itu sinyal awal tubuh belum pulih atau akan sakit.",
+    source: "Cardiovascular Endurance Physiology",
+  },
+  vam: {
+    title: "VAM (Velocità Ascensionale Media)",
+    subtitle: "Kecepatan Nanjak Vertikal (Meter / Jam)",
+    definition:
+      "Mengukur berapa meter vertikal (D+) yang bisa Anda daki dalam waktu 1 jam di tanjakan gunung. Menjadi acuan utama untuk memprediksi waktu tiba di pos balapan trail.",
+    sweetSpot: "400 - 600 m/jam (Solid Mountain Runner), 600 - 800 m/jam (Advanced), > 800 m/jam (Elite/VK specialist).",
+    source: "Dr. Michele Ferrari (Cycling/Running VAM Model)",
+  },
+  km_effort: {
+    title: "ITRA Km-Effort",
+    subtitle: "Jarak Setara Datar (Km + D+/100)",
+    definition:
+      "Formula resmi asosiasi trail internasional (ITRA) untuk menyetarakan beban lari gunung dengan jalan datar. Setiap 100 meter tanjakan vertikal (D+) dihitung setara menambah 1 km lari datar.",
+    sweetSpot: "Contoh: Lari 36 km dengan +2.200m D+ memiliki beban fisik setara lari 58 km di jalan aspal datar!",
+    source: "International Trail Running Association (ITRA) Regulations",
+  },
+  gap: {
+    title: "GAP (Grade Adjusted Pace — Minetti Model)",
+    subtitle: "Pace Normalisasi Tanjakan",
+    definition:
+      "Pace ekuivalen jika Anda berlari dengan output tenaga yang sama di jalan aspal datar, dihitung menggunakan kurva beban metabolik tanjakan Dr. Alberto Minetti.",
+    sweetSpot: "Membantu Anda tidak panik saat pace di tanjakan melambat ke 14:00/km, karena tenaga aslinya setara 5:30/km di jalan datar.",
+    source: "Dr. Alberto E. Minetti (2002), Journal of Applied Physiology",
+  },
+  climb_density: {
+    title: "Climb Density Ratio (D+ / Km)",
+    subtitle: "Tingkat Kecuraman Jalur Gunung",
+    definition:
+      "Rasio antara total elevasi tanjakan (D+) dibagi jarak horizontal (km). Menentukan apakah lomba tersebut tergolong lari santai, pegunungan, atau skyrunning terjal.",
+    sweetSpot: "<25 m/km (Rolling), 25-60 m/km (Moderate Mountain), 60-95 m/km (High Alpine), >95 m/km (Skyrunning).",
+    source: "Kílian Jornet & Scott Johnston, 'Training for the Uphill Athlete'",
+  },
+  ads: {
+    title: "Aerobic Deficiency Syndrome (ADS)",
+    subtitle: "Sindrom Defisiensi Aerobik Pembakar Lemak",
+    definition:
+      "Kondisi ketika mesin pembakaran lemak tubuh kurang terlatih karena terlalu sering lari di intensitas menengah/tinggi (Zona 3/4). Akibatnya, glikogen cepat habis dan pelari mudah lemas (*bonking*) di tanjakan panjang.",
+    sweetSpot: "Status 'No ADS Detected' berarti metabolisme lemak Anda sangat kokoh (diuji via Decoupling < 3.5%).",
+    source: "Scott Johnston, Uphill Athlete Aerobic Threshold Diagnostics",
+  },
+  cumulative_gain: {
+    title: "Cumulative Gain (D+) — Total Tanjakan",
+    subtitle: "Akumulasi Kenaikan Elevasi Barometrik",
+    definition:
+      "Jumlah total elevasi tanjakan (meter D+) yang tercatat oleh sensor barometer jam COROS dari seluruh sesi latihan di database Anda (periode 90 hari). Menunjukkan akumulasi daya tanjak yang sudah dilatih otot kaki Anda.",
+    sweetSpot: "Rutin mengumpulkan 1.000m - 2.500m D+ per minggu saat fase persiapan lomba ultra trail.",
+    source: "COROS Barometric Altimeter Sensor & GPS Elevation Engine",
+  },
+  cumulative_loss: {
+    title: "Cumulative Loss (D-) — Total Turunan",
+    subtitle: "Akumulasi Beban Eksentrik Kuadrisep",
+    definition:
+      "Jumlah total penurunan vertikal (meter D-) dari seluruh aktivitas lari Anda. Lari di turunan memberikan stres benturan eksentrik tinggi pada otot paha depan (quadriceps), yang wajib dilatih agar paha tidak hancur/kram saat balap.",
+    sweetSpot: "Volume D- idealnya seimbang dengan D+ untuk melatih 'Quad Armor' tanpa merusak sendi lutut.",
+    source: "Eccentric Muscle Contraction Science & Kilian Jornet Quad Armor Model",
+  },
+};
+
+import { createPortal } from "react-dom";
+
+interface MetricTooltipProps {
+  term: MetricTerm;
+  children?: React.ReactNode;
+  iconOnly?: boolean;
+  className?: string;
+}
+
+export const MetricTooltip: React.FC<MetricTooltipProps> = ({
+  term,
+  children,
+  iconOnly = false,
+  className = "",
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    placement: "top" | "bottom";
+    arrowLeft: number;
+  } | null>(null);
+
+  const data = METRIC_GLOSSARY[term];
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updatePosition = React.useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const tooltipWidth = Math.min(320, window.innerWidth - 32);
+    const popoverHeight = popoverRef.current?.offsetHeight || 250;
+
+    // Check collision with top of viewport / sticky navbar (~65px)
+    const spaceAbove = rect.top;
+    const placement: "top" | "bottom" = spaceAbove >= popoverHeight + 70 ? "top" : "bottom";
+
+    // Center horizontally on trigger
+    const triggerCenter = rect.left + rect.width / 2;
+    let left = triggerCenter - tooltipWidth / 2;
+
+    // Clamp horizontally inside viewport
+    const minLeft = 16;
+    const maxLeft = window.innerWidth - tooltipWidth - 16;
+    left = Math.max(minLeft, Math.min(maxLeft, left));
+
+    // Arrow position relative to popover box
+    const arrowLeft = Math.max(16, Math.min(tooltipWidth - 16, triggerCenter - left));
+    const top = placement === "top" ? rect.top - 8 : rect.bottom + 8;
+
+    setCoords({ top, left, placement, arrowLeft });
+  }, []);
+
+  // Recalculate on open, scroll, or resize
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, { passive: true, capture: true });
+    window.addEventListener("resize", updatePosition, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", updatePosition, { capture: true });
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen, updatePosition]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        triggerRef.current &&
+        !triggerRef.current.contains(target) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener("mousedown", handleOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [isOpen]);
+
+  if (!data) return <>{children}</>;
+
+  return (
+    <>
+      <div
+        ref={triggerRef}
+        className={`relative inline-flex items-center group cursor-pointer ${className}`}
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => setIsOpen(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+      >
+        {children ? (
+          <span className="inline-flex items-center gap-1 border-b border-dotted border-zinc-500 hover:border-cyan-400 transition-colors">
+            {children}
+            <HelpCircle className="h-3 w-3 text-zinc-500 group-hover:text-cyan-400 transition-colors shrink-0" />
+          </span>
+        ) : (
+          <HelpCircle className="h-3.5 w-3.5 text-zinc-500 hover:text-cyan-400 transition-colors shrink-0" />
+        )}
+      </div>
+
+      {/* Floating Tooltip Popover rendered in Portal above everything (z-[99999]) */}
+      {isOpen &&
+        mounted &&
+        coords &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className="fixed z-[99999] w-72 sm:w-80 p-3.5 rounded-xl bg-zinc-950/95 border border-cyan-500/50 text-left shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl space-y-2 pointer-events-auto transition-opacity animate-in fade-in zoom-in-95 duration-150"
+            style={{
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
+              transform: coords.placement === "top" ? "translateY(-100%)" : "none",
+              maxWidth: "calc(100vw - 32px)",
+            }}
+            onMouseEnter={() => setIsOpen(true)}
+            onMouseLeave={() => setIsOpen(false)}
+          >
+            {/* Directional Arrow */}
+            {coords.placement === "top" ? (
+              <div
+                className="absolute top-full -mt-1 border-4 border-transparent border-t-cyan-500/50"
+                style={{ left: `${coords.arrowLeft}px`, transform: "translateX(-50%)" }}
+              />
+            ) : (
+              <div
+                className="absolute bottom-full -mb-1 border-4 border-transparent border-b-cyan-500/50"
+                style={{ left: `${coords.arrowLeft}px`, transform: "translateX(-50%)" }}
+              />
+            )}
+
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 border-b border-zinc-800 pb-2">
+              <div>
+                <h4 className="text-xs font-black text-white leading-tight">{data.title}</h4>
+                <p className="text-[10px] text-cyan-400 font-semibold mt-0.5">{data.subtitle}</p>
+              </div>
+              <span className="h-5 w-5 rounded-md bg-cyan-950/80 border border-cyan-700/60 flex items-center justify-center text-cyan-300 shrink-0">
+                <Info className="h-3 w-3" />
+              </span>
+            </div>
+
+            {/* Definition */}
+            <p className="text-[11px] text-zinc-300 leading-relaxed font-sans">{data.definition}</p>
+
+            {/* Sweet Spot */}
+            <div className="p-2 rounded-lg bg-zinc-900/90 border border-zinc-800/80 space-y-0.5 text-[10px]">
+              <div className="flex items-center gap-1 text-emerald-400 font-bold">
+                <Sparkles className="h-3 w-3 shrink-0" />
+                <span>Sweet Spot / Target Ideal:</span>
+              </div>
+              <p className="text-zinc-300 font-mono leading-normal">{data.sweetSpot}</p>
+            </div>
+
+            {/* Theoretical Source */}
+            <div className="flex items-center gap-1 text-[9px] text-zinc-500 pt-0.5 font-mono">
+              <BookOpen className="h-3 w-3 shrink-0 text-zinc-600" />
+              <span className="truncate">{data.source}</span>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};

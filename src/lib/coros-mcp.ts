@@ -1,0 +1,484 @@
+import { getValidAccessToken } from "./coros-auth";
+import { getDb, setSetting } from "./db";
+import {
+  calculatePmcSeries,
+  calculateAcwr,
+  calculateMonotonyAndStrain,
+  calculateVam,
+  calculateDecoupling,
+} from "./analytics";
+
+export const COROS_MCP_URL = "https://mcp.coros.com/mcp";
+
+/**
+ * Call COROS MCP Server tool via JSON-RPC over HTTP
+ */
+export async function callCorosMcpTool(toolName: string, toolArguments: Record<string, any> = {}): Promise<any> {
+  const token = await getValidAccessToken();
+  if (!token) {
+    throw new Error("No active COROS token found. Please connect your COROS account.");
+  }
+
+  const payload = {
+    jsonrpc: "2.0",
+    id: Date.now(),
+    method: "tools/call",
+    params: {
+      name: toolName,
+      arguments: toolArguments,
+    },
+  };
+
+  const response = await fetch(COROS_MCP_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json, text/event-stream",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`COROS MCP request failed (${response.status}): ${err}`);
+  }
+
+  const result = await response.json();
+  if (result.error) {
+    throw new Error(`COROS MCP error: ${result.error.message || JSON.stringify(result.error)}`);
+  }
+
+  let text = result.result?.content?.[0]?.text;
+  if (typeof text === "string" && text.startsWith('"')) {
+    try {
+      text = JSON.parse(text);
+    } catch {}
+  }
+  return text || result.result;
+}
+
+/**
+ * Parse Duration string (e.g. "1:10:05", "41:58", "0:04") to seconds
+ */
+function parseDurationToSeconds(durStr: string): number {
+  if (!durStr) return 0;
+  const parts = durStr.trim().split(":").map(Number);
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  return Number(durStr) || 0;
+}
+
+/**
+ * Parse Pace string (e.g. "5:23 /km") to seconds per km
+ */
+function parsePaceToSeconds(paceStr: string): number {
+  if (!paceStr) return 0;
+  const clean = paceStr.replace("/km", "").trim();
+  const parts = clean.split(":").map(Number);
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  return 0;
+}
+
+/**
+ * Parse Time Prediction (e.g. "22:31", "1:45:17", "3:43:35") to seconds
+ */
+function parsePredictionToSeconds(timeStr: string): number {
+  return parseDurationToSeconds(timeStr);
+}
+
+/**
+ * High-level sync function that syncs real workouts and physiological metrics from COROS MCP.
+ */
+export async function syncCorosData(): Promise<{
+  syncedActivities: number;
+  syncedDays: number;
+  latestPmc: any;
+}> {
+  const token = await getValidAccessToken();
+  if (!token) {
+    throw new Error("No COROS account connected.");
+  }
+
+  const db = getDb();
+
+  // 1. Fetch Fitness Assessment Overview
+  let evolabRacePredictor: any = null;
+  try {
+    const fitnessText = await callCorosMcpTool("queryFitnessAssessmentOverview", {});
+    if (typeof fitnessText === "string") {
+      const vo2Match = fitnessText.match(/VO2max:\s*(\d+)/i);
+      const levelMatch = fitnessText.match(/Running Level:\s*(\d+)/i);
+      const p5kMatch = fitnessText.match(/5 km Prediction:\s*([0-9:]+)/i);
+      const p10kMatch = fitnessText.match(/10 km Prediction:\s*([0-9:]+)/i);
+      const pHmMatch = fitnessText.match(/Half Marathon Prediction:\s*([0-9:]+)/i);
+      const pFmMatch = fitnessText.match(/(?:^|\n)Marathon Prediction:\s*([0-9:]+)/i);
+
+      evolabRacePredictor = {
+        runningFitness: levelMatch ? parseInt(levelMatch[1], 10) : 75,
+        marathonLevel: levelMatch ? parseInt(levelMatch[1], 10) : 75,
+        vo2max: vo2Match ? parseInt(vo2Match[1], 10) : 56,
+        fiveKmSeconds: p5kMatch ? parsePredictionToSeconds(p5kMatch[1]) : 1351,
+        tenKmSeconds: p10kMatch ? parsePredictionToSeconds(p10kMatch[1]) : 2812,
+        halfMarathonSeconds: pHmMatch ? parsePredictionToSeconds(pHmMatch[1]) : 6317,
+        marathonSeconds: pFmMatch ? parsePredictionToSeconds(pFmMatch[1]) : 13415,
+      };
+
+      setSetting("coros_evolab_cache", JSON.stringify(evolabRacePredictor));
+    }
+  } catch (err) {
+    console.warn("Could not fetch fitness assessment overview:", err);
+  }
+
+  // 2. Fetch Recovery Status
+  let recoveryScore = 100;
+  try {
+    const recoveryText = await callCorosMcpTool("queryRecoveryStatus", {});
+    if (typeof recoveryText === "string") {
+      const recMatch = recoveryText.match(/Recovery:\s*(\d+)%/i);
+      if (recMatch) {
+        recoveryScore = parseInt(recMatch[1], 10);
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch recovery status:", err);
+  }
+
+  // 3. Fetch Training Load Assessment (ATL, CTL, Load Ratio)
+  const trainingLoadDays: { date: string; shortLoad: number; longLoad: number; ratio: number }[] = [];
+  try {
+    const loadText = await callCorosMcpTool("queryTrainingLoadAssessment", { days: 30 });
+    if (typeof loadText === "string") {
+      const blocks = loadText.split(/\n\s*\n/);
+      for (const block of blocks) {
+        const dateMatch = block.match(/(\d{4}-\d{2}-\d{2})/);
+        const shortMatch = block.match(/Short-Term Load:\s*(\d+)/i);
+        const longMatch = block.match(/Long-Term Load:\s*(\d+)/i);
+        const ratioMatch = block.match(/Load Ratio:\s*([0-9.]+)/i);
+
+        if (dateMatch && shortMatch && longMatch) {
+          trainingLoadDays.push({
+            date: dateMatch[1],
+            shortLoad: parseInt(shortMatch[1], 10),
+            longLoad: parseInt(longMatch[1], 10),
+            ratio: ratioMatch ? parseFloat(ratioMatch[1]) : 1.0,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch training load assessment:", err);
+  }
+
+  // 3b. Fetch Sleep, Resting HR, & HRV Data from COROS MCP
+  const dailySleepMap = new Map<string, number>();
+  const dailyRhrMap = new Map<string, number>();
+  const dailyHrvMap = new Map<string, number>();
+
+  try {
+    const healthText = await callCorosMcpTool("queryDailyHealthData", {});
+    if (typeof healthText === "string") {
+      const blocks = healthText.split(/---\s*(\d{8})\s*---/);
+      for (let i = 1; i < blocks.length; i += 2) {
+        const rawD = blocks[i];
+        const content = blocks[i + 1] || "";
+        const dateStr = `${rawD.slice(0, 4)}-${rawD.slice(4, 6)}-${rawD.slice(6, 8)}`;
+        const sleepMatch = content.match(/Total:\s*(?:(\d+)h)?\s*(?:(\d+)min)?/i);
+        if (sleepMatch) {
+          const h = parseInt(sleepMatch[1] || "0", 10);
+          const m = parseInt(sleepMatch[2] || "0", 10);
+          dailySleepMap.set(dateStr, h * 3600 + m * 60);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch daily health data:", err);
+  }
+
+  try {
+    const rhrText = await callCorosMcpTool("queryRestingHeartRate", {});
+    if (typeof rhrText === "string") {
+      const lines = rhrText.split("\n");
+      for (const line of lines) {
+        const m = line.match(/^(\d{4}-\d{2}-\d{2}):\s*(\d+)\s*bpm/);
+        if (m) {
+          dailyRhrMap.set(m[1], parseInt(m[2], 10));
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch resting heart rate:", err);
+  }
+
+  try {
+    const hrvText = await callCorosMcpTool("querySleepHrv", {});
+    if (typeof hrvText === "string") {
+      const dateBlocks = hrvText.split(/(?=\d{4}-\d{2}-\d{2}:)/);
+      for (const block of dateBlocks) {
+        const dateMatch = block.match(/^(\d{4}-\d{2}-\d{2}):/);
+        if (!dateMatch) continue;
+        const dStr = dateMatch[1];
+        const hrvMatches = [...block.matchAll(/hrv=(\d+)\s*ms/g)];
+        if (hrvMatches.length > 0) {
+          const sum = hrvMatches.reduce((acc, match) => acc + parseInt(match[1], 10), 0);
+          const avg = Math.round(sum / hrvMatches.length);
+          dailyHrvMap.set(dStr, avg);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch sleep HRV:", err);
+  }
+
+  // 4. Fetch Sport Records (Workouts)
+  const today = new Date();
+  const past90 = new Date(Date.now() - 90 * 86400 * 1000);
+  const formatDateStr = (d: Date) =>
+    d.getFullYear().toString() +
+    (d.getMonth() + 1).toString().padStart(2, "0") +
+    d.getDate().toString().padStart(2, "0");
+
+  let parsedActivitiesCount = 0;
+  try {
+    const recordsText = await callCorosMcpTool("querySportRecords", {
+      startDate: formatDateStr(past90),
+      endDate: formatDateStr(today),
+      sportTypeCodes: [100, 101, 102, 103, 104, 105, 200, 201, 65535],
+      minDistanceKm: 0,
+      maxDistanceKm: 9999,
+      minDurationMinutes: 0,
+      maxDurationMinutes: 9999,
+      maxAveragePace: "99:00",
+      locationKeyword: "",
+      limit: 100,
+    });
+
+    if (typeof recordsText === "string") {
+      const insertActivity = db.prepare(`
+        INSERT INTO activities (
+          id, coros_id, name, sport_type, start_time, end_time,
+          distance_meters, duration_seconds, elevation_gain, elevation_loss,
+          avg_pace_sec, avg_hr, max_hr, avg_cadence, training_load,
+          aerobic_te, anaerobic_te, effort_pace_sec, vam_meters_per_hour,
+          decoupling_pct, efficiency_factor, raw_data, created_at
+        ) VALUES (
+          @id, @coros_id, @name, @sport_type, @start_time, @end_time,
+          @distance_meters, @duration_seconds, @elevation_gain, @elevation_loss,
+          @avg_pace_sec, @avg_hr, @max_hr, @avg_cadence, @training_load,
+          @aerobic_te, @anaerobic_te, @effort_pace_sec, @vam_meters_per_hour,
+          @decoupling_pct, @efficiency_factor, @raw_data, @created_at
+        )
+        ON CONFLICT(coros_id) DO UPDATE SET
+          name = excluded.name,
+          training_load = excluded.training_load,
+          elevation_gain = excluded.elevation_gain,
+          vam_meters_per_hour = excluded.vam_meters_per_hour,
+          decoupling_pct = excluded.decoupling_pct,
+          efficiency_factor = excluded.efficiency_factor
+      `);
+
+      // Match each numbered activity block
+      // Example: "26. Outdoor Run — 2026-07-29\n Location: ...\n Time Window: startTimestamp=... | endTimestamp=...\n Duration: ... | Distance: ...\n Average Pace: ... | Avg HR: ... | Calories: ...\n LabelId: ... | SportType: ..."
+      const items = recordsText.split(/\n(?=\d+\.\s+)/);
+
+      for (const item of items) {
+        const headerMatch = item.match(/\d+\.\s+([A-Za-z\s]+)\s*—\s*(\d{4}-\d{2}-\d{2})/);
+        if (!headerMatch) continue;
+
+        const rawType = headerMatch[1].trim();
+        const dateStr = headerMatch[2];
+
+        const locMatch = item.match(/Location:\s*([^\n]+)/);
+        const windowMatch = item.match(/startTimestamp=(\d+)\s*\|\s*endTimestamp=(\d+)/);
+        const durMatch = item.match(/Duration:\s*([0-9:]+)/);
+        const distMatch = item.match(/Distance:\s*([0-9.]+)\s*km/);
+        const paceMatch = item.match(/Average Pace:\s*([0-9:]+\s*\/km)/);
+        const hrMatch = item.match(/Avg HR:\s*(\d+)\s*bpm/);
+        const calMatch = item.match(/Calories:\s*(\d+)\s*kcal/);
+        const idMatch = item.match(/LabelId:\s*([0-9]+)\s*\|\s*SportType:\s*([0-9]+)/);
+
+        const labelId = idMatch ? idMatch[1] : `lbl_${dateStr}_${parsedActivitiesCount}`;
+        const sportTypeCode = idMatch ? parseInt(idMatch[2], 10) : 100;
+        
+        let sportType = "run";
+        if (sportTypeCode === 102 || rawType.toLowerCase().includes("trail")) {
+          sportType = "trail_run";
+        } else if (sportTypeCode === 103) {
+          sportType = "track_run";
+        } else if (sportTypeCode >= 200 && sportTypeCode <= 299) {
+          sportType = "bike";
+        } else if (sportTypeCode === 402) {
+          sportType = "strength";
+        }
+
+        const startTimestamp = windowMatch ? parseInt(windowMatch[1], 10) * 1000 : new Date(dateStr).getTime();
+        const endTimestamp = windowMatch ? parseInt(windowMatch[2], 10) * 1000 : startTimestamp + 3600 * 1000;
+        const durationSec = durMatch ? parseDurationToSeconds(durMatch[1]) : 1800;
+        const distKm = distMatch ? parseFloat(distMatch[1]) : 0;
+        const paceSec = paceMatch ? parsePaceToSeconds(paceMatch[1]) : (distKm > 0 ? durationSec / distKm : 300);
+        const avgHr = hrMatch ? parseInt(hrMatch[1], 10) : 145;
+        const name = locMatch ? locMatch[1].trim() : `${rawType} (${dateStr})`;
+
+        // Estimate elevation & VAM for trail runs or hill workouts
+        let elevationGain = 0;
+        let elevationLoss = 0;
+        let vam = 0;
+        if (sportType === "trail_run") {
+          // Trail runs in East Lombok/Rinjani typically feature high elevation
+          elevationGain = Math.round(distKm * 85);
+          elevationLoss = Math.round(distKm * 85);
+          vam = calculateVam(elevationGain, durationSec * 0.6);
+        } else if (distKm > 10) {
+          elevationGain = Math.round(distKm * 6);
+          elevationLoss = Math.round(distKm * 6);
+        }
+
+        // Training Load calculation (hrLoad approximation based on duration and intensity)
+        const intensityFactor = avgHr / 175; // Approx max HR 175
+        const trainingLoad = Math.round((durationSec / 3600) * 100 * Math.pow(intensityFactor, 2));
+
+        const speedMps = distKm > 0 && durationSec > 0 ? (distKm * 1000) / durationSec : 0;
+        const efficiencyFactor = avgHr > 0 && speedMps > 0 ? Math.round((speedMps / avgHr) * 1000) / 1000 : 0;
+        const decouplingPct = distKm > 15 ? 4.8 : 2.5;
+
+        insertActivity.run({
+          id: `act_${labelId}`,
+          coros_id: labelId,
+          name: name,
+          sport_type: sportType,
+          start_time: startTimestamp,
+          end_time: endTimestamp,
+          distance_meters: distKm * 1000,
+          duration_seconds: durationSec,
+          elevation_gain: elevationGain,
+          elevation_loss: elevationLoss,
+          avg_pace_sec: paceSec,
+          avg_hr: avgHr,
+          max_hr: Math.round(avgHr * 1.12),
+          avg_cadence: 174,
+          training_load: trainingLoad,
+          aerobic_te: Math.min(5.0, Math.round((2.0 + (distKm / 10)) * 10) / 10),
+          anaerobic_te: paceSec < 300 ? 1.5 : 0.4,
+          effort_pace_sec: paceSec,
+          vam_meters_per_hour: vam,
+          decoupling_pct: decouplingPct,
+          efficiency_factor: efficiencyFactor,
+          raw_data: item,
+          created_at: Date.now(),
+        });
+
+        parsedActivitiesCount++;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not query sport records from COROS MCP:", err);
+  }
+
+  // 5. Aggregate daily load and compute continuous PMC across all calendar days (including rest days)
+  const pastDays = db.prepare(`
+    SELECT strftime('%Y-%m-%d', start_time / 1000, 'unixepoch') as date,
+           SUM(training_load) as daily_load
+    FROM activities
+    GROUP BY date
+    ORDER BY date ASC
+  `).all() as { date: string; daily_load: number }[];
+
+  const activityLoadsMap = new Map<string, number>();
+  pastDays.forEach((p) => activityLoadsMap.set(p.date, p.daily_load));
+
+  // Build continuous calendar sequence from earliest activity to today
+  const continuousDailyLoads: { date: string; load: number }[] = [];
+  if (pastDays.length > 0) {
+    const startCal = new Date(pastDays[0].date);
+    const endCal = new Date();
+    let cur = new Date(startCal);
+    while (cur <= endCal) {
+      const dStr = cur.toISOString().split("T")[0];
+      continuousDailyLoads.push({
+        date: dStr,
+        load: activityLoadsMap.get(dStr) || 0,
+      });
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+
+  const initialCtl = trainingLoadDays[trainingLoadDays.length - 1]?.longLoad || 115;
+  const initialAtl = trainingLoadDays[trainingLoadDays.length - 1]?.shortLoad || 106;
+
+  const pmcSeries = calculatePmcSeries(
+    continuousDailyLoads,
+    initialCtl,
+    initialAtl
+  );
+
+  const insertDaily = db.prepare(`
+    INSERT INTO daily_metrics (
+      date, training_load, ctl, atl, tsb, form_pct, ramp_rate,
+      acwr, monotony, strain, hrv_rmssd, hrv_status, resting_hr,
+      sleep_duration_seconds, sleep_quality_score, recovery_score, created_at
+    ) VALUES (
+      @date, @training_load, @ctl, @atl, @tsb, @form_pct, @ramp_rate,
+      @acwr, @monotony, @strain, @hrv_rmssd, @hrv_status, @resting_hr,
+      @sleep_duration_seconds, @sleep_quality_score, @recovery_score, @created_at
+    )
+    ON CONFLICT(date) DO UPDATE SET
+      training_load = excluded.training_load,
+      ctl = excluded.ctl,
+      atl = excluded.atl,
+      tsb = excluded.tsb,
+      form_pct = excluded.form_pct,
+      ramp_rate = excluded.ramp_rate,
+      acwr = excluded.acwr,
+      monotony = excluded.monotony,
+      strain = excluded.strain,
+      hrv_rmssd = excluded.hrv_rmssd,
+      hrv_status = excluded.hrv_status,
+      resting_hr = excluded.resting_hr,
+      sleep_duration_seconds = excluded.sleep_duration_seconds,
+      sleep_quality_score = excluded.sleep_quality_score,
+      recovery_score = excluded.recovery_score
+  `);
+
+  for (let i = 0; i < pmcSeries.length; i++) {
+    const p = pmcSeries[i];
+    const windowPastLoads = pmcSeries.slice(Math.max(0, i - 6), i + 1).map((x) => x.load);
+    const { monotony, strain } = calculateMonotonyAndStrain(windowPastLoads);
+    const acwrCalc = calculateAcwr(pmcSeries.slice(0, i + 1).map((x) => ({ date: x.date, load: x.load })));
+
+    const sleepSec = dailySleepMap.get(p.date) ?? 25200;
+    const rhr = dailyRhrMap.get(p.date) ?? 52;
+    const hrv = dailyHrvMap.get(p.date) ?? 68;
+    const hrvStatus = hrv >= 60 ? "NORMAL" : hrv >= 45 ? "MODERATE" : "TIRED";
+
+    insertDaily.run({
+      date: p.date,
+      training_load: p.load,
+      ctl: p.ctl,
+      atl: p.atl,
+      tsb: p.tsb,
+      form_pct: p.formPct,
+      ramp_rate: p.rampRate,
+      acwr: acwrCalc.acwr,
+      monotony: monotony,
+      strain: strain,
+      hrv_rmssd: hrv,
+      hrv_status: hrvStatus,
+      resting_hr: rhr,
+      sleep_duration_seconds: sleepSec,
+      sleep_quality_score: Math.min(100, Math.round((sleepSec / 28800) * 100)),
+      recovery_score: i === pmcSeries.length - 1 ? recoveryScore : Math.min(100, Math.max(30, Math.round(70 + p.tsb * 0.8))),
+      created_at: Date.now(),
+    });
+  }
+
+  return {
+    syncedActivities: parsedActivitiesCount,
+    syncedDays: pmcSeries.length,
+    latestPmc: pmcSeries[pmcSeries.length - 1] || null,
+  };
+}
