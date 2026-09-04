@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,6 +12,9 @@ import {
   LogOut,
   Mountain,
   ClipboardList,
+  Menu,
+  X,
+  ChevronRight,
 } from "lucide-react";
 import { SettingsModal } from "./SettingsModal";
 import { ThemeToggle } from "./ThemeToggle";
@@ -40,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const pathname = usePathname();
   const [internalSettingsOpen, setInternalSettingsOpen] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   const { data: authData } = useAuthStatus();
   const syncMutation = useSyncCorosMutation();
@@ -47,6 +51,22 @@ export const Header: React.FC<HeaderProps> = ({
 
   const isConnected = externalConnected !== undefined ? externalConnected : !!authData?.connected;
   const isSyncing = externalIsSyncing !== undefined ? externalIsSyncing : syncMutation.isPending;
+
+  // Auto-close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Handle ESC key to close mobile menu
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSync = async () => {
     if (externalOnSync) {
@@ -88,18 +108,21 @@ export const Header: React.FC<HeaderProps> = ({
     {
       href: "/",
       label: "Dashboard",
+      description: "Ringkasan metrik beban & grafik PMC",
       icon: Activity,
       exact: true,
     },
     {
       href: "/trail-planner",
       label: "GPX Planner",
+      description: "Simulasi & profil elevasi rute trail",
       icon: Mountain,
       exact: false,
     },
     {
       href: "/activities",
       label: "Logbook",
+      description: "Daftar riwayat aktivitas COROS",
       icon: ClipboardList,
       exact: false,
     },
@@ -119,6 +142,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-3 sm:gap-6 shrink-0">
             <Link
               href="/"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="flex items-center gap-2.5 group transition-transform active:scale-95"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-white border-2 border-zinc-950 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] group-hover:-translate-y-0.5 transition-transform">
@@ -139,9 +163,9 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </Link>
 
-            {/* Primary Neo-Brutalist Segmented Route Navigation - only visible when connected */}
+            {/* Primary Neo-Brutalist Segmented Route Navigation - Desktop */}
             {isConnected && (
-              <nav className="flex items-center gap-1 p-1 bg-[#F0EDE4] dark:bg-zinc-900 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000]">
+              <nav className="hidden md:flex items-center gap-1 p-1 bg-[#F0EDE4] dark:bg-zinc-900 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000]">
                 {navLinks.map((item) => {
                   const Icon = item.icon;
                   const active = isLinkActive(item.href, item.exact);
@@ -149,7 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs rounded-lg transition-all ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all ${
                         active
                           ? "bg-white text-zinc-950 font-black border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#000000]"
                           : "text-zinc-600 hover:text-zinc-950 font-bold hover:bg-white/60 border-2 border-transparent dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800/60"
@@ -160,9 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
                           active ? "text-orange-600" : "text-zinc-500 dark:text-zinc-400"
                         }`}
                       />
-                      <span className={item.href === "/" ? "inline" : "hidden xs:inline sm:inline"}>
-                        {item.label}
-                      </span>
+                      <span>{item.label}</span>
                     </Link>
                   );
                 })}
@@ -185,7 +207,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Authenticated Controls */}
             {isConnected && (
               <>
-                {/* Connection Status Indicator */}
+                {/* Connection Status Indicator - Desktop */}
                 <div
                   className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/50 border-2 border-zinc-950 dark:border-zinc-700 text-emerald-950 dark:text-emerald-300 text-xs font-bold font-mono shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000]"
                   title="COROS MCP terhubung aktif"
@@ -194,24 +216,24 @@ export const Header: React.FC<HeaderProps> = ({
                   <span>Online</span>
                 </div>
 
-                {/* Manual Sync Button */}
+                {/* Manual Sync Button - Desktop */}
                 <button
                   onClick={handleSync}
                   disabled={isSyncing}
-                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-black rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-950 dark:text-zinc-100 transition-all shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-950 dark:text-zinc-100 transition-all shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50"
                   title="Sync with COROS MCP"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin text-orange-600" : ""}`}
                   />
-                  <span className="hidden sm:inline">{isSyncing ? "Syncing..." : "Sync"}</span>
+                  <span>{isSyncing ? "Syncing..." : "Sync"}</span>
                 </button>
 
-                {/* AI Coach Trigger */}
+                {/* AI Coach Trigger - Desktop */}
                 {onToggleAi && (
                   <button
                     onClick={onToggleAi}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-black rounded-xl border-2 border-zinc-950 dark:border-zinc-700 transition-all shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
+                    className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl border-2 border-zinc-950 dark:border-zinc-700 transition-all shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
                       isAiOpen
                         ? "bg-orange-500 text-white"
                         : "bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-950 dark:text-zinc-100"
@@ -219,32 +241,181 @@ export const Header: React.FC<HeaderProps> = ({
                     title="Buka AI Coach Drawer"
                   >
                     <Bot className={`h-3.5 w-3.5 ${isAiOpen ? "text-white" : "text-orange-600"}`} />
-                    <span className="hidden md:inline">AI Coach</span>
+                    <span>AI Coach</span>
                   </button>
                 )}
 
-                {/* Settings Trigger */}
+                {/* Settings Trigger - Desktop */}
                 <button
                   onClick={handleOpenSettings}
-                  className="p-1.5 text-zinc-950 dark:text-zinc-100 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                  className="hidden md:flex p-1.5 text-zinc-950 dark:text-zinc-100 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                   title="Pengaturan & Kunci API"
                 >
                   <Settings className="h-4 w-4" />
                 </button>
 
-                {/* Disconnect Button */}
+                {/* Disconnect Button - Desktop */}
                 <button
                   onClick={handleDisconnect}
-                  className="hidden sm:block p-1.5 text-rose-600 dark:text-rose-400 bg-white dark:bg-zinc-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                  className="hidden md:flex p-1.5 text-rose-600 dark:text-rose-400 bg-white dark:bg-zinc-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                   title="Putuskan Sambungan COROS"
                 >
                   <LogOut className="h-4 w-4" />
+                </button>
+
+                {/* Mobile Menu Hamburger Toggle */}
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  aria-label={isMobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+                  aria-expanded={isMobileMenuOpen}
+                  className="md:hidden flex items-center justify-center p-2 text-zinc-950 dark:text-zinc-100 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                >
+                  {isMobileMenuOpen ? (
+                    <X className="h-4 w-4 text-orange-600" />
+                  ) : (
+                    <Menu className="h-4 w-4" />
+                  )}
                 </button>
               </>
             )}
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer Panel */}
+        {isConnected && isMobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 z-40 bg-[#F6F4EE] dark:bg-[#09090b] border-b-2 border-zinc-950 dark:border-zinc-800 shadow-[0_6px_0_0_#09090b] dark:shadow-[0_6px_0_0_#000000] p-4 space-y-4 max-h-[calc(100vh-70px)] overflow-y-auto">
+            {/* Nav Route Links */}
+            <div>
+              <div className="text-[10px] font-mono font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2 px-1">
+                Menu Navigasi
+              </div>
+              <div className="space-y-1.5">
+                {navLinks.map((item) => {
+                  const Icon = item.icon;
+                  const active = isLinkActive(item.href, item.exact);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                        active
+                          ? "bg-white text-zinc-950 border-zinc-950 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2.5px_2.5px_0px_0px_#000000]"
+                          : "bg-white/70 dark:bg-zinc-900/80 text-zinc-700 dark:text-zinc-300 border-zinc-950/20 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-800 hover:border-zinc-950"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-8 w-8 items-center justify-center rounded-lg border-2 ${
+                            active
+                              ? "bg-orange-500 text-white border-zinc-950"
+                              : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="text-left">
+                          <div className="text-sm font-black text-zinc-950 dark:text-zinc-100">
+                            {item.label}
+                          </div>
+                          <div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                            {item.description}
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight
+                        className={`h-4 w-4 ${
+                          active ? "text-orange-600" : "text-zinc-400 dark:text-zinc-600"
+                        }`}
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Quick Actions & Status Section */}
+            <div className="pt-3 border-t-2 border-zinc-200 dark:border-zinc-800 space-y-2.5">
+              <div className="text-[10px] font-mono font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1 flex items-center justify-between">
+                <span>Aksi & Integrasi</span>
+                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse border border-zinc-950 dark:border-zinc-700" />
+                  COROS Online
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {/* Sync Action */}
+                <button
+                  onClick={() => {
+                    handleSync();
+                  }}
+                  disabled={isSyncing}
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 transition-all"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 ${
+                      isSyncing ? "animate-spin text-orange-600" : "text-zinc-700 dark:text-zinc-300"
+                    }`}
+                  />
+                  <span>{isSyncing ? "Syncing..." : "Sync COROS"}</span>
+                </button>
+
+                {/* AI Coach Action */}
+                {onToggleAi && (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onToggleAi();
+                    }}
+                    className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all ${
+                      isAiOpen
+                        ? "bg-orange-500 text-white"
+                        : "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100"
+                    }`}
+                  >
+                    <Bot className={`h-3.5 w-3.5 ${isAiOpen ? "text-white" : "text-orange-600"}`} />
+                    <span>AI Coach</span>
+                  </button>
+                )}
+
+                {/* Settings Action */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleOpenSettings();
+                  }}
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                >
+                  <Settings className="h-3.5 w-3.5 text-zinc-700 dark:text-zinc-300" />
+                  <span>Pengaturan</span>
+                </button>
+
+                {/* Disconnect Action */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleDisconnect();
+                  }}
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border-2 border-zinc-950 dark:border-zinc-700 text-rose-700 dark:text-rose-400 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                >
+                  <LogOut className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                  <span>Putuskan</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
+
+      {/* Mobile Backdrop Overlay */}
+      {isConnected && isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 top-[57px] sm:top-[61px] bg-zinc-950/40 backdrop-blur-[2px] z-30 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Standalone Settings Modal if triggered internally */}
       {externalOnOpenSettings === undefined && (
