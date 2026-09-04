@@ -11,10 +11,18 @@ import { EvoLabSuite } from "@/components/EvoLabSuite";
 import { RecoveryRadar } from "@/components/RecoveryRadar";
 import { TrainingReadinessCard } from "@/components/TrainingReadinessCard";
 import { ActivityFeed } from "@/components/ActivityFeed";
-import { AiCoachDrawer } from "@/components/AiCoachDrawer";
-import { SettingsModal } from "@/components/SettingsModal";
+import dynamic from "next/dynamic";
 import { Trophy, Mountain, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
 import { useDashboardData, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
+
+const AiCoachDrawer = dynamic(
+  () => import("@/components/AiCoachDrawer").then((mod) => mod.AiCoachDrawer),
+  { ssr: false }
+);
+const SettingsModal = dynamic(
+  () => import("@/components/SettingsModal").then((mod) => mod.SettingsModal),
+  { ssr: false }
+);
 
 export default function DashboardPage() {
   const { data: dashboardData, isLoading: loading } = useDashboardData();

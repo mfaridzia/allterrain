@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
   Mountain,
@@ -170,12 +171,13 @@ export default function TrailPlannerPage() {
   const activeRace = customRace;
 
   // Redirect to landing page if disconnected
+  const router = useRouter();
   const { data: authStatus } = useAuthStatus();
   useEffect(() => {
     if (authStatus && !authStatus.connected) {
-      window.location.href = "/";
+      router.replace("/");
     }
-  }, [authStatus]);
+  }, [authStatus, router]);
 
   // Sync official COT when active race changes
   useEffect(() => {

@@ -5,19 +5,35 @@ import { getCurrentAthleteId } from "@/lib/session";
 export async function GET(req: NextRequest) {
   const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
 
-  const aiProvider = await getSetting("ai_provider", "gemini", athleteId);
-  const aiModelName = await getSetting("ai_model_name", "gemini-2.5-flash", athleteId);
+  // Parallel fetch to eliminate async waterfall (Vercel Best Practice: async-parallel)
+  const [
+    aiProvider,
+    aiModelName,
+    geminiKey,
+    openAiKey,
+    claudeKey,
+    deepseekKey,
+    trailTargetRaceDistStr,
+    trailTargetRaceElevStr,
+    trailWeeklyVertTargetStr,
+    trailTrainingTier,
+  ] = await Promise.all([
+    getSetting("ai_provider", "gemini", athleteId),
+    getSetting("ai_model_name", "gemini-2.5-flash", athleteId),
+    getSetting("gemini_api_key", "", athleteId),
+    getSetting("openai_api_key", "", athleteId),
+    getSetting("claude_api_key", "", athleteId),
+    getSetting("deepseek_api_key", "", athleteId),
+    getSetting("trail_target_race_dist", "36", athleteId),
+    getSetting("trail_target_race_elev", "2200", athleteId),
+    getSetting("trail_weekly_vert_target", "1000", athleteId),
+    getSetting("trail_training_tier", "finisher", athleteId),
+  ]);
 
-  // Check if keys configured either per-athlete in db or globally in process.env
-  const hasGeminiKey = !!(await getSetting("gemini_api_key", "", athleteId)) || !!process.env.GEMINI_API_KEY;
-  const hasOpenAiKey = !!(await getSetting("openai_api_key", "", athleteId)) || !!process.env.OPENAI_API_KEY;
-  const hasClaudeKey = !!(await getSetting("claude_api_key", "", athleteId)) || !!process.env.ANTHROPIC_API_KEY;
-  const hasDeepseekKey = !!(await getSetting("deepseek_api_key", "", athleteId)) || !!process.env.DEEPSEEK_API_KEY;
-
-  const trailTargetRaceDist = Number(await getSetting("trail_target_race_dist", "36", athleteId));
-  const trailTargetRaceElev = Number(await getSetting("trail_target_race_elev", "2200", athleteId));
-  const trailWeeklyVertTarget = Number(await getSetting("trail_weekly_vert_target", "1000", athleteId));
-  const trailTrainingTier = await getSetting("trail_training_tier", "finisher", athleteId);
+  const hasGeminiKey = !!geminiKey || !!process.env.GEMINI_API_KEY;
+  const hasOpenAiKey = !!openAiKey || !!process.env.OPENAI_API_KEY;
+  const hasClaudeKey = !!claudeKey || !!process.env.ANTHROPIC_API_KEY;
+  const hasDeepseekKey = !!deepseekKey || !!process.env.DEEPSEEK_API_KEY;
 
   return NextResponse.json({
     aiProvider,
@@ -29,9 +45,9 @@ export async function GET(req: NextRequest) {
       deepseek: hasDeepseekKey,
     },
     trailSettings: {
-      targetRaceDist: trailTargetRaceDist,
-      targetRaceElev: trailTargetRaceElev,
-      weeklyVertTarget: trailWeeklyVertTarget,
+      targetRaceDist: Number(trailTargetRaceDistStr),
+      targetRaceElev: Number(trailTargetRaceElevStr),
+      weeklyVertTarget: Number(trailWeeklyVertTargetStr),
       trainingTier: trailTrainingTier,
     },
   });

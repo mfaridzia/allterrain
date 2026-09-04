@@ -32,19 +32,37 @@ export async function GET(req: NextRequest) {
 
   const db = getDb();
 
-  // 1. Fetch PMC Series (Daily Metrics) for this athlete
-  const dailyRes = await db.execute({
-    sql: `SELECT * FROM daily_metrics WHERE athlete_id = ? ORDER BY date ASC`,
-    args: [athleteId],
-  });
-  const dailyRows = dailyRes.rows as any[];
+  // Parallel fetch to eliminate async waterfall (Vercel Best Practice: async-parallel)
+  const [
+    dailyRes,
+    actRes,
+    evolabJson,
+    targetRaceDistStr,
+    targetRaceElevStr,
+    weeklyVertTargetStr,
+    trainingTierStr,
+  ] = await Promise.all([
+    db.execute({
+      sql: `SELECT * FROM daily_metrics WHERE athlete_id = ? ORDER BY date ASC`,
+      args: [athleteId],
+    }),
+    db.execute({
+      sql: `SELECT * FROM activities WHERE athlete_id = ? ORDER BY start_time DESC`,
+      args: [athleteId],
+    }),
+    getSetting("coros_evolab_cache", "", athleteId),
+    getSetting("trail_target_race_dist", "36", athleteId),
+    getSetting("trail_target_race_elev", "2200", athleteId),
+    getSetting("trail_weekly_vert_target", "1000", athleteId),
+    getSetting("trail_training_tier", "finisher", athleteId),
+  ]);
 
-  // 2. Fetch Activities for this athlete
-  const actRes = await db.execute({
-    sql: `SELECT * FROM activities WHERE athlete_id = ? ORDER BY start_time DESC`,
-    args: [athleteId],
-  });
+  const dailyRows = dailyRes.rows as any[];
   const activities = actRes.rows as any[];
+  const targetRaceDist = Number(targetRaceDistStr || "36");
+  const targetRaceElev = Number(targetRaceElevStr || "2200");
+  const weeklyVertTarget = Number(weeklyVertTargetStr || "1000");
+  const trainingTier = (trainingTierStr || "finisher") as "finisher" | "elite";
 
   // 3. Current Summary
   const latestDaily = dailyRows[dailyRows.length - 1] || null;
@@ -158,7 +176,6 @@ export async function GET(req: NextRequest) {
     totalDecouplingCount > 0 ? Math.round((totalDecouplingSum / totalDecouplingCount) * 10) / 10 : 3.5;
 
   // Road Race Predictor: use real COROS EvoLab metrics if cached, else derive from CTL
-  const evolabJson = await getSetting("coros_evolab_cache", "", athleteId);
   let racePredictor = {
     fiveKmSeconds: 1351,
     tenKmSeconds: 2812,
@@ -332,11 +349,6 @@ export async function GET(req: NextRequest) {
     scaleLabel: "Standard rTSS",
     scaleDescription: "Threshold pace/power scale calibrated to Coggan rTSS model (Threshold: 4:42 /km).",
   };
-
-  const targetRaceDist = Number(await getSetting("trail_target_race_dist", "36", athleteId));
-  const targetRaceElev = Number(await getSetting("trail_target_race_elev", "2200", athleteId));
-  const weeklyVertTarget = Number(await getSetting("trail_weekly_vert_target", "1000", athleteId));
-  const trainingTier = (await getSetting("trail_training_tier", "finisher", athleteId)) as "finisher" | "elite";
 
   return NextResponse.json({
     connected: isConnected,

@@ -30,18 +30,25 @@ import {
 import { formatPace, calculateKmEffort, calculateGapPace } from "@/lib/analytics";
 import { ActivityItem } from "@/components/ActivityFeed";
 import { Header } from "@/components/Header";
-import { ActivityShareModal } from "@/components/ActivityShareModal";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useDashboardData } from "@/lib/queries";
 
+const ActivityShareModal = dynamic(
+  () => import("@/components/ActivityShareModal").then((mod) => mod.ActivityShareModal),
+  { ssr: false }
+);
+
 export default function ActivitiesPage() {
+  const router = useRouter();
   const { data: dashboardData, isLoading: loading } = useDashboardData();
   const activities: ActivityItem[] = dashboardData?.activities || [];
 
   useEffect(() => {
     if (dashboardData && !dashboardData.connected) {
-      window.location.href = "/";
+      router.replace("/");
     }
-  }, [dashboardData]);
+  }, [dashboardData, router]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<string>("all");
