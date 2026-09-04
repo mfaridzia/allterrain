@@ -143,8 +143,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 placeholder={configuredKeys[provider] ? "Leave blank to keep existing key" : "Enter API Key..."}
                 className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 placeholder-zinc-500 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
               />
-              <p className="text-[10px] text-zinc-600 font-medium">
-                Your API key is saved locally in SQLite and never transmitted to third parties.
+              <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium">
+                Your API key is stored securely in your encrypted database and never transmitted to third parties.
               </p>
             </div>
           )}

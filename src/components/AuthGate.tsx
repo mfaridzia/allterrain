@@ -28,10 +28,17 @@ export const AuthGate: React.FC = () => {
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-[#F6F4EE]">
       <div className="max-w-3xl w-full text-center space-y-8">
-        {/* Glow & Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-200 border-2 border-zinc-950 text-orange-950 text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#09090b]">
-          <Zap className="h-4 w-4 text-orange-600 stroke-[2.5]" />
-          Official COROS MCP Integration
+        {/* Glow & Badge with Official COROS Logo */}
+        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white dark:bg-zinc-900 border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/coros-logo.png"
+            alt="COROS"
+            className="h-4.5 w-auto object-contain dark:brightness-0 dark:invert"
+          />
+          <span className="text-[11px] font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-100 border-l-2 border-zinc-300 dark:border-zinc-700 pl-2.5">
+            Official MCP Integration
+          </span>
         </div>
 
         {/* Hero Title */}
@@ -123,9 +130,9 @@ export const AuthGate: React.FC = () => {
         </div>
 
         {/* Security & Privacy Badge */}
-        <div className="pt-4 flex items-center justify-center gap-2 text-xs text-zinc-600 font-bold">
+        <div className="pt-4 flex items-center justify-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 font-bold">
           <ShieldCheck className="h-4 w-4 text-emerald-600 stroke-[2.5]" />
-          <span>Private & Secure: Tokens & athlete metrics stored locally in your SQLite database.</span>
+          <span>Private & Secure: Tokens & athlete metrics are stored in your private encrypted database. Never shared with third parties.</span>
         </div>
       </div>
     </div>
