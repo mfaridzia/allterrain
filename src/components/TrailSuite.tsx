@@ -23,6 +23,7 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
+import { useUpdateSettingsMutation } from "@/lib/queries";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import {
   estimateTrailRaceFinishTime,
@@ -75,6 +76,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
   const [weeklyVertTarget, setWeeklyVertTarget] = useState<number>(savedWeeklyVertTarget || 1000);
   const [vertWindow, setVertWindow] = useState<"this_week" | "rolling_7d">("this_week");
   const [trainingTier, setTrainingTier] = useState<"finisher" | "elite">(savedTrainingTier || "finisher");
+  const updateSettings = useUpdateSettingsMutation();
 
   // Load from localStorage on mount (hydration safe)
   useEffect(() => {
@@ -119,16 +121,12 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
     } catch (_) {}
 
     const timer = setTimeout(() => {
-      fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          trailTargetRaceDist: raceDistance,
-          trailTargetRaceElev: raceElevation,
-          trailWeeklyVertTarget: weeklyVertTarget,
-          trailTrainingTier: trainingTier,
-        }),
-      }).catch(() => {});
+      updateSettings.mutate({
+        trailTargetRaceDist: raceDistance,
+        trailTargetRaceElev: raceElevation,
+        trailWeeklyVertTarget: weeklyVertTarget,
+        trailTrainingTier: trainingTier,
+      });
     }, 600);
 
     return () => clearTimeout(timer);

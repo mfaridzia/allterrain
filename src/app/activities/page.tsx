@@ -31,10 +31,18 @@ import { formatPace, calculateKmEffort, calculateGapPace } from "@/lib/analytics
 import { ActivityItem } from "@/components/ActivityFeed";
 import { Header } from "@/components/Header";
 import { ActivityShareModal } from "@/components/ActivityShareModal";
+import { useDashboardData } from "@/lib/queries";
 
 export default function ActivitiesPage() {
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: dashboardData, isLoading: loading } = useDashboardData();
+  const activities: ActivityItem[] = dashboardData?.activities || [];
+
+  useEffect(() => {
+    if (dashboardData && !dashboardData.connected) {
+      window.location.href = "/";
+    }
+  }, [dashboardData]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<string>("all");
   const [selectedSports, setSelectedSports] = useState<string[]>(["all"]);
@@ -44,31 +52,6 @@ export default function ActivitiesPage() {
   const [sharingActivity, setSharingActivity] = useState<ActivityItem | null>(null);
 
   const PAGE_SIZE = 20;
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/analytics/dashboard");
-        if (res.ok) {
-          const data = await res.json();
-          if (!data.connected) {
-            window.location.href = "/";
-            return;
-          }
-          setActivities(data.activities || []);
-        } else {
-          window.location.href = "/";
-        }
-      } catch (err) {
-        console.error("Failed to load activities:", err);
-        window.location.href = "/";
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
 
   // Extract distinct available months from activities (sorted descending)
   const availableMonths = useMemo(() => {

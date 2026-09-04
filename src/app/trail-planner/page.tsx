@@ -41,6 +41,7 @@ import {
   Split,
   Trash2,
 } from "lucide-react";
+import { useAuthStatus } from "@/lib/queries";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -169,24 +170,12 @@ export default function TrailPlannerPage() {
   const activeRace = customRace;
 
   // Redirect to landing page if disconnected
+  const { data: authStatus } = useAuthStatus();
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch("/api/auth/coros/status");
-        if (res.ok) {
-          const data = await res.json();
-          if (!data.connected) {
-            window.location.href = "/";
-          }
-        } else {
-          window.location.href = "/";
-        }
-      } catch {
-        window.location.href = "/";
-      }
+    if (authStatus && !authStatus.connected) {
+      window.location.href = "/";
     }
-    checkAuth();
-  }, []);
+  }, [authStatus]);
 
   // Sync official COT when active race changes
   useEffect(() => {

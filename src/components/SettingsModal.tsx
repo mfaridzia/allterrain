@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Settings, X, Key, Cpu, Check, AlertCircle } from "lucide-react";
+import { useAppSettings, useUpdateSettingsMutation } from "@/lib/queries";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -9,31 +10,28 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const { data: settingsData } = useAppSettings();
+  const updateSettingsMutation = useUpdateSettingsMutation();
+
   const [provider, setProvider] = useState<string>("gemini");
   const [modelName, setModelName] = useState<string>("gemini-2.5-flash");
   const [apiKey, setApiKey] = useState<string>("");
-  const [configuredKeys, setConfiguredKeys] = useState<Record<string, boolean>>({});
-  const [saving, setSaving] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
   useEffect(() => {
-    if (isOpen) {
-      fetch("/api/settings")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.aiProvider) setProvider(data.aiProvider);
-          if (data.aiModelName) setModelName(data.aiModelName);
-          if (data.configuredKeys) setConfiguredKeys(data.configuredKeys);
-        })
-        .catch((err) => console.error("Failed to load settings:", err));
+    if (settingsData) {
+      if (settingsData.aiProvider) setProvider(settingsData.aiProvider);
+      if (settingsData.aiModelName) setModelName(settingsData.aiModelName);
     }
-  }, [isOpen]);
+  }, [settingsData]);
 
   if (!isOpen) return null;
 
+  const configuredKeys = settingsData?.configuredKeys || {};
+  const saving = updateSettingsMutation.isPending;
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setSavedSuccess(false);
 
     try {
@@ -49,26 +47,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         if (provider === "deepseek") payload.deepseekApiKey = apiKey.trim();
       }
 
-      const res = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error("Failed to save settings");
+      await updateSettingsMutation.mutateAsync(payload);
 
       setSavedSuccess(true);
       setApiKey("");
-      // Update key flags
-      setConfiguredKeys((prev) => ({
-        ...prev,
-        [provider]: true,
-      }));
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
       console.error(err);
-    } finally {
-      setSaving(false);
     }
   };
 

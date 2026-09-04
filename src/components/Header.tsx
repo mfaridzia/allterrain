@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,6 +14,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { SettingsModal } from "./SettingsModal";
+import { useAuthStatus, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
 
 export interface HeaderProps {
   connected?: boolean;
@@ -37,43 +38,24 @@ export const Header: React.FC<HeaderProps> = ({
   extraActions,
 }) => {
   const pathname = usePathname();
-  const [internalConnected, setInternalConnected] = useState<boolean>(true);
-  const [internalSyncing, setInternalSyncing] = useState<boolean>(false);
   const [internalSettingsOpen, setInternalSettingsOpen] = useState<boolean>(false);
 
-  // If connected is not passed from page props, check status automatically
-  useEffect(() => {
-    if (externalConnected === undefined) {
-      fetch("/api/auth/coros/status")
-        .then((res) => res.json())
-        .then((data) => {
-          setInternalConnected(!!data.connected);
-        })
-        .catch(() => {
-          setInternalConnected(false);
-        });
-    }
-  }, [externalConnected]);
+  const { data: authData } = useAuthStatus();
+  const syncMutation = useSyncCorosMutation();
+  const disconnectMutation = useDisconnectMutation();
 
-  const isConnected = externalConnected !== undefined ? externalConnected : internalConnected;
-  const isSyncing = externalIsSyncing !== undefined ? externalIsSyncing : internalSyncing;
+  const isConnected = externalConnected !== undefined ? externalConnected : !!authData?.connected;
+  const isSyncing = externalIsSyncing !== undefined ? externalIsSyncing : syncMutation.isPending;
 
   const handleSync = async () => {
     if (externalOnSync) {
       externalOnSync();
       return;
     }
-
     try {
-      setInternalSyncing(true);
-      const res = await fetch("/api/coros/sync", { method: "POST" });
-      if (res.ok) {
-        window.location.reload();
-      }
+      await syncMutation.mutateAsync();
     } catch (err) {
       console.error("Manual sync failed:", err);
-    } finally {
-      setInternalSyncing(false);
     }
   };
 
@@ -93,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
 
     if (window.confirm("Apakah Anda yakin ingin memutuskan sambungan akun COROS?")) {
       try {
-        await fetch("/api/auth/coros/status", { method: "POST" });
+        await disconnectMutation.mutateAsync();
         window.location.href = "/";
       } catch (err) {
         console.error("Disconnect failed:", err);

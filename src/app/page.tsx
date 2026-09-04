@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { Header } from "@/components/Header";
 import { AuthGate } from "@/components/AuthGate";
 import { PmcChart } from "@/components/PmcChart";
@@ -14,56 +14,39 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { AiCoachDrawer } from "@/components/AiCoachDrawer";
 import { SettingsModal } from "@/components/SettingsModal";
 import { Trophy, Mountain, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
+import { useDashboardData, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
 
 export default function DashboardPage() {
-  const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const { data: dashboardData, isLoading: loading } = useDashboardData();
+  const syncMutation = useSyncCorosMutation();
+  const disconnectMutation = useDisconnectMutation();
+  const isSyncing = syncMutation.isPending;
+
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"evolab" | "trail">("evolab");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [scaleMode, setScaleMode] = useState<"coros" | "intervals">("coros");
 
-  const fetchDashboard = useCallback(async () => {
-    try {
-      const res = await fetch("/api/analytics/dashboard");
-      const data = await res.json();
-      setDashboardData(data);
-    } catch (err) {
-      console.error("Dashboard fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
-
   const handleSync = async () => {
-    setIsSyncing(true);
     setSyncMessage(null);
     try {
-      const res = await fetch("/api/coros/sync", { method: "POST" });
-      const json = await res.json();
+      const json = await syncMutation.mutateAsync();
       if (json.success) {
         setSyncMessage(`Synced ${json.syncedActivities || 0} activities & recalculated PMC.`);
-        await fetchDashboard();
       } else {
         setSyncMessage(`Sync notice: ${json.error || "Connected to MCP"}`);
       }
     } catch (err: any) {
       setSyncMessage(`Sync notice: ${err.message}`);
     } finally {
-      setIsSyncing(false);
       setTimeout(() => setSyncMessage(null), 5000);
     }
   };
 
   const handleDisconnect = async () => {
     if (!confirm("Are you sure you want to disconnect your COROS account?")) return;
-    await fetch("/api/auth/coros/status", { method: "POST" });
+    await disconnectMutation.mutateAsync();
     window.location.href = "/";
   };
 

@@ -14,6 +14,7 @@
     "@ai-sdk/openai": "^4.0.57",
     "@libsql/client": "^0.18.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@tanstack/react-query": "^5.102.8",
     "ai": "^7.0.91",
     "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",

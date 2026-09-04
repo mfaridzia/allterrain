@@ -2,37 +2,26 @@
 
 import React, { useState } from "react";
 import { Zap, ShieldCheck, Activity, Mountain, Brain, ArrowRight, Key } from "lucide-react";
+import { useManualTokenMutation } from "@/lib/queries";
 
 export const AuthGate: React.FC = () => {
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualToken, setManualToken] = useState("");
-  const [savingManual, setSavingManual] = useState(false);
   const [manualError, setManualError] = useState("");
+  const manualTokenMutation = useManualTokenMutation();
+  const savingManual = manualTokenMutation.isPending;
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualToken.trim()) return;
 
-    setSavingManual(true);
     setManualError("");
 
     try {
-      // Save direct token to settings
-      const res = await fetch("/api/auth/coros/manual", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: manualToken.trim() }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to save token");
-      }
-
+      await manualTokenMutation.mutateAsync(manualToken.trim());
       window.location.reload();
     } catch (err: any) {
       setManualError(err.message || "Failed to set manual token");
-    } finally {
-      setSavingManual(false);
     }
   };
 
