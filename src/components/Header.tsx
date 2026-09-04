@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b-2 border-zinc-950 bg-white/95 backdrop-blur-md px-3 sm:px-6 py-2.5 sm:py-3 shadow-[0_3px_0px_0px_#09090b] transition-colors">
+      <header className="sticky top-0 z-40 w-full border-b-2 border-zinc-950 dark:border-zinc-800 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md px-3 sm:px-6 py-2.5 sm:py-3 shadow-[0_3px_0px_0px_#09090b] dark:shadow-[0_3px_0px_0px_#000000] transition-colors">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand & Left Navigation */}
           <div className="flex items-center gap-3 sm:gap-6 shrink-0">
@@ -121,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
               href="/"
               className="flex items-center gap-2.5 group transition-transform active:scale-95"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-white border-2 border-zinc-950 shadow-[2.5px_2.5px_0px_0px_#09090b] group-hover:-translate-y-0.5 transition-transform">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-white border-2 border-zinc-950 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] group-hover:-translate-y-0.5 transition-transform">
                 <svg
                   className="h-5 w-5"
                   viewBox="0 0 24 24"
@@ -133,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </svg>
               </div>
               <div className="flex items-center">
-                <span className="text-base sm:text-lg font-black tracking-tight text-zinc-950 flex items-center">
+                <span className="text-base sm:text-lg font-black tracking-tight text-zinc-950 dark:text-zinc-100 flex items-center">
                   ALL<span className="text-orange-600">TERRAIN</span>
                 </span>
               </div>
@@ -141,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Primary Neo-Brutalist Segmented Route Navigation - only visible when connected */}
             {isConnected && (
-              <nav className="flex items-center gap-1 p-1 bg-[#F0EDE4] rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
+              <nav className="flex items-center gap-1 p-1 bg-[#F0EDE4] dark:bg-zinc-900 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000]">
                 {navLinks.map((item) => {
                   const Icon = item.icon;
                   const active = isLinkActive(item.href, item.exact);
@@ -151,13 +151,13 @@ export const Header: React.FC<HeaderProps> = ({
                       href={item.href}
                       className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs rounded-lg transition-all ${
                         active
-                          ? "bg-white text-zinc-950 font-black border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
-                          : "text-zinc-600 hover:text-zinc-950 font-bold hover:bg-white/60 border-2 border-transparent"
+                          ? "bg-white text-zinc-950 font-black border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#000000]"
+                          : "text-zinc-600 hover:text-zinc-950 font-bold hover:bg-white/60 border-2 border-transparent dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800/60"
                       }`}
                     >
                       <Icon
                         className={`h-3.5 w-3.5 ${
-                          active ? "text-orange-600" : "text-zinc-500"
+                          active ? "text-orange-600" : "text-zinc-500 dark:text-zinc-400"
                         }`}
                       />
                       <span className={item.href === "/" ? "inline" : "hidden xs:inline sm:inline"}>

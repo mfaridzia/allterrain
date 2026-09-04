@@ -140,6 +140,10 @@ body {
   background-color: #18181b;
 }
 
+.dark .bg-white\/95 {
+  background-color: rgba(9, 9, 11, 0.95);
+}
+
 .dark .bg-\[\#FAF9F5\],
 .dark .bg-\[\#faf9f5\],
 .dark .bg-\[\#FAF8F5\],
@@ -315,6 +319,12 @@ body {
 }
 .dark .shadow-\[0_2px_0px_0px_\#09090b\] {
   box-shadow: 0 2px 0px 0px #000000;
+}
+.dark .shadow-\[0_3px_0px_0px_\#09090b\] {
+  box-shadow: 0 3px 0px 0px #000000;
+}
+.dark .shadow-\[2\.5px_2\.5px_0px_0px_\#09090b\] {
+  box-shadow: 2.5px 2.5px 0px 0px #000000;
 }
 .dark .shadow-\[0_-2px_0px_0px_\#09090b\] {
   box-shadow: 0 -2px 0px 0px #000000;
