@@ -29,12 +29,24 @@ export const AuthGate: React.FC = () => {
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-[#F6F4EE]">
       <div className="max-w-3xl w-full text-center space-y-8">
         {/* Glow & Badge with Official COROS Logo */}
-        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white dark:bg-zinc-900 border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000]">
+        <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white dark:bg-zinc-900 border-2 border-zinc-950 dark:border-zinc-700 shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000]">
+          {/* Light Mode: Red emblem + dark typography */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/coros-logo.png"
             alt="COROS"
-            className="h-4.5 w-auto object-contain dark:brightness-0 dark:invert"
+            width={78}
+            height={19}
+            className="h-[19px] w-[78px] object-contain shrink-0 dark:hidden"
+          />
+          {/* Dark Mode: Red emblem + white typography */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/coros-logo-dark.png"
+            alt="COROS"
+            width={78}
+            height={19}
+            className="h-[19px] w-[78px] object-contain shrink-0 hidden dark:block"
           />
           <span className="text-[11px] font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-100 border-l-2 border-zinc-300 dark:border-zinc-700 pl-2.5">
             Official MCP Integration
