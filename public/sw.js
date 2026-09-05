@@ -73,7 +73,7 @@ self.addEventListener("fetch", (event) => {
           if (cached) return cached;
           const fallback = await caches.match("/");
           if (fallback) return fallback;
-          return new Response("Offline. Harap periksa koneksi internet Anda.", {
+          return new Response("Offline. Please check your internet connection.", {
             headers: { "Content-Type": "text/plain; charset=utf-8" },
           });
         })

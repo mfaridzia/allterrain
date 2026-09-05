@@ -111,7 +111,7 @@ export const PwaInstallPrompt: React.FC = () => {
         <button
           onClick={handleDismiss}
           className="absolute top-2.5 right-2.5 p-1 rounded-lg text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-          aria-label="Tutup saran instalasi"
+          aria-label="Dismiss install prompt"
         >
           <X className="h-4 w-4" />
         </button>
@@ -133,18 +133,18 @@ export const PwaInstallPrompt: React.FC = () => {
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-mono font-black uppercase tracking-wider text-orange-600 dark:text-orange-500">
-                PWA Web App
+                Install Web App
               </span>
             </div>
             <h3 className="text-sm font-black tracking-tight leading-tight">
               {showIosBanner
-                ? "Pasang ALLTERRAIN di iPhone"
-                : "Pasang Aplikasi ALLTERRAIN"}
+                ? "Add ALLTERRAIN to Home Screen"
+                : "Install ALLTERRAIN App"}
             </h3>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-snug">
               {showIosBanner
-                ? "Gunakan seperti aplikasi native tanpa bilah browser untuk akses latihan COROS yang lebih cepat."
-                : "Akses cepat langsung dari layar utama ponsel dengan pengalaman fullscreen dan offline caching."}
+                ? "Launch like a native app without browser bars for instant access to your COROS workout analytics."
+                : "Fast home screen access with a fullscreen experience, smoother performance, and offline caching."}
             </p>
           </div>
         </div>
@@ -157,9 +157,9 @@ export const PwaInstallPrompt: React.FC = () => {
                 1
               </span>
               <span className="flex-1 flex items-center gap-1.5">
-                Ketuk ikon Bagikan
+                Tap the Share icon
                 <Share className="h-4 w-4 text-sky-600 dark:text-sky-400 inline shrink-0" />
-                di bilah bawah Safari
+                in Safari's bottom toolbar
               </span>
             </div>
 
@@ -168,9 +168,9 @@ export const PwaInstallPrompt: React.FC = () => {
                 2
               </span>
               <span className="flex-1 flex items-center gap-1.5">
-                Pilih
+                Scroll down and tap
                 <span className="font-bold flex items-center gap-1">
-                  Tambahkan ke Layar Utama
+                  Add to Home Screen
                   <PlusSquare className="h-3.5 w-3.5 text-zinc-700 dark:text-zinc-300 inline shrink-0" />
                 </span>
               </span>
@@ -181,7 +181,7 @@ export const PwaInstallPrompt: React.FC = () => {
                 onClick={handleDismiss}
                 className="px-3 py-1.5 text-xs font-black rounded-lg bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
               >
-                Saya Mengerti
+                Got It
               </button>
             </div>
           </div>
@@ -194,7 +194,7 @@ export const PwaInstallPrompt: React.FC = () => {
               onClick={handleDismiss}
               className="text-xs font-bold text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors px-2 py-1"
             >
-              Nanti Saja
+              Maybe Later
             </button>
 
             <button
@@ -202,7 +202,7 @@ export const PwaInstallPrompt: React.FC = () => {
               className="flex items-center gap-2 px-3.5 py-2 text-xs font-black rounded-xl bg-orange-500 hover:bg-orange-600 text-white border-2 border-zinc-950 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
             >
               <Download className="h-3.5 w-3.5" />
-              <span>Pasang ke Layar Utama</span>
+              <span>Install to Home Screen</span>
             </button>
           </div>
         )}
