@@ -119,7 +119,17 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
           <div className="text-2xl font-black text-zinc-950 font-mono">
             {sleepHours} <span className="text-xs font-normal text-zinc-500">hrs</span>
           </div>
-          <p className="text-[10px] text-zinc-600 font-medium truncate">Recovery duration</p>
+          <p className="text-[10px] text-zinc-600 font-medium truncate">
+            {(() => {
+              const num = parseFloat(sleepHours);
+              if (!isNaN(num) && num > 0) {
+                const h = Math.floor(num);
+                const m = Math.round((num - h) * 60);
+                return `${h}h ${m}m • Net duration`;
+              }
+              return "Recovery duration";
+            })()}
+          </p>
         </div>
       </div>
     </div>

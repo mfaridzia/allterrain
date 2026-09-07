@@ -192,10 +192,14 @@ export async function syncCorosData(athleteId: string = "athlete_primary"): Prom
         const content = blocks[i + 1] || "";
         const dateStr = `${rawD.slice(0, 4)}-${rawD.slice(4, 6)}-${rawD.slice(6, 8)}`;
         const sleepMatch = content.match(/Total:\s*(?:(\d+)h)?\s*(?:(\d+)min)?/i);
+        const awakeMatch = content.match(/Awake:\s*(\d+)\s*min/i);
         if (sleepMatch) {
           const h = parseInt(sleepMatch[1] || "0", 10);
           const m = parseInt(sleepMatch[2] || "0", 10);
-          dailySleepMap.set(dateStr, h * 3600 + m * 60);
+          const awakeM = awakeMatch ? parseInt(awakeMatch[1], 10) : 0;
+          // Calculate net sleep duration (Total sleep minus awake time, matching COROS app)
+          const netSeconds = Math.max(0, (h * 60 + m - awakeM) * 60);
+          dailySleepMap.set(dateStr, netSeconds);
         }
       }
     }
@@ -432,20 +436,37 @@ export async function syncCorosData(athleteId: string = "athlete_primary"): Prom
   const activityLoadsMap = new Map<string, number>();
   pastDays.forEach((p) => activityLoadsMap.set(p.date, p.daily_load));
 
-  // Build continuous calendar sequence from earliest activity to today
+  // Determine continuous date range: from earliest activity to latest available date
+  // (combining activities, sleep, resting HR, HRV, and local calendar date)
+  const localTodayStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Makassar", // Athlete timezone (WITA / UTC+8)
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const allDateCandidates = [
+    ...pastDays.map((p) => p.date),
+    ...dailySleepMap.keys(),
+    ...dailyRhrMap.keys(),
+    ...dailyHrvMap.keys(),
+    localTodayStr,
+  ].filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+
+  const startCalStr = allDateCandidates[0] || localTodayStr;
+  const endCalStr = allDateCandidates[allDateCandidates.length - 1] || localTodayStr;
+
   const continuousDailyLoads: { date: string; load: number }[] = [];
-  if (pastDays.length > 0) {
-    const startCal = new Date(pastDays[0].date);
-    const endCal = new Date();
-    let cur = new Date(startCal);
-    while (cur <= endCal) {
-      const dStr = cur.toISOString().split("T")[0];
-      continuousDailyLoads.push({
-        date: dStr,
-        load: activityLoadsMap.get(dStr) || 0,
-      });
-      cur.setDate(cur.getDate() + 1);
-    }
+  let cur = new Date(`${startCalStr}T00:00:00Z`);
+  const endLimit = new Date(`${endCalStr}T00:00:00Z`);
+
+  while (cur <= endLimit) {
+    const dStr = cur.toISOString().split("T")[0];
+    continuousDailyLoads.push({
+      date: dStr,
+      load: activityLoadsMap.get(dStr) || 0,
+    });
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
 
   const initialCtl = trainingLoadDays[trainingLoadDays.length - 1]?.longLoad || 115;
@@ -457,15 +478,23 @@ export async function syncCorosData(athleteId: string = "athlete_primary"): Prom
     initialAtl
   );
 
+  let lastKnownSleep = 25200;
+  let lastKnownRhr = 50;
+  let lastKnownHrv = 68;
+
   for (let i = 0; i < pmcSeries.length; i++) {
     const p = pmcSeries[i];
     const windowPastLoads = pmcSeries.slice(Math.max(0, i - 6), i + 1).map((x) => x.load);
     const { monotony, strain } = calculateMonotonyAndStrain(windowPastLoads);
     const acwrCalc = calculateAcwr(pmcSeries.slice(0, i + 1).map((x) => ({ date: x.date, load: x.load })));
 
-    const sleepSec = dailySleepMap.get(p.date) ?? 25200;
-    const rhr = dailyRhrMap.get(p.date) ?? 52;
-    const hrv = dailyHrvMap.get(p.date) ?? 68;
+    if (dailySleepMap.has(p.date)) lastKnownSleep = dailySleepMap.get(p.date)!;
+    if (dailyRhrMap.has(p.date)) lastKnownRhr = dailyRhrMap.get(p.date)!;
+    if (dailyHrvMap.has(p.date)) lastKnownHrv = dailyHrvMap.get(p.date)!;
+
+    const sleepSec = dailySleepMap.get(p.date) ?? lastKnownSleep;
+    const rhr = dailyRhrMap.get(p.date) ?? lastKnownRhr;
+    const hrv = dailyHrvMap.get(p.date) ?? lastKnownHrv;
     const hrvStatus = hrv >= 60 ? "NORMAL" : hrv >= 45 ? "MODERATE" : "TIRED";
 
     await db.execute({

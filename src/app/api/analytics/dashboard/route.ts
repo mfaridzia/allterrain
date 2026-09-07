@@ -252,19 +252,30 @@ export async function GET(req: NextRequest) {
   }
 
   // Generate full continuous calendar days sequence for Standard rTSS
+  const localTodayStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Makassar",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const latestDailyDate = dailyRows.length > 0 ? String(dailyRows[dailyRows.length - 1].date) : localTodayStr;
+  const targetEndStr = latestDailyDate > localTodayStr ? latestDailyDate : localTodayStr;
+
   const intervalsDailyLoads: { date: string; load: number }[] = [];
   if (activities.length > 0) {
     const earliestTime = Number(activities[activities.length - 1].start_time || Date.now());
-    const startCal = new Date(earliestTime);
-    const endCal = new Date();
-    let cur = new Date(startCal);
-    while (cur <= endCal) {
+    const startCalStr = new Date(earliestTime).toISOString().split("T")[0];
+    let cur = new Date(`${startCalStr}T00:00:00Z`);
+    const endLimit = new Date(`${targetEndStr}T00:00:00Z`);
+
+    while (cur <= endLimit) {
       const dStr = cur.toISOString().split("T")[0];
       intervalsDailyLoads.push({
         date: dStr,
         load: dailyRtssMap.get(dStr) || 0,
       });
-      cur.setDate(cur.getDate() + 1);
+      cur.setUTCDate(cur.getUTCDate() + 1);
     }
   }
 
