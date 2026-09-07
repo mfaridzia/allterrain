@@ -10,20 +10,19 @@ import {
   Tooltip,
   ReferenceLine,
   CartesianGrid,
-  Cell,
 } from "recharts";
 import {
   Layers,
   Clock,
   CheckCircle2,
   AlertTriangle,
-  Info,
   ChevronDown,
   ChevronUp,
   Percent,
   Timer,
   Flame,
   HelpCircle,
+  Hourglass,
 } from "lucide-react";
 import { WeeklyZoneData, WeeklyZoneProgressionResult } from "@/lib/analytics";
 
@@ -31,27 +30,55 @@ interface WeeklyZoneProgressionCardProps {
   progression: WeeklyZoneProgressionResult | null | undefined;
 }
 
+/**
+ * Format hours to human readable minutes & hours
+ * e.g. 0.5 -> "30 mnt"
+ * e.g. 0.6 -> "36 mnt"
+ * e.g. 4.4 -> "4j 24m (264 mnt)"
+ */
+function formatDurationReadable(hours: number): string {
+  const totalMin = Math.round((hours || 0) * 60);
+  if (totalMin === 0) return "0 mnt";
+  if (totalMin < 60) return `${totalMin} mnt`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m > 0 ? `${h}j ${m}m (${totalMin} mnt)` : `${h} jam (${totalMin} mnt)`;
+}
+
+function formatMinutesOnly(hours: number): string {
+  const totalMin = Math.round((hours || 0) * 60);
+  return `${totalMin} mnt`;
+}
+
 export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps> = ({
   progression,
 }) => {
   const [selectedWeeksCount, setSelectedWeeksCount] = useState<number>(8);
-  const [metricMode, setMetricMode] = useState<"percentage" | "hours">("percentage");
+  const [metricMode, setMetricMode] = useState<"percentage" | "minutes" | "hours">("percentage");
   const [zoneMode, setZoneMode] = useState<"seiler3" | "zones5">("seiler3");
   const [showExplainer, setShowExplainer] = useState<boolean>(false);
-  const [activeBarIndex, setActiveBarIndex] = useState<number | null>(null);
 
   const rawWeeks = progression?.weeks || [];
 
-  // Filter weeks by user selected range (latest N weeks, reversed for top-to-bottom or bottom-to-top display)
+  // Filter weeks by user selected range and augment with exact integer minutes
   const chartData = useMemo(() => {
     if (!rawWeeks.length) return [];
     const sliced = rawWeeks.slice(-selectedWeeksCount);
     // Reverse so the most recent week is at the top of the horizontal bar chart
-    return [...sliced].reverse();
+    return [...sliced].reverse().map((wk) => ({
+      ...wk,
+      lowIntensityMinutes: Math.round(wk.lowIntensityHours * 60),
+      greyZoneMinutes: Math.round(wk.greyZoneHours * 60),
+      highIntensityMinutes: Math.round(wk.highIntensityHours * 60),
+      z1Minutes: Math.round(wk.z1Hours * 60),
+      z2Minutes: Math.round(wk.z2Hours * 60),
+      z3Minutes: Math.round(wk.z3Hours * 60),
+      z4Minutes: Math.round(wk.z4Hours * 60),
+      z5Minutes: Math.round(wk.z5Hours * 60),
+    }));
   }, [rawWeeks, selectedWeeksCount]);
 
   const currentWeek = progression?.currentWeek || rawWeeks[rawWeeks.length - 1] || null;
-  const overallAvg = progression?.overallAverage;
 
   if (!progression || rawWeeks.length === 0) {
     return (
@@ -79,7 +106,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
   // Custom Recharts Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload || !payload.length) return null;
-    const data: WeeklyZoneData = payload[0].payload;
+    const data = payload[0].payload;
 
     return (
       <div className="bg-white border-2 border-zinc-950 p-3.5 rounded-xl shadow-[4px_4px_0px_0px_#09090b] text-xs space-y-2.5 max-w-xs z-50">
@@ -104,7 +131,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
             <Clock className="h-3 w-3" /> Total Volume:
           </span>
           <span className="font-black text-zinc-950">
-            {data.totalHours} jam ({data.activityCount} sesi)
+            {formatDurationReadable(data.totalHours)} ({data.activityCount} sesi)
           </span>
         </div>
 
@@ -116,7 +143,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 Low (Z1-2 Easy):
               </span>
               <span className="font-black text-zinc-950">
-                {data.lowIntensityHours} jam ({data.lowIntensityPct}%)
+                {formatDurationReadable(data.lowIntensityHours)} • {data.lowIntensityPct}%
               </span>
             </div>
             <div className="flex items-center justify-between font-mono text-[11px]">
@@ -125,7 +152,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 Grey Zone (Z3 Tempo):
               </span>
               <span className="font-black text-zinc-950">
-                {data.greyZoneHours} jam ({data.greyZonePct}%)
+                {formatDurationReadable(data.greyZoneHours)} • {data.greyZonePct}%
               </span>
             </div>
             <div className="flex items-center justify-between font-mono text-[11px]">
@@ -134,7 +161,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 High (Z4-5 Hard):
               </span>
               <span className="font-black text-zinc-950">
-                {data.highIntensityHours} jam ({data.highIntensityPct}%)
+                {formatDurationReadable(data.highIntensityHours)} • {data.highIntensityPct}%
               </span>
             </div>
           </div>
@@ -144,31 +171,31 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               <span className="flex items-center gap-1 text-blue-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-blue-500" /> Z1 Recovery:
               </span>
-              <span>{data.z1Hours}h ({data.z1Pct}%)</span>
+              <span>{formatMinutesOnly(data.z1Hours)} ({data.z1Pct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-emerald-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" /> Z2 Aerobic Base:
               </span>
-              <span>{data.z2Hours}h ({data.z2Pct}%)</span>
+              <span>{formatMinutesOnly(data.z2Hours)} ({data.z2Pct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-amber-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-amber-400" /> Z3 Tempo/Grey:
               </span>
-              <span>{data.z3Hours}h ({data.z3Pct}%)</span>
+              <span>{formatMinutesOnly(data.z3Hours)} ({data.z3Pct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-orange-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-orange-500" /> Z4 Threshold:
               </span>
-              <span>{data.z4Hours}h ({data.z4Pct}%)</span>
+              <span>{formatMinutesOnly(data.z4Hours)} ({data.z4Pct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-rose-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-rose-500" /> Z5 VO2Max:
               </span>
-              <span>{data.z5Hours}h ({data.z5Pct}%)</span>
+              <span>{formatMinutesOnly(data.z5Hours)} ({data.z5Pct}%)</span>
             </div>
           </div>
         )}
@@ -201,7 +228,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               </span>
             </div>
             <p className="text-xs font-mono text-zinc-600 mt-0.5">
-              Distribusi jam latihan per minggu • Deteksi jebakan Zone 3 (Grey Zone)
+              Distribusi volume latihan per minggu • Deteksi jebakan Zone 3 (Grey Zone)
             </p>
           </div>
         </div>
@@ -232,7 +259,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
             </button>
           </div>
 
-          {/* Unit: Percent vs Hours */}
+          {/* Unit: Percent vs Minutes vs Hours */}
           <div className="flex items-center p-0.5 bg-zinc-100 rounded-lg border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
             <button
               onClick={() => setMetricMode("percentage")}
@@ -244,7 +271,19 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               title="Tampilkan proporsi persentase (100% stacked)"
             >
               <Percent className="h-3 w-3" />
-              <span>Rasio %</span>
+              <span>% Rasio</span>
+            </button>
+            <button
+              onClick={() => setMetricMode("minutes")}
+              className={`px-2 py-1 rounded text-[11px] font-black flex items-center gap-1 transition-all ${
+                metricMode === "minutes"
+                  ? "bg-emerald-300 text-zinc-950 shadow-sm"
+                  : "text-zinc-600 hover:text-zinc-950"
+              }`}
+              title="Tampilkan durasi dalam menit (mudah dibaca tanpa desimal)"
+            >
+              <Timer className="h-3 w-3" />
+              <span>Menit</span>
             </button>
             <button
               onClick={() => setMetricMode("hours")}
@@ -255,7 +294,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               }`}
               title="Tampilkan total jam latihan absolut"
             >
-              <Timer className="h-3 w-3" />
+              <Hourglass className="h-3 w-3" />
               <span>Jam</span>
             </button>
           </div>
@@ -279,7 +318,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
         </div>
       </div>
 
-      {/* Snapshot Cards for Current Week & Multi-week Average */}
+      {/* Snapshot Cards for Current Week */}
       {currentWeek && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Status Badge & Week Indicator */}
@@ -311,16 +350,16 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               </span>
               <span className="text-[10px] font-bold text-emerald-700">Target ≥ 75-80%</span>
             </div>
-            <div className="mt-1 flex items-baseline gap-2">
+            <div className="mt-1 flex items-baseline gap-2 flex-wrap">
               <span className="text-2xl font-black font-mono text-emerald-950">
                 {currentWeek.lowIntensityPct}%
               </span>
               <span className="text-xs font-mono font-bold text-emerald-800">
-                ({currentWeek.lowIntensityHours} jam)
+                ({formatDurationReadable(currentWeek.lowIntensityHours)})
               </span>
             </div>
             <p className="text-[10px] text-emerald-700 font-medium mt-0.5">
-              Pondasi mitokondria & endurance base
+              Pondasi mitokondria & aerobic base
             </p>
           </div>
 
@@ -344,12 +383,12 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 {currentWeek.greyZonePct > 20 ? "⚠️ Waspada (>20%)" : "Optimal ≤ 15%"}
               </span>
             </div>
-            <div className="mt-1 flex items-baseline gap-2">
+            <div className="mt-1 flex items-baseline gap-2 flex-wrap">
               <span className="text-2xl font-black font-mono text-zinc-950">
                 {currentWeek.greyZonePct}%
               </span>
               <span className="text-xs font-mono font-bold text-zinc-700">
-                ({currentWeek.greyZoneHours} jam)
+                ({formatDurationReadable(currentWeek.greyZoneHours)})
               </span>
             </div>
             <p className="text-[10px] text-zinc-600 font-medium mt-0.5">
@@ -367,12 +406,12 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               </span>
               <span className="text-[10px] font-bold text-rose-700">Target 5-20%</span>
             </div>
-            <div className="mt-1 flex items-baseline gap-2">
+            <div className="mt-1 flex items-baseline gap-2 flex-wrap">
               <span className="text-2xl font-black font-mono text-rose-950">
                 {currentWeek.highIntensityPct}%
               </span>
               <span className="text-xs font-mono font-bold text-rose-800">
-                ({currentWeek.highIntensityHours} jam)
+                ({formatDurationReadable(currentWeek.highIntensityHours)})
               </span>
             </div>
             <p className="text-[10px] text-rose-700 font-medium mt-0.5">
@@ -428,29 +467,33 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           </div>
 
           {metricMode === "percentage" && (
-            <div className="hidden sm:flex items-center gap-1.5 text-zinc-500">
+            <div className="hidden sm:flex items-center gap-1.5 text-zinc-600 font-mono">
               <span className="border-b-2 border-dashed border-zinc-950 w-5 h-0" />
-              <span className="font-bold">Garis Acuan 80%</span>
+              <span className="font-black text-zinc-950">Garis Acuan 80% (Seiler Polarized)</span>
             </div>
           )}
         </div>
 
         <div
           className="w-full bg-[#FAF9F5] border-2 border-zinc-950 rounded-xl p-3 shadow-[2px_2px_0px_0px_#09090b] overflow-x-auto"
-          style={{ height: Math.max(260, chartData.length * 44 + 60) }}
+          style={{ height: Math.max(280, chartData.length * 44 + 70) }}
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               layout="vertical"
               data={chartData}
-              margin={{ top: 10, right: 24, left: 16, bottom: 10 }}
+              margin={{ top: 26, right: 28, left: 16, bottom: 10 }}
               barCategoryGap={6}
             >
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e4e4e7" />
               <XAxis
                 type="number"
                 domain={metricMode === "percentage" ? [0, 100] : [0, "auto"]}
-                tickFormatter={(val) => `${val}${metricMode === "percentage" ? "%" : "h"}`}
+                tickFormatter={(val) => {
+                  if (metricMode === "percentage") return `${val}%`;
+                  if (metricMode === "minutes") return `${val}m`;
+                  return `${val}h`;
+                }}
                 tick={{ fontSize: 11, fontWeight: 700, fill: "#52525b" }}
                 axisLine={{ stroke: "#09090b", strokeWidth: 1.5 }}
               />
@@ -463,7 +506,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0, 0, 0, 0.04)" }} />
 
-              {/* 80% Threshold reference line when in percentage mode */}
+              {/* 80% Threshold reference line when in percentage mode - position insideTopLeft ensures it's never cut off */}
               {metricMode === "percentage" && (
                 <ReferenceLine
                   x={80}
@@ -472,10 +515,12 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   strokeDasharray="4 4"
                   label={{
                     value: "Target 80%",
-                    position: "top",
+                    position: "insideTopLeft",
                     fill: "#09090b",
                     fontSize: 10,
                     fontWeight: 900,
+                    dy: 4,
+                    dx: -4,
                   }}
                 />
               )}
@@ -484,7 +529,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               {zoneMode === "seiler3" ? (
                 <>
                   <Bar
-                    dataKey={metricMode === "percentage" ? "lowIntensityPct" : "lowIntensityHours"}
+                    dataKey={
+                      metricMode === "percentage"
+                        ? "lowIntensityPct"
+                        : metricMode === "minutes"
+                        ? "lowIntensityMinutes"
+                        : "lowIntensityHours"
+                    }
                     name="Low Intensity (Z1-2)"
                     stackId="a"
                     fill="#10b981"
@@ -493,7 +544,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                     radius={[0, 0, 0, 0]}
                   />
                   <Bar
-                    dataKey={metricMode === "percentage" ? "greyZonePct" : "greyZoneHours"}
+                    dataKey={
+                      metricMode === "percentage"
+                        ? "greyZonePct"
+                        : metricMode === "minutes"
+                        ? "greyZoneMinutes"
+                        : "greyZoneHours"
+                    }
                     name="Grey Zone (Z3)"
                     stackId="a"
                     fill="#fbbf24"
@@ -502,7 +559,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                     radius={[0, 0, 0, 0]}
                   />
                   <Bar
-                    dataKey={metricMode === "percentage" ? "highIntensityPct" : "highIntensityHours"}
+                    dataKey={
+                      metricMode === "percentage"
+                        ? "highIntensityPct"
+                        : metricMode === "minutes"
+                        ? "highIntensityMinutes"
+                        : "highIntensityHours"
+                    }
                     name="High Intensity (Z4-5)"
                     stackId="a"
                     fill="#f43f5e"
@@ -514,7 +577,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               ) : (
                 <>
                   <Bar
-                    dataKey={metricMode === "percentage" ? "z1Pct" : "z1Hours"}
+                    dataKey={
+                      metricMode === "percentage"
+                        ? "z1Pct"
+                        : metricMode === "minutes"
+                        ? "z1Minutes"
+                        : "z1Hours"
+                    }
                     name="Z1 Recovery"
                     stackId="a"
                     fill="#3b82f6"
@@ -522,7 +591,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                     strokeWidth={1.5}
                   />
                   <Bar
-                    dataKey={metricMode === "percentage" ? "z2Pct" : "z2Hours"}
+                    dataKey={
+                      metricMode === "percentage"
+                        ? "z2Pct"
+                        : metricMode === "minutes"
+                        ? "z2Minutes"
+                        : "z2Hours"
+                    }
                     name="Z2 Aerobic"
                     stackId="a"
                     fill="#10b981"
@@ -530,7 +605,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                     strokeWidth={1.5}
                   />
                   <Bar
-                    dataKey={metricMode === "percentage" ? "z3Pct" : "z3Hours"}
+                    dataKey={
+                      metricMode === "percentage"
+                        ? "z3Pct"
+                        : metricMode === "minutes"
+                        ? "z3Minutes"
+                        : "z3Hours"
+                    }
                     name="Z3 Tempo"
                     stackId="a"
                     fill="#fbbf24"
@@ -538,7 +619,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                     strokeWidth={1.5}
                   />
                   <Bar
-                    dataKey={metricMode === "percentage" ? "z4Pct" : "z4Hours"}
+                    dataKey={
+                      metricMode === "percentage"
+                        ? "z4Pct"
+                        : metricMode === "minutes"
+                        ? "z4Minutes"
+                        : "z4Hours"
+                    }
                     name="Z4 Threshold"
                     stackId="a"
                     fill="#f97316"
@@ -546,7 +633,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                     strokeWidth={1.5}
                   />
                   <Bar
-                    dataKey={metricMode === "percentage" ? "z5Pct" : "z5Hours"}
+                    dataKey={
+                      metricMode === "percentage"
+                        ? "z5Pct"
+                        : metricMode === "minutes"
+                        ? "z5Minutes"
+                        : "z5Hours"
+                    }
                     name="Z5 VO2Max"
                     stackId="a"
                     fill="#ef4444"
