@@ -14,9 +14,25 @@ import {
   ReferenceLine,
   ReferenceArea,
 } from "recharts";
-import { Activity, Flame, ShieldAlert, Zap, TrendingUp, Info, Calendar, Crosshair } from "lucide-react";
+import {
+  Activity,
+  Flame,
+  ShieldAlert,
+  Zap,
+  TrendingUp,
+  Info,
+  Calendar,
+  Crosshair,
+  Sliders,
+  Sparkles,
+  Flag,
+  ArrowRight,
+  RotateCcw,
+  CheckCircle2,
+} from "lucide-react";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { useTheme } from "next-themes";
+import { generatePmcForecast, PmcPoint } from "@/lib/analytics";
 
 export interface PmcDataPoint {
   date: string;
@@ -26,6 +42,8 @@ export interface PmcDataPoint {
   tsb: number;
   formPct?: number;
   rampRate?: number;
+  isForecast?: boolean;
+  isRaceDay?: boolean;
 }
 
 interface PmcChartProps {
@@ -141,6 +159,15 @@ const PmcTooltip = ({ active, payload }: any) => {
           <Calendar className="h-3.5 w-3.5 text-zinc-600" />
           {formatFullDate(point.date)}
         </span>
+        {point.isRaceDay ? (
+          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-400 text-black border border-zinc-950 flex items-center gap-1">
+            <Flag className="h-2.5 w-2.5" /> Race
+          </span>
+        ) : point.isForecast ? (
+          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-100 text-violet-950 border border-violet-950">
+            Projected
+          </span>
+        ) : null}
       </div>
       <div className="space-y-1 pt-0.5">
         <div className="flex items-center justify-between">
@@ -194,12 +221,66 @@ export const PmcChart: React.FC<PmcChartProps> = ({
   const [timeRange, setTimeRange] = useState<"7" | "30" | "60" | "90" | "180" | "all">("90");
   const [hoveredPoint, setHoveredPoint] = useState<PmcDataPoint | null>(null);
 
-  const filteredData = useMemo(() => {
+  // Future PMC Forecasting ("What-If" Planning) State
+  const [isForecastOpen, setIsForecastOpen] = useState(false);
+  const [forecastDays, setForecastDays] = useState<number>(21); // 3 weeks default
+  const [forecastStrategy, setForecastStrategy] = useState<
+    "maintain" | "taper_light" | "taper_aggressive" | "build_conservative" | "custom"
+  >("taper_light");
+  const [customWeeklyLoad, setCustomWeeklyLoad] = useState<number>(250);
+  const [targetRaceDate, setTargetRaceDate] = useState<string>("");
+
+  // Base filtered historical series
+  const historicalFiltered = useMemo(() => {
     if (!data || data.length === 0) return [];
     if (timeRange === "all") return data;
     const days = parseInt(timeRange, 10);
     return data.slice(-days);
   }, [data, timeRange]);
+
+  // Baseline load info from recent history
+  const baselineWeeklyLoad = useMemo(() => {
+    if (!data || data.length === 0) return 250;
+    const recent = data.slice(-14);
+    const avg = recent.reduce((sum, p) => sum + (p.load || 0), 0) / Math.max(1, recent.length);
+    return Math.round(avg * 7);
+  }, [data]);
+
+  // Initialize customWeeklyLoad to baseline if not modified
+  React.useEffect(() => {
+    if (baselineWeeklyLoad > 0 && customWeeklyLoad === 250) {
+      setCustomWeeklyLoad(baselineWeeklyLoad);
+    }
+  }, [baselineWeeklyLoad, customWeeklyLoad]);
+
+  // Forecast points generation
+  const forecastSeries = useMemo(() => {
+    if (!isForecastOpen || !data || data.length === 0) return [];
+    return generatePmcForecast(data as PmcPoint[], {
+      forecastDays,
+      weeklyLoadStrategy: forecastStrategy,
+      customWeeklyLoad,
+      raceDate: targetRaceDate || undefined,
+    });
+  }, [isForecastOpen, data, forecastDays, forecastStrategy, customWeeklyLoad, targetRaceDate]);
+
+  // Combined chart dataset: historical + forecast points
+  const filteredData = useMemo(() => {
+    if (!isForecastOpen || forecastSeries.length === 0) {
+      return historicalFiltered;
+    }
+    return [...historicalFiltered, ...forecastSeries];
+  }, [historicalFiltered, isForecastOpen, forecastSeries]);
+
+  // Race day predicted point (if target date set) or target horizon point
+  const targetForecastPoint = useMemo(() => {
+    if (!isForecastOpen || forecastSeries.length === 0) return null;
+    if (targetRaceDate) {
+      const racePt = forecastSeries.find((p) => p.date === targetRaceDate);
+      if (racePt) return racePt;
+    }
+    return forecastSeries[forecastSeries.length - 1];
+  }, [isForecastOpen, forecastSeries, targetRaceDate]);
 
   // Active point: either hovered or latest data point
   const activePoint = useMemo(() => {
@@ -385,6 +466,20 @@ export const PmcChart: React.FC<PmcChartProps> = ({
               </button>
             ))}
           </div>
+
+          {/* What-If Forecast Simulator Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsForecastOpen(!isForecastOpen)}
+            className={`px-3 py-1.5 text-xs rounded-xl border-2 border-zinc-950 font-black flex items-center gap-1.5 transition-all shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 ${
+              isForecastOpen
+                ? "bg-violet-600 text-white"
+                : "bg-violet-100 text-violet-950 hover:bg-violet-200"
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>{isForecastOpen ? "Hide Forecast" : "What-If Forecast"}</span>
+          </button>
         </div>
       </div>
 
@@ -473,6 +568,199 @@ export const PmcChart: React.FC<PmcChartProps> = ({
           </p>
         </div>
       </div>
+
+      {/* What-If Future PMC Simulation Control Deck */}
+      {isForecastOpen && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-violet-50 via-[#FAF9F5] to-amber-50/50 border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-zinc-200">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-violet-600 border-2 border-zinc-950 flex items-center justify-center text-white shadow-[1.5px_1.5px_0px_0px_#09090b]">
+                <Sliders className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-black text-zinc-950">
+                    What-If Forward PMC Simulator
+                  </h3>
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-violet-200 text-violet-900 border border-violet-950">
+                    Bannister Impulse-Response
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-600 mt-0.5">
+                  Simulate future Fitness (CTL), Fatigue (ATL), and Race-Day Form (TSB) by projecting upcoming training load.
+                </p>
+              </div>
+            </div>
+
+            {/* Target Outcome Preview Badge */}
+            {targetForecastPoint && (
+              <div className="flex items-center gap-3 bg-white px-3 py-2 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
+                <div className="text-right">
+                  <div className="text-[9px] font-black uppercase text-zinc-500">
+                    {targetForecastPoint.isRaceDay ? "Race Day Outcome" : `Projected at +${forecastDays}d`}
+                  </div>
+                  <div className="text-xs font-black text-zinc-950">
+                    {formatChartDate(targetForecastPoint.date)}
+                  </div>
+                </div>
+                <div className="h-7 w-px bg-zinc-200" />
+                <div className="flex items-center gap-2">
+                  <div className="text-center">
+                    <span className="text-[9px] font-bold text-sky-700 block">CTL</span>
+                    <span className="font-mono font-black text-xs text-sky-700">
+                      {targetForecastPoint.ctl}
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-[9px] font-bold text-purple-700 block">ATL</span>
+                    <span className="font-mono font-black text-xs text-purple-700">
+                      {targetForecastPoint.atl}
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-[9px] font-bold text-emerald-700 block">TSB</span>
+                    <span
+                      className={`font-mono font-black text-xs ${
+                        targetForecastPoint.tsb >= 0 ? "text-emerald-700" : "text-amber-700"
+                      }`}
+                    >
+                      {targetForecastPoint.tsb > 0 ? `+${targetForecastPoint.tsb}` : targetForecastPoint.tsb}
+                    </span>
+                  </div>
+                </div>
+                <span
+                  className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded shadow-[1px_1px_0px_0px_#09090b] ${
+                    getFormZone(targetForecastPoint.tsb).badgeClass
+                  }`}
+                >
+                  {getFormZone(targetForecastPoint.tsb).label}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Interactive Controls Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1">
+            {/* 1. Target Strategy Preset */}
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-[11px] font-black uppercase text-zinc-700 flex items-center gap-1.5">
+                <Flame className="h-3.5 w-3.5 text-orange-500" />
+                <span>Training Load Strategy</span>
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                {[
+                  {
+                    id: "taper_light",
+                    label: "Standard Taper",
+                    desc: "-15% load/wk (Ideal fresh form)",
+                  },
+                  {
+                    id: "taper_aggressive",
+                    label: "Deep Taper",
+                    desc: "-25% load/wk (Fast recovery)",
+                  },
+                  {
+                    id: "maintain",
+                    label: "Maintain",
+                    desc: `~${baselineWeeklyLoad} TL/wk (Holds fitness)`,
+                  },
+                  {
+                    id: "build_conservative",
+                    label: "Build Phase",
+                    desc: "+8% load/wk (Progressive overload)",
+                  },
+                ].map((strat) => (
+                  <button
+                    key={strat.id}
+                    type="button"
+                    onClick={() => setForecastStrategy(strat.id as any)}
+                    className={`p-2 rounded-xl text-left border-2 transition-all text-xs flex flex-col justify-between ${
+                      forecastStrategy === strat.id
+                        ? "bg-violet-600 text-white border-zinc-950 font-black shadow-[2px_2px_0px_0px_#09090b]"
+                        : "bg-white text-zinc-800 border-zinc-950 hover:bg-zinc-100 font-bold shadow-[1px_1px_0px_0px_#09090b]"
+                    }`}
+                  >
+                    <span>{strat.label}</span>
+                    <span
+                      className={`text-[9px] mt-1 line-clamp-1 ${
+                        forecastStrategy === strat.id ? "text-violet-100 font-normal" : "text-zinc-500 font-medium"
+                      }`}
+                    >
+                      {strat.desc}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Forecast Horizon / Days */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-black uppercase text-zinc-700 flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-violet-600" />
+                  <span>Horizon ({forecastDays} Days)</span>
+                </label>
+                <span className="text-xs font-mono font-black text-zinc-900">
+                  {Math.round(forecastDays / 7)} wks
+                </span>
+              </div>
+              <input
+                type="range"
+                min={7}
+                max={56}
+                step={7}
+                value={forecastDays}
+                onChange={(e) => setForecastDays(parseInt(e.target.value, 10))}
+                className="w-full accent-violet-600 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-zinc-500 font-mono font-bold">
+                <span>1 wk</span>
+                <span>2 wks</span>
+                <span>3 wks</span>
+                <span>4 wks</span>
+                <span>8 wks</span>
+              </div>
+            </div>
+
+            {/* 3. Target Race Day Marker (Optional) */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-black uppercase text-zinc-700 flex items-center gap-1.5">
+                <Flag className="h-3.5 w-3.5 text-amber-500" />
+                <span>Target Race Date</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={targetRaceDate}
+                  onChange={(e) => setTargetRaceDate(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-xl bg-white border-2 border-zinc-950 text-xs font-mono font-bold shadow-[2px_2px_0px_0px_#09090b] focus:outline-none"
+                />
+                {targetRaceDate && (
+                  <button
+                    type="button"
+                    onClick={() => setTargetRaceDate("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500 hover:text-zinc-950 font-black"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] text-zinc-500 font-medium">
+                Puts a 🏁 marker on the chart to read exact race day form.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Explanation Banner */}
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/80 border border-zinc-950 text-xs font-medium text-zinc-700">
+            <Info className="h-4 w-4 text-violet-600 shrink-0" />
+            <span>
+              The chart now projects forward from today. Notice how tapering brings Form (TSB) into the green/cyan sweet spot (+5 to +25) without crashing your Fitness (CTL).
+            </span>
+          </div>
+        </div>
+      )}
+
 
       {/* Main Single Unified Chart Container (Matching Intervals.icu Single Canvas) */}
       {filteredData.length === 0 ? (
@@ -646,6 +934,42 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                     strokeOpacity={0.7}
                   />
 
+                  {/* Forecast Horizon Shading & Reference Lines */}
+                  {isForecastOpen && historicalFiltered.length > 0 && (
+                    <>
+                      {/* Vertical line separating history from forecast */}
+                      <ReferenceLine
+                        x={historicalFiltered[historicalFiltered.length - 1].date}
+                        stroke="#8b5cf6"
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                        label={{
+                          value: "Today / Now",
+                          position: "insideTopRight",
+                          fill: "#8b5cf6",
+                          fontSize: 10,
+                          fontWeight: 800,
+                        }}
+                      />
+
+                      {/* Race Day Reference Line if specified */}
+                      {targetRaceDate && (
+                        <ReferenceLine
+                          x={targetRaceDate}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          label={{
+                            value: "🏁 Race Day",
+                            position: "insideTopLeft",
+                            fill: "#ca8a04",
+                            fontSize: 10,
+                            fontWeight: 900,
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+
                   {/* Daily Load Bars (Sitting quietly along the bottom) */}
                   <Bar
                     yAxisId="load"
@@ -700,8 +1024,22 @@ export const PmcChart: React.FC<PmcChartProps> = ({
             <div className="space-y-1 pb-3 border-b-2 border-zinc-200">
               <div className="text-[10px] font-black uppercase text-zinc-500 tracking-wider flex items-center justify-between">
                 <span>Telemetry</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold bg-zinc-200 text-zinc-800">
-                  {hoveredPoint ? "Hover" : "Latest"}
+                <span
+                  className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                    activePoint?.isRaceDay
+                      ? "bg-amber-400 text-black border border-zinc-950 font-black"
+                      : activePoint?.isForecast
+                      ? "bg-violet-200 text-violet-950 font-black"
+                      : "bg-zinc-200 text-zinc-800"
+                  }`}
+                >
+                  {activePoint?.isRaceDay
+                    ? "🏁 Race Day"
+                    : activePoint?.isForecast
+                    ? "Projected"
+                    : hoveredPoint
+                    ? "Hover"
+                    : "Latest"}
                 </span>
               </div>
               <div className="text-xs font-black text-zinc-950">

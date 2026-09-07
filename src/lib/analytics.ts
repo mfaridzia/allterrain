@@ -164,6 +164,126 @@ export function calculatePmcSeries(dailyLoads: DailyLoadInput[], initialCtl = 0,
   return results;
 }
 
+export interface PmcForecastOptions {
+  forecastDays?: number; // default 28 days
+  weeklyLoadStrategy?: "maintain" | "taper_light" | "taper_aggressive" | "build_conservative" | "custom";
+  customWeeklyLoad?: number; // target weekly load if custom
+  taperWeeklyReductionPct?: number; // e.g. 20% drop per week
+  raceDate?: string; // YYYY-MM-DD
+}
+
+export interface PmcForecastPoint extends PmcPoint {
+  isForecast: boolean;
+  isRaceDay?: boolean;
+}
+
+/**
+ * Projects PMC series forward into the future based on Bannister impulse-response model.
+ * Enables athletes to run "What-If" simulations for tapering and race prep.
+ */
+export function generatePmcForecast(
+  history: PmcPoint[],
+  options: PmcForecastOptions = {}
+): PmcForecastPoint[] {
+  if (!history || history.length === 0) return [];
+
+  const {
+    forecastDays = 28,
+    weeklyLoadStrategy = "maintain",
+    customWeeklyLoad,
+    taperWeeklyReductionPct = 20,
+    raceDate,
+  } = options;
+
+  const lastPoint = history[history.length - 1];
+  let currentCtl = lastPoint.ctl;
+  let currentAtl = lastPoint.atl;
+
+  // Derive baseline average daily load from past 14 days
+  const past14 = history.slice(-14);
+  const avgDailyLoad =
+    past14.length > 0
+      ? past14.reduce((acc, p) => acc + (p.load || 0), 0) / past14.length
+      : 30;
+
+  const baselineWeeklyLoad = Math.round(avgDailyLoad * 7);
+
+  const ctlLambda = Math.exp(-1 / 42);
+  const atlLambda = Math.exp(-1 / 7);
+
+  // Parse start date from last historical point
+  const lastDateParts = lastPoint.date.split("-").map(Number);
+  const startDate = new Date(lastDateParts[0], lastDateParts[1] - 1, lastDateParts[2]);
+
+  const forecastPoints: PmcForecastPoint[] = [];
+
+  // Track recent CTLs for ramp rate calculation (seeding from last 7 days of history)
+  const ctlBuffer: number[] = history.slice(-7).map((p) => p.ctl);
+
+  for (let day = 1; day <= forecastDays; day++) {
+    const nextDate = new Date(startDate);
+    nextDate.setDate(startDate.getDate() + day);
+
+    const year = nextDate.getFullYear();
+    const month = String(nextDate.getMonth() + 1).padStart(2, "0");
+    const dStr = String(nextDate.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${dStr}`;
+
+    const weekIndex = Math.floor((day - 1) / 7); // 0, 1, 2, 3...
+
+    // Calculate simulated day load based on strategy
+    let simulatedDayLoad = 0;
+    if (weeklyLoadStrategy === "custom" && customWeeklyLoad !== undefined) {
+      simulatedDayLoad = Math.max(0, customWeeklyLoad / 7);
+    } else if (weeklyLoadStrategy === "taper_light") {
+      // 15% reduction each week
+      const factor = Math.max(0.2, Math.pow(1 - 0.15, weekIndex + 1));
+      simulatedDayLoad = (baselineWeeklyLoad * factor) / 7;
+    } else if (weeklyLoadStrategy === "taper_aggressive") {
+      // Custom or standard 25% reduction each week
+      const reduction = (taperWeeklyReductionPct || 25) / 100;
+      const factor = Math.max(0.1, Math.pow(1 - reduction, weekIndex + 1));
+      simulatedDayLoad = (baselineWeeklyLoad * factor) / 7;
+    } else if (weeklyLoadStrategy === "build_conservative") {
+      // +8% safe ramp each week
+      const factor = Math.pow(1 + 0.08, weekIndex + 1);
+      simulatedDayLoad = (baselineWeeklyLoad * factor) / 7;
+    } else {
+      // "maintain" - keep current chronic baseline daily average
+      simulatedDayLoad = avgDailyLoad;
+    }
+
+    // Bannister EMA recurrence
+    currentCtl = currentCtl * ctlLambda + simulatedDayLoad * (1 - ctlLambda);
+    currentAtl = currentAtl * atlLambda + simulatedDayLoad * (1 - atlLambda);
+    const tsb = currentCtl - currentAtl;
+    const formPct = currentCtl > 0 ? (tsb / currentCtl) * 100 : 0;
+
+    // Ramp rate vs 7 days ago
+    const ctl7DaysAgo = ctlBuffer.length >= 7 ? ctlBuffer[ctlBuffer.length - 7] : currentCtl;
+    const rampRate = currentCtl - ctl7DaysAgo;
+    ctlBuffer.push(currentCtl);
+
+    const isRaceDay = raceDate ? dateStr === raceDate : false;
+
+    forecastPoints.push({
+      date: dateStr,
+      load: Math.round(simulatedDayLoad),
+      ctl: Math.round(currentCtl * 10) / 10,
+      atl: Math.round(currentAtl * 10) / 10,
+      tsb: Math.round(tsb * 10) / 10,
+      formPct: Math.round(formPct * 10) / 10,
+      rampRate: Math.round(rampRate * 10) / 10,
+      formZone: classifyFormZone(tsb).zone,
+      isForecast: true,
+      isRaceDay,
+    });
+  }
+
+  return forecastPoints;
+}
+
+
 /**
  * Calculates Acute:Chronic Workload Ratio (ACWR)
  * Acute = past 7 days load sum
