@@ -235,9 +235,9 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
         </div>
 
         {/* Controls: Range Selector, Metric Toggle, Zone Mode */}
-        <div className="flex items-center gap-2 flex-wrap self-start md:self-auto">
+        <div className="w-full md:w-auto flex items-center gap-2 overflow-x-auto max-w-full pb-1 self-start md:self-auto">
           {/* 3-Zone vs 5-Zone */}
-          <div className="flex items-center p-0.5 bg-zinc-100 rounded-lg border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+          <div className="flex items-center p-0.5 bg-zinc-100 rounded-lg border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] shrink-0">
             <button
               onClick={() => setZoneMode("seiler3")}
               className={`px-2.5 py-1 rounded text-[11px] font-black transition-all ${
@@ -261,7 +261,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           </div>
 
           {/* Unit: Percent vs Minutes vs Hours */}
-          <div className="flex items-center p-0.5 bg-zinc-100 rounded-lg border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+          <div className="flex items-center p-0.5 bg-zinc-100 rounded-lg border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] shrink-0">
             <button
               onClick={() => setMetricMode("percentage")}
               className={`px-2 py-1 rounded text-[11px] font-black flex items-center gap-1 transition-all ${
@@ -301,7 +301,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           </div>
 
           {/* Weeks Count Selector */}
-          <div className="flex items-center p-0.5 bg-zinc-100 rounded-lg border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+          <div className="flex items-center p-0.5 bg-zinc-100 rounded-lg border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] shrink-0">
             {[4, 8, 12].map((num) => (
               <button
                 key={num}
@@ -323,7 +323,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
       {currentWeek && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Status Badge & Week Indicator */}
-          <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex flex-col justify-between group">
+          <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex flex-col justify-between group min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black font-mono text-zinc-500 uppercase">
                 Status Minggu Ini ({currentWeek.weekLabel})
@@ -355,18 +355,18 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           </div>
 
           {/* Low Intensity KPI */}
-          <div className="p-3.5 rounded-xl bg-emerald-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
+          <div className="p-3.5 rounded-xl bg-emerald-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] min-w-0">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black font-mono text-emerald-800 uppercase">
+              <span className="text-[10px] font-black font-mono text-emerald-800 uppercase truncate">
                 Zone 1-2 (Easy Aerobic)
               </span>
-              <span className="text-[10px] font-bold text-emerald-700">Target ≥ 75-80%</span>
+              <span className="text-[10px] font-bold text-emerald-700 shrink-0">Target ≥ 75%</span>
             </div>
             <div className="mt-1 flex items-baseline gap-2 flex-wrap">
-              <span className="text-2xl font-black font-mono text-emerald-950">
+              <span className="text-xl sm:text-2xl font-black font-mono text-emerald-950">
                 {currentWeek.lowIntensityPct}%
               </span>
-              <span className="text-xs font-mono font-bold text-emerald-800">
+              <span className="text-xs font-mono font-bold text-emerald-800 break-words">
                 ({formatDurationReadable(currentWeek.lowIntensityHours)})
               </span>
             </div>
@@ -377,18 +377,18 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
 
           {/* Grey Zone KPI */}
           <div
-            className={`p-3.5 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] ${
+            className={`p-3.5 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] min-w-0 ${
               currentWeek.greyZonePct > 20
                 ? "bg-rose-50 border-rose-950"
                 : "bg-amber-50"
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black font-mono text-amber-900 uppercase">
+              <span className="text-[10px] font-black font-mono text-amber-900 uppercase truncate">
                 Zone 3 (Grey / Tempo)
               </span>
               <span
-                className={`text-[10px] font-bold ${
+                className={`text-[10px] font-bold shrink-0 ${
                   currentWeek.greyZonePct > 20 ? "text-rose-700 font-black" : "text-amber-700"
                 }`}
               >
@@ -396,10 +396,10 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               </span>
             </div>
             <div className="mt-1 flex items-baseline gap-2 flex-wrap">
-              <span className="text-2xl font-black font-mono text-zinc-950">
+              <span className="text-xl sm:text-2xl font-black font-mono text-zinc-950">
                 {currentWeek.greyZonePct}%
               </span>
-              <span className="text-xs font-mono font-bold text-zinc-700">
+              <span className="text-xs font-mono font-bold text-zinc-700 break-words">
                 ({formatDurationReadable(currentWeek.greyZoneHours)})
               </span>
             </div>
@@ -411,18 +411,18 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           </div>
 
           {/* High Intensity KPI */}
-          <div className="p-3.5 rounded-xl bg-rose-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
+          <div className="p-3.5 rounded-xl bg-rose-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] min-w-0">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black font-mono text-rose-800 uppercase">
+              <span className="text-[10px] font-black font-mono text-rose-800 uppercase truncate">
                 Zone 4-5 (Hard / VO2)
               </span>
-              <span className="text-[10px] font-bold text-rose-700">Target 5-20%</span>
+              <span className="text-[10px] font-bold text-rose-700 shrink-0">Target 5-20%</span>
             </div>
             <div className="mt-1 flex items-baseline gap-2 flex-wrap">
-              <span className="text-2xl font-black font-mono text-rose-950">
+              <span className="text-xl sm:text-2xl font-black font-mono text-rose-950">
                 {currentWeek.highIntensityPct}%
               </span>
-              <span className="text-xs font-mono font-bold text-rose-800">
+              <span className="text-xs font-mono font-bold text-rose-800 break-words">
                 ({formatDurationReadable(currentWeek.highIntensityHours)})
               </span>
             </div>

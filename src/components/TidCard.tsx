@@ -26,19 +26,19 @@ export const TidCard: React.FC<TidCardProps> = ({
   return (
     <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div className="h-8 w-8 rounded-lg bg-emerald-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
             <PieChart className="h-4 w-4 stroke-[2.5]" />
           </div>
-          <div>
-            <h3 className="text-sm font-black text-zinc-950 tracking-tight">Intensity & Drift</h3>
-            <p className="text-[11px] font-mono text-zinc-600 font-semibold">80/20 Rule • Decoupling</p>
+          <div className="min-w-0">
+            <h3 className="text-sm font-black text-zinc-950 tracking-tight truncate">Intensity & Drift</h3>
+            <p className="text-[11px] font-mono text-zinc-600 font-semibold truncate">80/20 Rule • Decoupling</p>
           </div>
         </div>
 
         <div
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0 whitespace-nowrap ${
+          className={`self-start sm:self-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0 whitespace-nowrap ${
             isPolarized
               ? "bg-emerald-300 text-zinc-950 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]"
               : "bg-amber-300 text-zinc-950 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]"
@@ -77,7 +77,7 @@ export const TidCard: React.FC<TidCardProps> = ({
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-between text-[11px] text-zinc-700 font-mono font-bold pt-1">
+        <div className="flex items-center justify-between text-[11px] text-zinc-700 font-mono font-bold pt-1 flex-wrap gap-1">
           <div className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 border border-zinc-950 shrink-0" />
             <span className="truncate">Z1-2 ({z1z2Pct}%)</span>

@@ -40,18 +40,18 @@ export const AcwrCard: React.FC<AcwrCardProps> = ({
   return (
     <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div className="h-8 w-8 rounded-lg bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
             <Activity className="h-4 w-4 stroke-[2.5]" />
           </div>
-          <div>
-            <h3 className="text-sm font-black text-zinc-950 tracking-tight">Injury Risk & Load</h3>
-            <p className="text-[11px] font-mono text-zinc-600 font-semibold">ACWR • Monotony • Strain</p>
+          <div className="min-w-0">
+            <h3 className="text-sm font-black text-zinc-950 tracking-tight truncate">Injury Risk & Load</h3>
+            <p className="text-[11px] font-mono text-zinc-600 font-semibold truncate">ACWR • Monotony • Strain</p>
           </div>
         </div>
 
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0 whitespace-nowrap ${badgeColor}`}>
+        <div className={`self-start sm:self-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0 whitespace-nowrap ${badgeColor}`}>
           {icon}
           <span>{label}</span>
         </div>
@@ -87,7 +87,7 @@ export const AcwrCard: React.FC<AcwrCardProps> = ({
             <div className="w-4 h-4 bg-zinc-950 rounded-full border-2 border-white shadow-md" />
           </div>
 
-          <div className="flex justify-between text-[10px] text-zinc-600 pt-1 font-mono font-bold">
+          <div className="flex justify-between text-[9px] sm:text-[10px] text-zinc-600 pt-1 font-mono font-bold">
             <span>0.5</span>
             <span className="text-emerald-700 font-black">Sweet Spot (0.8-1.3)</span>
             <span>1.5</span>

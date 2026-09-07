@@ -310,60 +310,60 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="max-w-xl w-full bg-white rounded-3xl border-2 border-zinc-950 p-5 sm:p-6 space-y-5 shadow-[8px_8px_0px_0px_#09090b] my-auto">
+      <div className="max-w-xl w-full bg-white rounded-3xl border-2 border-zinc-950 p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-[8px_8px_0px_0px_#09090b] my-auto max-h-[92dvh] overflow-y-auto">
         {/* Header Controls */}
-        <div className="flex items-center justify-between border-b-2 border-zinc-200 pb-3.5">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+        <div className="flex items-center justify-between border-b-2 border-zinc-200 pb-3 gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="h-8 w-8 rounded-xl bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
               <Share2 className="h-4 w-4 stroke-[2.5]" />
             </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-black text-zinc-950 leading-tight">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm sm:text-base font-black text-zinc-950 leading-tight truncate">
                 Share Workout Card
               </h2>
-              <p className="text-[11px] font-medium text-zinc-500">
+              <p className="text-[10px] sm:text-[11px] font-medium text-zinc-500 truncate">
                 Export high-resolution story & feed cards ready for social media
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all"
+            className="p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all"
           >
             <X className="h-4 w-4 stroke-[2.5]" />
           </button>
         </div>
 
         {/* Customization Toolbar: Aspect Ratio & Theme */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#FAF9F5] p-2.5 rounded-2xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 bg-[#FAF9F5] p-2 sm:p-2.5 rounded-2xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
           {/* Ratio Toggle */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] uppercase font-black text-zinc-500 mr-1">Ratio:</span>
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="text-[10px] uppercase font-black text-zinc-500 mr-0.5">Ratio:</span>
             <button
               onClick={() => setAspectRatio("9:16")}
-              className={`px-3 py-1.5 text-xs font-black rounded-xl border transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 text-xs font-black rounded-xl border transition-all ${
                 aspectRatio === "9:16"
                   ? "bg-zinc-950 text-white border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]"
                   : "border-transparent text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200"
               }`}
             >
-              📱 9:16 (Story)
+              📱 9:16 Story
             </button>
             <button
               onClick={() => setAspectRatio("1:1")}
-              className={`px-3 py-1.5 text-xs font-black rounded-xl border transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 text-xs font-black rounded-xl border transition-all ${
                 aspectRatio === "1:1"
                   ? "bg-zinc-950 text-white border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]"
                   : "border-transparent text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200"
               }`}
             >
-              ⏹️ 1:1 (Square)
+              ⏹️ 1:1 Square
             </button>
           </div>
 
           {/* Theme Toggle */}
           <div className="flex items-center gap-1">
-            <span className="text-[10px] uppercase font-black text-zinc-500 mr-1">Theme:</span>
+            <span className="text-[10px] uppercase font-black text-zinc-500 mr-0.5">Theme:</span>
             <button
               onClick={() => setTheme("dark")}
               className={`px-2.5 py-1 text-xs font-black rounded-lg border transition-all ${
@@ -387,8 +387,8 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
           </div>
         </div>
 
-        {/* Live Card Preview Box (Scrollable if needed) */}
-        <div className="flex justify-center items-center py-2 bg-zinc-200/60 rounded-2xl p-4 overflow-hidden">
+        {/* Live Card Preview Box (Scrollable horizontally on very small viewports) */}
+        <div className="w-full flex justify-center items-center py-2 bg-zinc-200/60 rounded-2xl p-2 sm:p-4 overflow-x-auto max-w-full">
           {/* TARGET CAPTURE ELEMENT */}
           <div
             ref={cardRef}

@@ -58,20 +58,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="max-w-md w-full rounded-2xl bg-white border-2 border-zinc-950 p-6 space-y-5 shadow-[6px_6px_0px_0px_#09090b]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+    <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+      <div className="max-w-md w-full rounded-2xl bg-white border-2 border-zinc-950 p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-[6px_6px_0px_0px_#09090b] max-h-[90dvh] overflow-y-auto">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-9 w-9 rounded-xl bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
               <Settings className="h-5 w-5 stroke-[2.5]" />
             </div>
-            <div>
-              <h3 className="text-base font-black text-zinc-950">App Settings</h3>
-              <p className="text-xs font-medium text-zinc-600">BYOK AI Provider & Model Configuration</p>
+            <div className="min-w-0">
+              <h3 className="text-base font-black text-zinc-950 truncate">App Settings</h3>
+              <p className="text-[11px] sm:text-xs font-medium text-zinc-600 truncate">BYOK AI Provider & Model Config</p>
             </div>
           </div>
 
-          <button onClick={onClose} className="p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+          <button onClick={onClose} className="p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
             <X className="h-4 w-4 stroke-[2.5]" />
           </button>
         </div>
@@ -83,14 +83,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <Cpu className="h-3.5 w-3.5 text-orange-600 stroke-[2.5]" />
               AI Coach Provider
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 { id: "gemini", label: "Google Gemini", defModel: "gemini-2.5-flash" },
                 { id: "deepseek", label: "DeepSeek", defModel: "deepseek-chat" },
                 { id: "openai", label: "OpenAI", defModel: "gpt-4o-mini" },
                 { id: "claude", label: "Anthropic Claude", defModel: "claude-3-5-sonnet-20241022" },
                 { id: "ollama", label: "Ollama (Local)", defModel: "llama3.2" },
-              ].map((p) => (
+              ].map((p, idx) => (
                 <button
                   type="button"
                   key={p.id}
@@ -98,14 +98,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     setProvider(p.id);
                     setModelName(p.defModel);
                   }}
-                  className={`p-2.5 rounded-xl text-left transition-all ${
+                  className={`p-2.5 rounded-xl text-left transition-all min-w-0 ${
+                    idx === 4 ? "sm:col-span-2" : ""
+                  } ${
                     provider === p.id
                       ? "border-2 border-zinc-950 bg-orange-100 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
                       : "border-2 border-zinc-200 bg-[#FAF9F5] text-zinc-700 hover:border-zinc-950"
                   }`}
                 >
-                  <div className="text-xs font-black">{p.label}</div>
-                  <div className="text-[10px] font-bold text-zinc-500 font-mono">
+                  <div className="text-xs font-black truncate">{p.label}</div>
+                  <div className="text-[10px] font-bold text-zinc-500 font-mono truncate">
                     {configuredKeys[p.id] ? "✓ Configured" : "Needs Key"}
                   </div>
                 </button>
@@ -127,13 +129,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           {/* API Key Input */}
           {provider !== "ollama" && (
             <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-black text-zinc-900 flex items-center gap-1">
-                  <Key className="h-3.5 w-3.5 text-orange-600 stroke-[2.5]" />
-                  API Key ({provider.toUpperCase()})
+              <div className="flex justify-between items-center gap-2">
+                <label className="text-xs font-black text-zinc-900 flex items-center gap-1 truncate">
+                  <Key className="h-3.5 w-3.5 text-orange-600 stroke-[2.5] shrink-0" />
+                  <span>API Key ({provider.toUpperCase()})</span>
                 </label>
                 {configuredKeys[provider] && (
-                  <span className="text-[10px] text-emerald-700 font-bold">✓ Stored securely</span>
+                  <span className="text-[10px] text-emerald-700 font-bold shrink-0">✓ Stored</span>
                 )}
               </div>
               <input
@@ -143,7 +145,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 placeholder={configuredKeys[provider] ? "Leave blank to keep existing key" : "Enter API Key..."}
                 className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 placeholder-zinc-500 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
               />
-              <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium">
+              <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium leading-tight">
                 Your API key is stored securely in your encrypted database and never transmitted to third parties.
               </p>
             </div>
@@ -151,23 +153,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
           {savedSuccess && (
             <div className="flex items-center gap-2 text-xs text-emerald-950 bg-emerald-100 border-2 border-zinc-950 p-2.5 rounded-xl shadow-[2px_2px_0px_0px_#09090b] font-bold">
-              <Check className="h-4 w-4 stroke-[2.5]" />
+              <Check className="h-4 w-4 stroke-[2.5] shrink-0" />
               <span>Settings saved successfully!</span>
             </div>
           )}
 
-          <div className="flex justify-end gap-2.5 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-black rounded-xl bg-zinc-100 hover:bg-zinc-200 border-2 border-zinc-950 text-zinc-950 transition-all shadow-[1.5px_1.5px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="w-full sm:w-auto px-4 py-2 text-xs font-black rounded-xl bg-zinc-100 hover:bg-zinc-200 border-2 border-zinc-950 text-zinc-950 transition-all shadow-[1.5px_1.5px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2 text-xs font-black rounded-xl bg-orange-500 hover:bg-orange-600 text-white border-2 border-zinc-950 transition-all shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50"
+              className="w-full sm:w-auto px-5 py-2 text-xs font-black rounded-xl bg-orange-500 hover:bg-orange-600 text-white border-2 border-zinc-950 transition-all shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save Configuration"}
             </button>

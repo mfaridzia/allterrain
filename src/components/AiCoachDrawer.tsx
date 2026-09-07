@@ -154,7 +154,7 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
               </div>
             )}
             <div
-              className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed whitespace-pre-wrap border-2 border-zinc-950 ${
+              className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed whitespace-pre-wrap break-words min-w-0 border-2 border-zinc-950 ${
                 m.role === "user"
                   ? "bg-orange-500 text-white font-semibold shadow-[2px_2px_0px_0px_#09090b] rounded-br-none"
                   : "bg-white text-zinc-900 font-medium shadow-[2px_2px_0px_0px_#09090b] rounded-tl-none"

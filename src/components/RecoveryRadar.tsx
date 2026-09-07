@@ -46,13 +46,13 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
   return (
     <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div className="h-8 w-8 rounded-lg bg-emerald-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
             <BatteryCharging className="h-4 w-4 stroke-[2.5]" />
           </div>
-          <div>
-            <h3 className="text-sm font-black text-zinc-950 tracking-tight flex items-center gap-2">
+          <div className="min-w-0">
+            <h3 className="text-sm font-black text-zinc-950 tracking-tight flex items-center gap-2 flex-wrap">
               <span>Recovery & Health</span>
               {formattedDate && (
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border-2 border-zinc-950 bg-zinc-100 text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
@@ -60,11 +60,11 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
                 </span>
               )}
             </h3>
-            <p className="text-[11px] font-mono text-zinc-600 font-semibold">HRV • Resting HR • Sleep</p>
+            <p className="text-[11px] font-mono text-zinc-600 font-semibold truncate">HRV • Resting HR • Sleep</p>
           </div>
         </div>
 
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0 whitespace-nowrap ${readinessColor}`}>
+        <span className={`self-start sm:self-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0 whitespace-nowrap ${readinessColor}`}>
           <Sparkles className="h-3 w-3 stroke-[2.5]" />
           <span>{readiness}</span>
         </span>
@@ -73,7 +73,7 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
       {/* 2x2 Metric Grid */}
       <div className="grid grid-cols-2 gap-3">
         {/* Recovery Score */}
-        <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
+        <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b] min-w-0">
           <MetricTooltip term="recovery_score">
             <span className="text-[11px] font-bold text-zinc-700 block truncate">Recovery Index</span>
           </MetricTooltip>

@@ -841,28 +841,34 @@ export default function ActivitiesPage() {
 
       {/* Activity Detail Modal / Inspector */}
       {selectedActivity && (
-        <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-lg w-full rounded-2xl bg-white border-2 border-zinc-950 p-6 space-y-5 shadow-[6px_6px_0px_0px_#09090b] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+        <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="max-w-lg w-full rounded-2xl bg-white border-2 border-zinc-950 p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-[6px_6px_0px_0px_#09090b] max-h-[90vh] overflow-y-auto">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <div className="h-10 w-10 rounded-xl bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
                   {getSportIcon(selectedActivity.sportType, selectedActivity.elevationGain)}
                 </div>
-                <div>
-                  <h3 className="text-base font-black text-zinc-950">{selectedActivity.name}</h3>
-                  <p className="text-xs font-mono font-medium text-zinc-600">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-black text-zinc-950 break-words leading-snug">{selectedActivity.name}</h3>
+                  <p className="text-xs font-mono font-medium text-zinc-600 mt-0.5">
                     {new Date(selectedActivity.startTime).toLocaleString("en-US", {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })}
                   </p>
                 </div>
+                <button
+                  onClick={() => setSelectedActivity(null)}
+                  className="sm:hidden p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                >
+                  <X className="h-4 w-4 stroke-[2.5]" />
+                </button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                 <button
                   type="button"
                   onClick={() => handleCompareFromDrawer(selectedActivity)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-sky-200 hover:bg-sky-300 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-sky-200 hover:bg-sky-300 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
                   title="Compare this run with a benchmark or previous run"
                 >
                   <Scale className="h-3.5 w-3.5 stroke-[2.5]" />
@@ -870,7 +876,7 @@ export default function ActivitiesPage() {
                 </button>
                 <button
                   onClick={() => setSharingActivity(selectedActivity)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-amber-300 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-amber-300 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
                   title="Share workout card"
                 >
                   <Share2 className="h-3.5 w-3.5 stroke-[2.5]" />
@@ -878,7 +884,7 @@ export default function ActivitiesPage() {
                 </button>
                 <button
                   onClick={() => setSelectedActivity(null)}
-                  className="p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-colors"
+                  className="hidden sm:block p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-colors"
                 >
                   <X className="h-4 w-4 stroke-[2.5]" />
                 </button>
@@ -1122,17 +1128,17 @@ export default function ActivitiesPage() {
               </div>
             )}
 
-            <div className="flex items-center gap-2.5 pt-1">
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
               <button
                 onClick={() => setSharingActivity(selectedActivity)}
-                className="flex-1 py-2.5 text-xs font-black rounded-xl bg-amber-300 hover:bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:flex-1 py-2.5 text-xs font-black rounded-xl bg-amber-300 hover:bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Share2 className="h-3.5 w-3.5 stroke-[2.5]" />
-                <span>Share Workout Card (Story / Feed)</span>
+                <span>Share Workout Card</span>
               </button>
               <button
                 onClick={() => setSelectedActivity(null)}
-                className="px-4 py-2.5 text-xs font-black rounded-xl bg-zinc-950 hover:bg-zinc-850 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 text-xs font-black rounded-xl bg-zinc-950 hover:bg-zinc-850 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all cursor-pointer"
               >
                 Close
               </button>
@@ -1151,27 +1157,27 @@ export default function ActivitiesPage() {
 
       {/* Floating Compare Action Dock (When 1 or 2 activities selected) */}
       {compareIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 text-white border-2 border-zinc-950 px-4 py-3 rounded-2xl shadow-[4px_4px_0px_0px_#09090b] flex items-center gap-3.5 animate-in slide-in-from-bottom-3 duration-200">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-amber-400 text-zinc-950 font-black text-xs flex items-center justify-center font-mono">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 text-white border-2 border-zinc-950 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl shadow-[4px_4px_0px_0px_#09090b] flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 max-w-[calc(100vw-1.5rem)] w-fit animate-in slide-in-from-bottom-3 duration-200">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-6 w-6 rounded-full bg-amber-400 text-zinc-950 font-black text-xs flex items-center justify-center font-mono shrink-0">
               {compareIds.length}
             </div>
-            <span className="text-xs font-bold text-zinc-200">
+            <span className="text-xs font-bold text-zinc-200 truncate">
               {compareIds.length === 1
-                ? "Select 1 more activity to compare"
-                : "2 Activities selected"}
+                ? "Select 1 more to compare"
+                : "2 Selected"}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {compareIds.length === 2 && (
               <button
                 type="button"
                 onClick={handleLaunchCompare}
-                className="px-3.5 py-1.5 rounded-xl bg-orange-400 hover:bg-orange-500 text-zinc-950 font-black text-xs border-2 border-zinc-950 flex items-center gap-1.5 transition-all shadow-[1.5px_1.5px_0px_0px_#ffffff] cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+                className="px-3 py-1.5 rounded-xl bg-orange-400 hover:bg-orange-500 text-zinc-950 font-black text-xs border-2 border-zinc-950 flex items-center gap-1.5 transition-all shadow-[1.5px_1.5px_0px_0px_#ffffff] cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
               >
                 <Scale className="h-3.5 w-3.5 stroke-[2.5]" />
-                <span>Compare Head-to-Head</span>
+                <span>Compare</span>
               </button>
             )}
             <button

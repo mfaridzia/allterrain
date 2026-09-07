@@ -417,21 +417,21 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
       {/* Activity Detail Modal / Inspector */}
       {selectedActivity && (
-        <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-lg w-full rounded-2xl bg-white border-2 border-zinc-950 p-6 space-y-5 shadow-[6px_6px_0px_0px_#09090b] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+        <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="max-w-lg w-full rounded-2xl bg-white border-2 border-zinc-950 p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-[6px_6px_0px_0px_#09090b] max-h-[90vh] overflow-y-auto">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <div className="h-10 w-10 rounded-xl bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
                   {getSportIcon(
                     selectedActivity.sportType,
                     selectedActivity.elevationGain,
                   )}
                 </div>
-                <div>
-                  <h3 className="text-base font-black text-zinc-950">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-black text-zinc-950 break-words leading-snug">
                     {selectedActivity.name}
                   </h3>
-                  <p className="text-xs font-mono font-medium text-zinc-600">
+                  <p className="text-xs font-mono font-medium text-zinc-600 mt-0.5">
                     {new Date(selectedActivity.startTime).toLocaleString(
                       "id-ID",
                       {
@@ -441,9 +441,15 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                     )}
                   </p>
                 </div>
+                <button
+                  onClick={() => setSelectedActivity(null)}
+                  className="sm:hidden p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                >
+                  <X className="h-4 w-4 stroke-[2.5]" />
+                </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -469,7 +475,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                       });
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-sky-200 hover:bg-sky-300 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-sky-200 hover:bg-sky-300 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
                   title="Compare with another run"
                 >
                   <Scale className="h-3.5 w-3.5 stroke-[2.5]" />
@@ -477,7 +483,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                 </button>
                 <button
                   onClick={() => setSharingActivity(selectedActivity)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-amber-300 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-amber-300 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
                   title="Share workout card"
                 >
                   <Share2 className="h-3.5 w-3.5 stroke-[2.5]" />
@@ -485,7 +491,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                 </button>
                 <button
                   onClick={() => setSelectedActivity(null)}
-                  className="p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                  className="hidden sm:block p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]"
                 >
                   <X className="h-4 w-4 stroke-[2.5]" />
                 </button>
@@ -757,11 +763,11 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
             {/* Trail / Mountain Section */}
             {(selectedActivity.sportType === "trail_run" ||
               selectedActivity.elevationGain > 150) && (
-              <div className="p-4 rounded-xl bg-cyan-50 border-2 border-zinc-950 space-y-2.5 text-xs shadow-[2px_2px_0px_0px_#09090b]">
-                <div className="flex items-center justify-between">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-cyan-50 border-2 border-zinc-950 space-y-2.5 text-xs shadow-[2px_2px_0px_0px_#09090b]">
+                <div className="flex items-center justify-between flex-wrap gap-1.5">
                   <span className="flex items-center gap-1.5 font-black text-zinc-950">
-                    <Mountain className="h-4 w-4 stroke-[2.5]" />
-                    Mountain Dynamics (Uphill Athlete & ITRA)
+                    <Mountain className="h-4 w-4 stroke-[2.5] shrink-0" />
+                    <span>Mountain Dynamics (ITRA)</span>
                   </span>
                   <span className="text-[10px] font-mono font-bold text-zinc-600">
                     Minetti Model
@@ -824,17 +830,17 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
               </div>
             )}
 
-            <div className="flex items-center gap-2.5 pt-1">
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
               <button
                 onClick={() => setSharingActivity(selectedActivity)}
-                className="flex-1 py-2.5 text-xs font-black rounded-xl bg-amber-300 hover:bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:flex-1 py-2.5 text-xs font-black rounded-xl bg-amber-300 hover:bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Share2 className="h-3.5 w-3.5 stroke-[2.5]" />
-                <span>Share Workout Card (Story / Feed)</span>
+                <span>Share Workout Card</span>
               </button>
               <button
                 onClick={() => setSelectedActivity(null)}
-                className="px-4 py-2.5 text-xs font-black rounded-xl bg-zinc-950 hover:bg-zinc-850 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 text-xs font-black rounded-xl bg-zinc-950 hover:bg-zinc-850 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all cursor-pointer"
               >
                 Close
               </button>

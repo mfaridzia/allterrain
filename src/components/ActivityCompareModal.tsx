@@ -81,21 +81,21 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
       <div className="bg-white border-2 border-zinc-950 rounded-2xl shadow-[6px_6px_0px_0px_#09090b] max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden my-auto">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b-2 border-zinc-950 flex items-center justify-between bg-[#FAF9F5] shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-orange-400 border-2 border-zinc-950 flex items-center justify-center text-black shadow-[1.5px_1.5px_0px_0px_#09090b]">
+        <div className="p-3.5 sm:p-5 border-b-2 border-zinc-950 flex items-center justify-between bg-[#FAF9F5] shrink-0 gap-2">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="h-9 w-9 rounded-xl bg-orange-400 border-2 border-zinc-950 flex items-center justify-center text-black shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
               <TrendingUp className="h-5 w-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-zinc-950">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-sm sm:text-lg font-black text-zinc-950 leading-snug">
                   Activity Head-to-Head Comparison
                 </h2>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-950 border border-zinc-950">
+                <span className="text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-950 border border-zinc-950 shrink-0">
                   Overlaid Analysis
                 </span>
               </div>
-              <p className="text-xs text-zinc-600 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-zinc-600 mt-0.5 line-clamp-2 sm:line-clamp-none">
                 Compare physiological adaptations, pacing splits, and cardiovascular economy between sessions.
               </p>
             </div>
@@ -103,28 +103,28 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all"
+            className="p-1.5 rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all"
           >
             <X className="h-4 w-4 stroke-[2.5]" />
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-6">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-5 sm:space-y-6">
           {/* Head-to-Head Card Header / Swap Selector */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative">
             {/* Activity A (Reference / Primary) */}
-            <div className="p-3.5 rounded-xl border-2 border-sky-600 bg-sky-50/50 shadow-[2px_2px_0px_0px_#0284c7] space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-black">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-sky-600 text-white">
+            <div className="p-3.5 rounded-xl border-2 border-sky-600 bg-sky-50/50 shadow-[2px_2px_0px_0px_#0284c7] space-y-1.5 min-w-0">
+              <div className="flex items-center justify-between text-xs font-black gap-2">
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-sky-600 text-white shrink-0">
                   Current Session (A)
                 </span>
-                <span className="text-zinc-500">{dateA}</span>
+                <span className="text-zinc-500 text-[11px] shrink-0">{dateA}</span>
               </div>
               <h3 className="text-sm font-black text-zinc-950 truncate" title={activityA.name}>
                 {activityA.name}
               </h3>
-              <div className="flex items-center gap-3 text-xs font-mono font-bold text-zinc-700">
+              <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono font-bold text-zinc-700 flex-wrap">
                 <span>{activityA.distanceKm} km</span>
                 <span>•</span>
                 <span>{activityA.durationMin}m</span>
@@ -136,13 +136,13 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
             </div>
 
             {/* Activity B (Benchmark / Comparison target) */}
-            <div className="p-3.5 rounded-xl border-2 border-amber-500 bg-amber-50/40 shadow-[2px_2px_0px_0px_#f59e0b] space-y-1.5 relative">
-              <div className="flex items-center justify-between text-xs font-black">
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500 text-black">
+            <div className="p-3.5 rounded-xl border-2 border-amber-500 bg-amber-50/40 shadow-[2px_2px_0px_0px_#f59e0b] space-y-1.5 relative min-w-0">
+              <div className="flex items-center justify-between text-xs font-black gap-2">
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500 text-black shrink-0">
                   Benchmark Session (B)
                 </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-zinc-500">{dateB}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-zinc-500 text-[11px]">{dateB}</span>
                   {allActivities.length > 2 && onSelectActivityB && (
                     <button
                       type="button"
@@ -158,7 +158,7 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
               <h3 className="text-sm font-black text-zinc-950 truncate" title={activityB.name}>
                 {activityB.name}
               </h3>
-              <div className="flex items-center gap-3 text-xs font-mono font-bold text-zinc-700">
+              <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono font-bold text-zinc-700 flex-wrap">
                 <span>{activityB.distanceKm} km</span>
                 <span>•</span>
                 <span>{activityB.durationMin}m</span>
@@ -213,12 +213,12 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
           </div>
 
           {/* Delta Scorecard 4-column Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
             {/* 1. Pace Delta */}
-            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
-              <span className="text-[10px] font-black uppercase text-zinc-500">Pace Delta</span>
+            <div className="p-2.5 sm:p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1 min-w-0">
+              <span className="text-[10px] font-black uppercase text-zinc-500 block truncate">Pace Delta</span>
               <div
-                className={`text-xl font-mono font-black ${
+                className={`text-lg sm:text-xl font-mono font-black break-words ${
                   analysis.paceDiffSec < 0 ? "text-emerald-600" : analysis.paceDiffSec > 0 ? "text-rose-600" : "text-zinc-950"
                 }`}
               >
@@ -228,16 +228,16 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
                   ? `+${analysis.paceDiffSec}s /km`
                   : "Identical"}
               </div>
-              <span className="text-[10px] text-zinc-600 font-bold block">
+              <span className="text-[10px] text-zinc-600 font-bold block truncate">
                 {analysis.paceDiffSec < 0 ? "Faster in Session A ⚡" : analysis.paceDiffSec > 0 ? "Slower in Session A" : "Same pace"}
               </span>
             </div>
 
             {/* 2. Heart Rate Delta */}
-            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
-              <span className="text-[10px] font-black uppercase text-zinc-500">Avg Heart Rate</span>
+            <div className="p-2.5 sm:p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1 min-w-0">
+              <span className="text-[10px] font-black uppercase text-zinc-500 block truncate">Avg Heart Rate</span>
               <div
-                className={`text-xl font-mono font-black ${
+                className={`text-lg sm:text-xl font-mono font-black break-words ${
                   analysis.hrDiff < 0 ? "text-emerald-600" : analysis.hrDiff > 0 ? "text-rose-600" : "text-zinc-950"
                 }`}
               >
@@ -247,16 +247,16 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
                   ? `+${analysis.hrDiff} bpm`
                   : "Identical"}
               </div>
-              <span className="text-[10px] text-zinc-600 font-bold block">
+              <span className="text-[10px] text-zinc-600 font-bold block truncate">
                 {analysis.hrDiff < 0 ? "Lower Cardiac Cost 💚" : analysis.hrDiff > 0 ? "Higher Cardiac Stress" : "Equivalent HR"}
               </span>
             </div>
 
             {/* 3. Aerobic Efficiency Gain */}
-            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
-              <span className="text-[10px] font-black uppercase text-zinc-500">Efficiency Index</span>
+            <div className="p-2.5 sm:p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1 min-w-0">
+              <span className="text-[10px] font-black uppercase text-zinc-500 block truncate">Efficiency Index</span>
               <div
-                className={`text-xl font-mono font-black ${
+                className={`text-lg sm:text-xl font-mono font-black break-words ${
                   analysis.efficiencyGainPct > 0
                     ? "text-emerald-600"
                     : analysis.efficiencyGainPct < 0
@@ -268,76 +268,76 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
                   ? `+${analysis.efficiencyGainPct}%`
                   : `${analysis.efficiencyGainPct}%`}
               </div>
-              <span className="text-[10px] text-zinc-600 font-bold block">
-                Speed / HR Ratio ({analysis.efficiencyFactorA} vs {analysis.efficiencyFactorB})
+              <span className="text-[10px] text-zinc-600 font-bold block truncate" title={`Speed / HR Ratio (${analysis.efficiencyFactorA} vs ${analysis.efficiencyFactorB})`}>
+                Ratio {analysis.efficiencyFactorA} vs {analysis.efficiencyFactorB}
               </span>
             </div>
 
             {/* 4. Cardiac Decoupling (Pa:HR) */}
-            <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
-              <span className="text-[10px] font-black uppercase text-zinc-500">Cardiac Drift</span>
-              <div className="text-xl font-mono font-black text-zinc-950">
+            <div className="p-2.5 sm:p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1 min-w-0">
+              <span className="text-[10px] font-black uppercase text-zinc-500 block truncate">Cardiac Drift</span>
+              <div className="text-lg sm:text-xl font-mono font-black text-zinc-950 break-words">
                 {activityA.decouplingPct || 0}%{" "}
                 <span className="text-xs text-zinc-500 font-normal">vs {activityB.decouplingPct || 0}%</span>
               </div>
-              <span className="text-[10px] text-zinc-600 font-bold block">
-                {analysis.decouplingDiff <= 0 ? "Stable fatigue curve 👍" : "Mild late-session drift"}
+              <span className="text-[10px] text-zinc-600 font-bold block truncate">
+                {analysis.decouplingDiff <= 0 ? "Stable fatigue 👍" : "Late drift"}
               </span>
             </div>
           </div>
 
           {/* Synchronized Overlaid Chart Section */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-4">
+          <div className="p-3.5 sm:p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-4">
             {/* Chart Control Toolbar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-zinc-100">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-zinc-900">Overlaid Metric:</span>
-                <div className="flex items-center gap-1 bg-[#F0EDE4] p-1 rounded-xl border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+              <div className="flex flex-col xs:flex-row xs:items-center gap-2 max-w-full">
+                <span className="text-xs font-black text-zinc-900 shrink-0">Overlaid Metric:</span>
+                <div className="flex items-center gap-1 bg-[#F0EDE4] p-1 rounded-xl border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] overflow-x-auto max-w-full">
                   <button
                     type="button"
                     onClick={() => setActiveTab("pace")}
-                    className={`px-3 py-1 text-xs rounded-lg transition-all font-black ${
+                    className={`px-2.5 sm:px-3 py-1 text-xs rounded-lg transition-all font-black whitespace-nowrap shrink-0 ${
                       activeTab === "pace"
                         ? "bg-white text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
                         : "text-zinc-600 hover:text-zinc-950 border-2 border-transparent"
                     }`}
                   >
-                    Pace Progression
+                    Pace
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab("hr")}
-                    className={`px-3 py-1 text-xs rounded-lg transition-all font-black ${
+                    className={`px-2.5 sm:px-3 py-1 text-xs rounded-lg transition-all font-black whitespace-nowrap shrink-0 ${
                       activeTab === "hr"
                         ? "bg-white text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
                         : "text-zinc-600 hover:text-zinc-950 border-2 border-transparent"
                     }`}
                   >
-                    Heart Rate Drift
+                    Heart Rate
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab("elevation")}
-                    className={`px-3 py-1 text-xs rounded-lg transition-all font-black ${
+                    className={`px-2.5 sm:px-3 py-1 text-xs rounded-lg transition-all font-black whitespace-nowrap shrink-0 ${
                       activeTab === "elevation"
                         ? "bg-white text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
                         : "text-zinc-600 hover:text-zinc-950 border-2 border-transparent"
                     }`}
                   >
-                    Elevation Profile
+                    Elevation
                   </button>
                 </div>
               </div>
 
               {/* Curve Color Legend */}
-              <div className="flex items-center gap-4 text-xs font-bold">
+              <div className="flex items-center gap-3 sm:gap-4 text-xs font-bold flex-wrap">
                 <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full bg-sky-600 border border-zinc-950" />
-                  <span className="text-zinc-900">Session A ({dateA})</span>
+                  <span className="h-3 w-3 rounded-full bg-sky-600 border border-zinc-950 shrink-0" />
+                  <span className="text-zinc-900 truncate">Session A ({dateA})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full bg-amber-500 border border-zinc-950" />
-                  <span className="text-zinc-900">Session B ({dateB})</span>
+                  <span className="h-3 w-3 rounded-full bg-amber-500 border border-zinc-950 shrink-0" />
+                  <span className="text-zinc-900 truncate">Session B ({dateB})</span>
                 </div>
               </div>
             </div>
@@ -504,8 +504,8 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
                 Negative delta (green) indicates faster / lower HR in Session A
               </span>
             </div>
-            <div className="border-2 border-zinc-950 rounded-xl overflow-hidden shadow-[2px_2px_0px_0px_#09090b]">
-              <table className="w-full text-left text-xs">
+            <div className="border-2 border-zinc-950 rounded-xl overflow-x-auto shadow-[2px_2px_0px_0px_#09090b]">
+              <table className="w-full min-w-[500px] text-left text-xs">
                 <thead className="bg-[#FAF9F5] border-b-2 border-zinc-950 font-black text-zinc-800">
                   <tr>
                     <th className="p-2.5">Split</th>
@@ -572,14 +572,14 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t-2 border-zinc-950 bg-[#FAF9F5] flex items-center justify-between shrink-0">
+        <div className="p-3.5 sm:p-4 border-t-2 border-zinc-950 bg-[#FAF9F5] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-zinc-500 font-medium">
             Pro Tip: Compare your long runs or tempo intervals over a 4–8 week cycle to monitor stroke volume adaptations.
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border-2 border-zinc-950 bg-white hover:bg-zinc-100 text-zinc-950 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl border-2 border-zinc-950 bg-white hover:bg-zinc-100 text-zinc-950 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 transition-all text-center"
           >
             Close Comparison
           </button>
