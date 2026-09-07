@@ -70,7 +70,7 @@ export default function ActivitiesPage() {
       const mm = (d.getMonth() + 1).toString().padStart(2, "0");
       const key = `${yyyy}-${mm}`;
       if (!map.has(key)) {
-        const label = d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+        const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
         map.set(key, label);
       }
     }
@@ -78,16 +78,16 @@ export default function ActivitiesPage() {
   }, [activities]);
 
   const timeRangeLabel = useMemo(() => {
-    if (timeFilter === "all") return "Semua Waktu";
-    if (timeFilter === "180d") return "6 Bulan Terakhir";
-    if (timeFilter === "365d") return "1 Tahun Terakhir";
+    if (timeFilter === "all") return "All Time";
+    if (timeFilter === "180d") return "Past 6 Months";
+    if (timeFilter === "365d") return "Past 1 Year";
     if (timeFilter.startsWith("month:")) {
       const ym = timeFilter.replace("month:", "");
       const [year, month] = ym.split("-");
       const d = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
-      return `Bulan ${d.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}`;
+      return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
     }
-    return "Periode Kustom";
+    return "Custom Period";
   }, [timeFilter]);
 
   const toggleSport = (sportId: string) => {
@@ -257,7 +257,7 @@ export default function ActivitiesPage() {
       <Header
         extraActions={
           <span className="text-[10px] uppercase font-mono font-black px-2.5 py-1 rounded-full border-2 border-zinc-950 bg-orange-100 text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
-            {activities.length} Sesi
+            {activities.length} Sessions
           </span>
         }
       />
@@ -269,11 +269,11 @@ export default function ActivitiesPage() {
             <h1 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight flex items-center gap-2.5">
               <span>Athlete Workouts & Activity Logbook</span>
               <span className="text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full bg-orange-200 text-orange-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
-                {filteredAndSorted.length} dari {activities.length} Sesi
+                {filteredAndSorted.length} of {activities.length} Sessions
               </span>
             </h1>
             <p className="text-xs font-medium text-zinc-600 mt-1">
-              Filter periode & jenis olahraga untuk melihat akumulasi statistik dan riwayat sesi latihan.
+              Filter by time range and activity type to view aggregate performance metrics and workout history.
             </p>
           </div>
 
@@ -281,10 +281,10 @@ export default function ActivitiesPage() {
           <div className="flex flex-wrap items-center gap-1.5 p-1 bg-white rounded-xl border-2 border-zinc-950 self-start lg:self-auto shadow-[2px_2px_0px_0px_#09090b]">
             <div className="flex items-center gap-1 px-2 text-[10px] font-black uppercase text-zinc-500">
               <Calendar className="h-3.5 w-3.5 text-zinc-950" />
-              <span>Periode:</span>
+              <span>Period:</span>
             </div>
 
-            {/* Quick Preset: Semua */}
+            {/* Quick Preset: All */}
             <button
               onClick={() => {
                 setTimeFilter("all");
@@ -296,7 +296,7 @@ export default function ActivitiesPage() {
                   : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
               }`}
             >
-              Semua
+              All
             </button>
 
             {/* Month Picker Dropdown */}
@@ -316,7 +316,7 @@ export default function ActivitiesPage() {
                 }`}
               >
                 <option value="" disabled>
-                  🗓️ Pilih Bulan...
+                  🗓️ Select Month...
                 </option>
                 {availableMonths.map(([ym, label]) => (
                   <option key={ym} value={`month:${ym}`}>
@@ -329,7 +329,7 @@ export default function ActivitiesPage() {
               </div>
             </div>
 
-            {/* Quick Preset: 6 Bulan */}
+            {/* Quick Preset: 6 Months */}
             <button
               onClick={() => {
                 setTimeFilter("180d");
@@ -341,10 +341,10 @@ export default function ActivitiesPage() {
                   : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
               }`}
             >
-              6 Bulan
+              6 Months
             </button>
 
-            {/* Quick Preset: 1 Tahun */}
+            {/* Quick Preset: 1 Year */}
             <button
               onClick={() => {
                 setTimeFilter("365d");
@@ -356,7 +356,7 @@ export default function ActivitiesPage() {
                   : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
               }`}
             >
-              1 Tahun
+              1 Year
             </button>
           </div>
         </div>
@@ -364,7 +364,7 @@ export default function ActivitiesPage() {
         {/* KPI Stats Overview (Dynamically Reflects Filters) */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="p-4 rounded-2xl bg-white border-2 border-zinc-950 space-y-1 shadow-[3px_3px_0px_0px_#09090b]">
-            <span className="text-[11px] text-zinc-700 font-bold">Total Aktivitas</span>
+            <span className="text-[11px] text-zinc-700 font-bold">Total Activities</span>
             <div className="text-2xl font-black text-zinc-950 font-mono">{stats.totalActivities}</div>
             <p className="text-[10px] font-medium text-zinc-600 truncate">
               {stats.roadCount} Road • {stats.trailCount} Trail
@@ -374,7 +374,7 @@ export default function ActivitiesPage() {
           </div>
 
           <div className="p-4 rounded-2xl bg-white border-2 border-zinc-950 space-y-1 shadow-[3px_3px_0px_0px_#09090b]">
-            <span className="text-[11px] text-zinc-700 font-bold">Total Jarak</span>
+            <span className="text-[11px] text-zinc-700 font-bold">Total Distance</span>
             <div className="text-2xl font-black text-zinc-950 font-mono">
               {stats.totalDistKm} <span className="text-xs font-normal text-zinc-500">km</span>
             </div>
@@ -384,18 +384,18 @@ export default function ActivitiesPage() {
           <div className="p-4 rounded-2xl bg-white border-2 border-zinc-950 space-y-1 shadow-[3px_3px_0px_0px_#09090b]">
             <span className="text-[11px] text-emerald-800 font-black flex items-center gap-1">
               <ArrowUpRight className="h-3 w-3 stroke-[2.5]" />
-              Total Elevasi (D+)
+              Total Elevation (D+)
             </span>
             <div className="text-2xl font-black text-emerald-700 font-mono">
               +{stats.totalGainM.toLocaleString()} <span className="text-xs font-normal text-zinc-500">m</span>
             </div>
-            <p className="text-[10px] font-medium text-zinc-600">Altimeter barometrik</p>
+            <p className="text-[10px] font-medium text-zinc-600">Barometric altimeter</p>
           </div>
 
           <div className="p-4 rounded-2xl bg-white border-2 border-zinc-950 space-y-1 shadow-[3px_3px_0px_0px_#09090b]">
-            <span className="text-[11px] text-zinc-700 font-bold">Total Waktu Latihan</span>
+            <span className="text-[11px] text-zinc-700 font-bold">Total Training Time</span>
             <div className="text-2xl font-black text-zinc-950 font-mono">
-              {stats.totalHours} <span className="text-xs font-normal text-zinc-500">jam</span>
+              {stats.totalHours} <span className="text-xs font-normal text-zinc-500">hrs</span>
             </div>
             <p className="text-[10px] font-medium text-zinc-600">Time on feet & gym</p>
           </div>
@@ -408,7 +408,7 @@ export default function ActivitiesPage() {
             <div className="text-2xl font-black text-orange-600 font-mono">
               {stats.totalLoad.toLocaleString()}
             </div>
-            <p className="text-[10px] font-medium text-zinc-600">Akumulasi TRIMP</p>
+            <p className="text-[10px] font-medium text-zinc-600">Cumulative TRIMP</p>
           </div>
         </div>
 
@@ -421,7 +421,7 @@ export default function ActivitiesPage() {
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 stroke-[2.5]" />
               <input
                 type="text"
-                placeholder="Cari sesi latihan (nama, lokasi, rute)..."
+                placeholder="Search workouts (name, route, keyword)..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full bg-[#FAF9F5] border-2 border-zinc-950 rounded-xl pl-10 pr-4 py-2 text-xs text-zinc-950 placeholder-zinc-500 focus:outline-none focus:bg-white font-medium shadow-[1.5px_1.5px_0px_0px_#09090b]"
@@ -439,17 +439,17 @@ export default function ActivitiesPage() {
             {/* Sort Selector */}
             <div className="flex items-center gap-1.5 bg-[#FAF9F5] px-3 py-2 rounded-xl border-2 border-zinc-950 text-xs font-bold text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] self-start sm:self-auto">
               <SlidersHorizontal className="h-3.5 w-3.5 text-zinc-600 stroke-[2.5]" />
-              <span className="text-[11px] text-zinc-500 font-sans">Urutan:</span>
+              <span className="text-[11px] text-zinc-500 font-sans">Sort by:</span>
               <select
                 value={sortBy}
                 onChange={(e: any) => setSortBy(e.target.value)}
                 className="bg-transparent text-zinc-950 text-xs font-black focus:outline-none cursor-pointer pr-1"
               >
-                <option value="date_desc">Terbaru</option>
-                <option value="date_asc">Terlama</option>
-                <option value="dist_desc">Jarak Terjauh</option>
-                <option value="gain_desc">Elevasi (D+) Tertinggi</option>
-                <option value="load_desc">Training Load Terbesar</option>
+                <option value="date_desc">Newest First</option>
+                <option value="date_asc">Oldest First</option>
+                <option value="dist_desc">Longest Distance</option>
+                <option value="gain_desc">Highest Elevation (D+)</option>
+                <option value="load_desc">Highest Training Load</option>
               </select>
             </div>
           </div>
@@ -459,7 +459,7 @@ export default function ActivitiesPage() {
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] font-black uppercase text-zinc-500 flex items-center gap-1 mr-1">
                 <Filter className="h-3 w-3 text-zinc-950" />
-                Jenis Sesi:
+                Activity Type:
               </span>
 
               {/* All Sports Pill */}
@@ -472,7 +472,7 @@ export default function ActivitiesPage() {
                     : "bg-[#FAF9F5] text-zinc-700 hover:text-zinc-950 hover:bg-white"
                 }`}
               >
-                Semua Jenis
+                All Sports
               </button>
 
               {/* Road Run Pill */}
@@ -516,7 +516,7 @@ export default function ActivitiesPage() {
                 }`}
               >
                 <Bike className="h-3.5 w-3.5 stroke-[2.5]" />
-                <span>Sepeda</span>
+                <span>Cycling</span>
                 {selectedSports.includes("bike") && <Check className="h-3 w-3 stroke-[3]" />}
               </button>
 
@@ -548,7 +548,7 @@ export default function ActivitiesPage() {
                 }}
                 className="text-[11px] font-black text-rose-700 hover:text-rose-900 underline cursor-pointer"
               >
-                Reset Semua Filter
+                Reset All Filters
               </button>
             )}
           </div>
@@ -559,11 +559,11 @@ export default function ActivitiesPage() {
           {loading ? (
             <div className="py-16 text-center text-zinc-600 flex flex-col items-center justify-center gap-3">
               <RefreshCw className="h-6 w-6 animate-spin text-orange-600 stroke-[2.5]" />
-              <p className="text-xs font-black font-mono">Memuat riwayat latihan COROS...</p>
+              <p className="text-xs font-black font-mono">Loading COROS workout history...</p>
             </div>
           ) : filteredAndSorted.length === 0 ? (
             <div className="py-16 text-center text-zinc-600 text-xs space-y-2 font-medium">
-              <p>Tidak ada aktivitas yang cocok dengan filter atau pencarian Anda.</p>
+              <p>No activities match your current filter or search criteria.</p>
               <button
                 onClick={() => {
                   setSearchQuery("");
@@ -573,14 +573,14 @@ export default function ActivitiesPage() {
                 }}
                 className="text-orange-600 hover:underline font-black text-xs cursor-pointer"
               >
-                Reset Filter
+                Reset Filters
               </button>
             </div>
           ) : (
             <div className="space-y-2.5">
               {paginatedList.map((act) => {
                 const isTrail = act.sportType === "trail_run" || act.elevationGain > 200;
-                const dateStr = new Date(act.startTime).toLocaleDateString("id-ID", {
+                const dateStr = new Date(act.startTime).toLocaleDateString("en-US", {
                   day: "numeric",
                   month: "short",
                   year: "numeric",
@@ -619,7 +619,7 @@ export default function ActivitiesPage() {
                           )}
                         </div>
                         <p className="text-[11px] font-mono font-medium text-zinc-600">
-                          {dateStr} • {act.durationMin} menit
+                          {dateStr} • {act.durationMin} mins
                         </p>
                       </div>
                     </div>
@@ -633,14 +633,14 @@ export default function ActivitiesPage() {
                             <div className="font-black text-purple-700 text-sm">
                               {act.durationMin} <span className="text-[10px] font-normal text-zinc-500">min</span>
                             </div>
-                            <div className="text-[10px] text-zinc-600 font-sans font-bold">Durasi Gym</div>
+                            <div className="text-[10px] text-zinc-600 font-sans font-bold">Gym Duration</div>
                           </>
                         ) : (
                           <>
                             <div className="font-black text-zinc-950 text-sm">
                               {act.distanceKm} <span className="text-[10px] font-normal text-zinc-500">km</span>
                             </div>
-                            <div className="text-[10px] text-zinc-600 font-sans font-bold">Jarak</div>
+                            <div className="text-[10px] text-zinc-600 font-sans font-bold">Distance</div>
                           </>
                         )}
                       </div>
@@ -650,9 +650,9 @@ export default function ActivitiesPage() {
                         <div className="font-black text-zinc-900">{formatSpeedOrPace(act)}</div>
                         <div className="text-[10px] text-zinc-600 font-sans font-bold">
                           {act.sportType === "bike" || act.sportType === "cycling"
-                            ? "Kecepatan"
+                            ? "Speed"
                             : act.sportType === "strength" || act.sportType === "gym"
-                            ? "Kategori"
+                            ? "Category"
                             : "Pace"}
                         </div>
                       </div>
@@ -702,9 +702,9 @@ export default function ActivitiesPage() {
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t-2 border-zinc-100 text-xs">
               <div className="text-zinc-600 font-mono text-[11px] font-medium">
-                Menampilkan <strong className="text-zinc-950 font-black">{(currentPage - 1) * PAGE_SIZE + 1}</strong> -{" "}
-                <strong className="text-zinc-950 font-black">{Math.min(currentPage * PAGE_SIZE, filteredAndSorted.length)}</strong> dari{" "}
-                <strong className="text-zinc-950 font-black">{filteredAndSorted.length}</strong> aktivitas
+                Showing <strong className="text-zinc-950 font-black">{(currentPage - 1) * PAGE_SIZE + 1}</strong> -{" "}
+                <strong className="text-zinc-950 font-black">{Math.min(currentPage * PAGE_SIZE, filteredAndSorted.length)}</strong> of{" "}
+                <strong className="text-zinc-950 font-black">{filteredAndSorted.length}</strong> activities
               </div>
 
               <div className="flex items-center gap-2">
@@ -755,7 +755,7 @@ export default function ActivitiesPage() {
                 <div>
                   <h3 className="text-base font-black text-zinc-950">{selectedActivity.name}</h3>
                   <p className="text-xs font-mono font-medium text-zinc-600">
-                    {new Date(selectedActivity.startTime).toLocaleString("id-ID", {
+                    {new Date(selectedActivity.startTime).toLocaleString("en-US", {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })}
@@ -766,10 +766,10 @@ export default function ActivitiesPage() {
                 <button
                   onClick={() => setSharingActivity(selectedActivity)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-amber-300 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
-                  title="Bagikan ke Instagram / Medsos"
+                  title="Share workout card"
                 >
                   <Share2 className="h-3.5 w-3.5 stroke-[2.5]" />
-                  <span>Bagikan</span>
+                  <span>Share</span>
                 </button>
                 <button
                   onClick={() => setSelectedActivity(null)}
@@ -785,8 +785,8 @@ export default function ActivitiesPage() {
               <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                 <span className="text-[11px] text-zinc-700 font-sans font-bold block">
                   {selectedActivity.sportType === "strength" || selectedActivity.sportType === "gym"
-                    ? "Fokus Sesi"
-                    : "Jarak"}
+                    ? "Workout Focus"
+                    : "Distance"}
                 </span>
                 <span className="text-xl font-black text-zinc-950">
                   {selectedActivity.sportType === "strength" || selectedActivity.sportType === "gym"
@@ -795,23 +795,23 @@ export default function ActivitiesPage() {
                 </span>
               </div>
               <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                <span className="text-[11px] text-zinc-700 font-sans font-bold block">Durasi</span>
+                <span className="text-[11px] text-zinc-700 font-sans font-bold block">Duration</span>
                 <span className="text-xl font-black text-zinc-950">{selectedActivity.durationMin} m</span>
               </div>
               <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                 <span className="text-[11px] text-zinc-700 font-sans font-bold block">
                   {selectedActivity.sportType === "bike" || selectedActivity.sportType === "cycling"
-                    ? "Kecepatan Rata-Rata"
+                    ? "Average Speed"
                     : selectedActivity.sportType === "strength" || selectedActivity.sportType === "gym"
-                    ? "Kategori Sesi"
-                    : "Pace Rata-Rata"}
+                    ? "Workout Category"
+                    : "Average Pace"}
                 </span>
                 <span className="text-xl font-black text-orange-600">
                   {formatSpeedOrPace(selectedActivity)}
                 </span>
               </div>
               <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                <span className="text-[11px] text-zinc-700 font-sans font-bold block">Detak Jantung</span>
+                <span className="text-[11px] text-zinc-700 font-sans font-bold block">Heart Rate</span>
                 <span className="text-xl font-black text-rose-700">
                   {selectedActivity.avgHr} <span className="text-xs text-zinc-500 font-normal">/ {selectedActivity.maxHr} max</span>
                 </span>
@@ -846,7 +846,7 @@ export default function ActivitiesPage() {
 
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                   <div className="p-2.5 rounded-xl bg-white border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
-                    <span className="text-[10px] text-zinc-600 block font-sans font-bold">Elevasi Naik / Turun</span>
+                    <span className="text-[10px] text-zinc-600 block font-sans font-bold">Elevation Gain / Loss</span>
                     <span className="text-emerald-700 font-black">+{selectedActivity.elevationGain}m</span>
                     <span className="text-rose-700 font-black ml-1.5">-{selectedActivity.elevationLoss || 0}m</span>
                   </div>
@@ -866,7 +866,7 @@ export default function ActivitiesPage() {
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-white border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
-                    <span className="text-[10px] text-zinc-600 block font-sans font-bold">Kecepatan Tanjak (VAM)</span>
+                    <span className="text-[10px] text-zinc-600 block font-sans font-bold">Climbing Rate (VAM)</span>
                     <span className="text-amber-800 font-black">
                       {selectedActivity.vam || Math.round((selectedActivity.elevationGain / (selectedActivity.durationMin / 60)))} m/h
                     </span>
@@ -881,13 +881,13 @@ export default function ActivitiesPage() {
                 className="flex-1 py-2.5 text-xs font-black rounded-xl bg-amber-300 hover:bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Share2 className="h-3.5 w-3.5 stroke-[2.5]" />
-                <span>Bagikan Kartu Latihan (Story / Feed)</span>
+                <span>Share Workout Card (Story / Feed)</span>
               </button>
               <button
                 onClick={() => setSelectedActivity(null)}
                 className="px-4 py-2.5 text-xs font-black rounded-xl bg-zinc-950 hover:bg-zinc-850 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] transition-all cursor-pointer"
               >
-                Tutup
+                Close
               </button>
             </div>
           </div>

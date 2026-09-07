@@ -214,13 +214,13 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
 
   const distKm = parseFloat(activity.distanceKm) || 0;
 
-  const formattedDate = new Date(activity.startTime).toLocaleDateString("id-ID", {
+  const formattedDate = new Date(activity.startTime).toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
 
-  const formattedTime = new Date(activity.startTime).toLocaleTimeString("id-ID", {
+  const formattedTime = new Date(activity.startTime).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -267,7 +267,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
       link.href = dataUrl;
       link.click();
     } catch (err) {
-      console.error("Gagal mendownload gambar share:", err);
+      console.error("Failed to download share image:", err);
     } finally {
       setIsExporting(false);
     }
@@ -291,7 +291,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch (err) {
-      console.error("Gagal menyalin gambar ke clipboard:", err);
+      console.error("Failed to copy image to clipboard:", err);
       // Fallback: download instead
       handleDownload();
     } finally {
@@ -318,10 +318,10 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-black text-zinc-950 leading-tight">
-                Bagikan ke Media Sosial
+                Share Workout Card
               </h2>
               <p className="text-[11px] font-medium text-zinc-500">
-                Ekspor kartu latihan siap upload Instagram Story & Feed
+                Export high-resolution story & feed cards ready for social media
               </p>
             </div>
           </div>
@@ -337,7 +337,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3 bg-[#FAF9F5] p-2.5 rounded-2xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
           {/* Ratio Toggle */}
           <div className="flex items-center gap-1">
-            <span className="text-[10px] uppercase font-black text-zinc-500 mr-1">Rasio:</span>
+            <span className="text-[10px] uppercase font-black text-zinc-500 mr-1">Ratio:</span>
             <button
               onClick={() => setAspectRatio("9:16")}
               className={`px-3 py-1.5 text-xs font-black rounded-xl border transition-all ${
@@ -362,7 +362,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
 
           {/* Theme Toggle */}
           <div className="flex items-center gap-1">
-            <span className="text-[10px] uppercase font-black text-zinc-500 mr-1">Tema:</span>
+            <span className="text-[10px] uppercase font-black text-zinc-500 mr-1">Theme:</span>
             <button
               onClick={() => setTheme("dark")}
               className={`px-2.5 py-1 text-xs font-black rounded-lg border transition-all ${
@@ -692,7 +692,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                     }`}
                   >
                     <span className="text-[9px] font-bold block text-zinc-500 uppercase">
-                      Durasi
+                      Duration
                     </span>
                     <span className="text-lg font-black font-mono leading-none">
                       {activity.durationMin}
@@ -746,7 +746,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                     }`}
                   >
                     <span className="text-[9px] font-bold block text-zinc-500 uppercase">
-                      Jarak
+                      Distance
                     </span>
                     <span className="text-lg font-black font-mono leading-none">
                       {activity.distanceKm}
@@ -786,7 +786,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                     }`}
                   >
                     <span className="text-[9px] font-bold block text-zinc-500 uppercase">
-                      Durasi
+                      Duration
                     </span>
                     <span className="text-base font-black font-mono leading-none">
                       {activity.durationMin}
@@ -825,7 +825,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
             className="flex-1 w-full py-3 px-4 rounded-2xl bg-zinc-950 hover:bg-zinc-850 text-white font-black text-xs sm:text-sm border-2 border-zinc-950 shadow-[3px_3px_0px_0px_#09090b] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
           >
             <Download className="h-4 w-4 stroke-[2.5]" />
-            <span>{isExporting ? "Memproses Gambar..." : "Unduh Gambar (PNG)"}</span>
+            <span>{isExporting ? "Rendering Image..." : "Download Image (PNG)"}</span>
           </button>
 
           <button
@@ -836,12 +836,12 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
             {copied ? (
               <>
                 <Check className="h-4 w-4 text-emerald-600 stroke-[3]" />
-                <span className="text-emerald-700">Tersalin ke Clipboard!</span>
+                <span className="text-emerald-700">Copied to Clipboard!</span>
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4 stroke-[2.5]" />
-                <span>Salin Gambar</span>
+                <span>Copy Image</span>
               </>
             )}
           </button>
