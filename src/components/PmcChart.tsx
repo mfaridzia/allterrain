@@ -466,20 +466,6 @@ export const PmcChart: React.FC<PmcChartProps> = ({
               </button>
             ))}
           </div>
-
-          {/* What-If Forecast Simulator Toggle */}
-          <button
-            type="button"
-            onClick={() => setIsForecastOpen(!isForecastOpen)}
-            className={`px-3 py-1.5 text-xs rounded-xl border-2 border-zinc-950 font-black flex items-center gap-1.5 transition-all shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 ${
-              isForecastOpen
-                ? "bg-violet-600 text-white"
-                : "bg-violet-100 text-violet-950 hover:bg-violet-200"
-            }`}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>{isForecastOpen ? "Hide Forecast" : "What-If Forecast"}</span>
-          </button>
         </div>
       </div>
 
@@ -794,8 +780,23 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                   <span className="text-zinc-600 font-medium">Daily Load</span>
                 </div>
               </div>
-              <div className="text-[11px] text-zinc-500 font-medium hidden sm:block">
-                Sweet spot: -30 to -10 TSB
+              {/* Right Side: What-If Forecast Toggle Button */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-zinc-500 font-medium hidden md:inline">
+                  Sweet spot: -30 to -10 TSB
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsForecastOpen(!isForecastOpen)}
+                  className={`px-2.5 py-1 text-xs rounded-lg border-2 border-zinc-950 font-black flex items-center gap-1.5 transition-all shadow-[1.5px_1.5px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 ${
+                    isForecastOpen
+                      ? "bg-violet-600 text-white"
+                      : "bg-violet-100 text-violet-950 hover:bg-violet-200"
+                  }`}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  <span>{isForecastOpen ? "Hide What-If" : "What-If Forecast"}</span>
+                </button>
               </div>
             </div>
 
