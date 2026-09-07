@@ -18,6 +18,7 @@ import {
   Share2,
   HeartPulse,
   Zap,
+  Scale,
 } from "lucide-react";
 import {
   formatPace,
@@ -26,6 +27,7 @@ import {
   calculateDecouplingAnalysis,
 } from "@/lib/analytics";
 import { ActivityShareModal } from "./ActivityShareModal";
+import { ActivityCompareModal } from "./ActivityCompareModal";
 
 export interface ActivityItem {
   id: string;
@@ -63,6 +65,10 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
   const [sharingActivity, setSharingActivity] = useState<ActivityItem | null>(null);
+  const [activeComparePair, setActiveComparePair] = useState<{
+    actA: ActivityItem;
+    actB: ActivityItem;
+  } | null>(null);
 
   const PAGE_SIZE = 20;
 
@@ -366,12 +372,32 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={() => {
+                    const targetDist = parseFloat(selectedActivity.distanceKm || "0");
+                    const otherActs = activities.filter((a) => a.id !== selectedActivity.id);
+                    if (otherActs.length > 0) {
+                      const sortedBySimilarity = [...otherActs].sort((a, b) => {
+                        const diffA = Math.abs(parseFloat(a.distanceKm || "0") - targetDist);
+                        const diffB = Math.abs(parseFloat(b.distanceKm || "0") - targetDist);
+                        return diffA - diffB;
+                      });
+                      setActiveComparePair({ actA: selectedActivity, actB: sortedBySimilarity[0] });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-sky-200 hover:bg-sky-300 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
+                  title="Compare with another run"
+                >
+                  <Scale className="h-3.5 w-3.5 stroke-[2.5]" />
+                  <span>Compare</span>
+                </button>
+                <button
                   onClick={() => setSharingActivity(selectedActivity)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-amber-300 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
-                  title="Bagikan ke Instagram / Medsos"
+                  title="Share workout card"
                 >
                   <Share2 className="h-3.5 w-3.5 stroke-[2.5]" />
-                  <span>Bagikan</span>
+                  <span>Share</span>
                 </button>
                 <button
                   onClick={() => setSelectedActivity(null)}
@@ -656,6 +682,19 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
         <ActivityShareModal
           activity={sharingActivity}
           onClose={() => setSharingActivity(null)}
+        />
+      )}
+
+      {/* Activity Comparison Modal */}
+      {activeComparePair && (
+        <ActivityCompareModal
+          activityA={activeComparePair.actA}
+          activityB={activeComparePair.actB}
+          allActivities={activities}
+          onSelectActivityB={(newB) =>
+            setActiveComparePair((prev) => (prev ? { ...prev, actB: newB } : null))
+          }
+          onClose={() => setActiveComparePair(null)}
         />
       )}
     </div>

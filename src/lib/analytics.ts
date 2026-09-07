@@ -1120,3 +1120,173 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
   };
 }
 
+export interface ActivitySplitPoint {
+  km: number;
+  // Activity A
+  paceSecA?: number;
+  formattedPaceA?: string;
+  hrA?: number;
+  elevA?: number;
+  // Activity B
+  paceSecB?: number;
+  formattedPaceB?: string;
+  hrB?: number;
+  elevB?: number;
+  // Diff (A vs B)
+  paceDiffSec?: number; // negative means A is faster (better)
+  hrDiff?: number; // negative means A had lower HR (more efficient)
+}
+
+export interface ActivityComparisonAnalysis {
+  activityA: any;
+  activityB: any;
+  distDiffKm: number;
+  durationDiffMin: number;
+  paceDiffSec: number; // A - B
+  hrDiff: number; // A - B
+  elevDiffM: number;
+  loadDiff: number;
+  decouplingDiff: number;
+  // Efficiency ratio (speed / HR)
+  efficiencyFactorA: number;
+  efficiencyFactorB: number;
+  efficiencyGainPct: number;
+  splits: ActivitySplitPoint[];
+  summaryVerdict: {
+    headline: string;
+    description: string;
+    isFaster: boolean;
+    isMoreEfficient: boolean;
+    hasLowerDrift: boolean;
+  };
+}
+
+/**
+ * Deterministically synthesizes KM-by-KM split comparisons between two activities
+ * based on their distance, pace, elevation, HR, and cardiac decoupling.
+ */
+export function generateActivityComparison(
+  actA: any,
+  actB: any
+): ActivityComparisonAnalysis {
+  const distA = parseFloat(actA.distanceKm || "0");
+  const distB = parseFloat(actB.distanceKm || "0");
+  const paceA = actA.avgPaceSec || 0;
+  const paceB = actB.avgPaceSec || 0;
+  const hrA = actA.avgHr || 0;
+  const hrB = actB.avgHr || 0;
+  const elevA = actA.elevationGain || 0;
+  const elevB = actB.elevationGain || 0;
+  const loadA = actA.trainingLoad || 0;
+  const loadB = actB.trainingLoad || 0;
+  const decA = actA.decouplingPct || 0;
+  const decB = actB.decouplingPct || 0;
+
+  // Efficiency factor = Speed (m/min) / HR
+  const speedMpmA = paceA > 0 ? 60000 / paceA : 0;
+  const speedMpmB = paceB > 0 ? 60000 / paceB : 0;
+  const efA = hrA > 0 ? Math.round((speedMpmA / hrA) * 100) / 100 : 0;
+  const efB = hrB > 0 ? Math.round((speedMpmB / hrB) * 100) / 100 : 0;
+  const efficiencyGainPct =
+    efB > 0 ? Math.round(((efA - efB) / efB) * 1000) / 10 : 0;
+
+  // Max KM to simulate splits
+  const maxKm = Math.min(42, Math.max(1, Math.round(Math.max(distA, distB))));
+  const splits: ActivitySplitPoint[] = [];
+
+  for (let k = 1; k <= maxKm; k++) {
+    const hasA = k <= Math.ceil(distA);
+    const hasB = k <= Math.ceil(distB);
+
+    let kPaceA: number | undefined;
+    let kHrA: number | undefined;
+    let kElevA: number | undefined;
+
+    let kPaceB: number | undefined;
+    let kHrB: number | undefined;
+    let kElevB: number | undefined;
+
+    // Simulate realistic fatigue drift and pace pacing strategy
+    if (hasA) {
+      const progress = distA > 0 ? k / distA : 0.5;
+      const fatigueFactor = 1 + (progress - 0.5) * ((decA || 3.5) / 100) * 0.8;
+      const cadenceNoise = Math.sin(k * 1.7) * 4;
+      kPaceA = Math.max(180, Math.round(paceA * fatigueFactor + cadenceNoise));
+      const hrDrift = Math.round(hrA * (1 + (progress - 0.5) * 0.06) + Math.cos(k * 2.1) * 2);
+      kHrA = Math.max(100, Math.min(205, hrDrift));
+      kElevA = Math.round((elevA / Math.max(1, distA)) * (1 + Math.sin(k * 1.3) * 0.6));
+    }
+
+    if (hasB) {
+      const progress = distB > 0 ? k / distB : 0.5;
+      const fatigueFactor = 1 + (progress - 0.5) * ((decB || 5.0) / 100) * 0.8;
+      const cadenceNoise = Math.cos(k * 1.9) * 5;
+      kPaceB = Math.max(180, Math.round(paceB * fatigueFactor + cadenceNoise));
+      const hrDrift = Math.round(hrB * (1 + (progress - 0.5) * 0.08) + Math.sin(k * 2.4) * 2);
+      kHrB = Math.max(100, Math.min(205, hrDrift));
+      kElevB = Math.round((elevB / Math.max(1, distB)) * (1 + Math.sin(k * 1.3) * 0.6));
+    }
+
+    const paceDiffSec =
+      kPaceA !== undefined && kPaceB !== undefined ? kPaceA - kPaceB : undefined;
+    const hrDiff = kHrA !== undefined && kHrB !== undefined ? kHrA - kHrB : undefined;
+
+    splits.push({
+      km: k,
+      paceSecA: kPaceA,
+      formattedPaceA: kPaceA ? formatPace(kPaceA) : undefined,
+      hrA: kHrA,
+      elevA: kElevA,
+      paceSecB: kPaceB,
+      formattedPaceB: kPaceB ? formatPace(kPaceB) : undefined,
+      hrB: kHrB,
+      elevB: kElevB,
+      paceDiffSec,
+      hrDiff,
+    });
+  }
+
+  // Summary Verdict
+  const isFaster = paceA > 0 && paceB > 0 && paceA < paceB;
+  const isMoreEfficient = efficiencyGainPct > 0;
+  const hasLowerDrift = decA < decB;
+
+  let headline = "Comparable Endurance Output";
+  let description = "Both workouts demonstrated similar physiological work and cardiovascular demand.";
+
+  if (isFaster && isMoreEfficient) {
+    headline = "Clear Aerobic Adaption & Speed Gain ⚡";
+    description = `You maintained ${Math.abs(Math.round(paceB - paceA))}s/km faster pace while gaining +${efficiencyGainPct}% higher aerobic efficiency (Speed/HR ratio).`;
+  } else if (isFaster) {
+    headline = "Faster Pace & Higher Running Output 🏃‍♂️";
+    description = `You clocked ${Math.abs(Math.round(paceB - paceA))}s/km faster over distance with solid mechanical commitment.`;
+  } else if (isMoreEfficient) {
+    headline = "Superior Cardiovascular Economy 💚";
+    description = `Even at comparable speed, your heart rate ran ${Math.abs(Math.round(hrB - hrA))} bpm lower, signaling strengthened stroke volume and mitochondrial density.`;
+  }
+
+  return {
+    activityA: actA,
+    activityB: actB,
+    distDiffKm: Math.round((distA - distB) * 100) / 100,
+    durationDiffMin: (actA.durationMin || 0) - (actB.durationMin || 0),
+    paceDiffSec: Math.round(paceA - paceB),
+    hrDiff: Math.round(hrA - hrB),
+    elevDiffM: Math.round(elevA - elevB),
+    loadDiff: Math.round(loadA - loadB),
+    decouplingDiff: Math.round((decA - decB) * 10) / 10,
+    efficiencyFactorA: efA,
+    efficiencyFactorB: efB,
+    efficiencyGainPct,
+    splits,
+    summaryVerdict: {
+      headline,
+      description,
+      isFaster,
+      isMoreEfficient,
+      hasLowerDrift,
+    },
+  };
+}
+
+

@@ -27,6 +27,7 @@ import {
   Filter,
   Share2,
   HeartPulse,
+  Scale,
 } from "lucide-react";
 import {
   formatPace,
@@ -42,6 +43,10 @@ import { useDashboardData } from "@/lib/queries";
 
 const ActivityShareModal = dynamic(
   () => import("@/components/ActivityShareModal").then((mod) => mod.ActivityShareModal),
+  { ssr: false }
+);
+const ActivityCompareModal = dynamic(
+  () => import("@/components/ActivityCompareModal").then((mod) => mod.ActivityCompareModal),
   { ssr: false }
 );
 
@@ -63,6 +68,12 @@ export default function ActivitiesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
   const [sharingActivity, setSharingActivity] = useState<ActivityItem | null>(null);
+  // Compare Activities state (Checkbox multi-selection & Active comparison modal pair)
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [activeComparePair, setActiveComparePair] = useState<{
+    actA: ActivityItem;
+    actB: ActivityItem;
+  } | null>(null);
 
   const PAGE_SIZE = 20;
 
@@ -115,6 +126,49 @@ export default function ActivitiesPage() {
     } else {
       setSelectedSports(next);
     }
+  };
+
+  // Toggle selection for comparison (Max 2 selected)
+  const toggleCompare = (actId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setCompareIds((prev) => {
+      if (prev.includes(actId)) {
+        return prev.filter((id) => id !== actId);
+      }
+      if (prev.length >= 2) {
+        // Keep the latest selected one and add the new one
+        return [prev[1], actId];
+      }
+      return [...prev, actId];
+    });
+  };
+
+  // Launch comparison from multi-selected checkboxes
+  const handleLaunchCompare = () => {
+    if (compareIds.length < 2) return;
+    const actA = activities.find((a) => a.id === compareIds[0]);
+    const actB = activities.find((a) => a.id === compareIds[1]);
+    if (actA && actB) {
+      setActiveComparePair({ actA, actB });
+    }
+  };
+
+  // Launch comparison directly from within drawer
+  const handleCompareFromDrawer = (sourceAct: ActivityItem) => {
+    // Find best candidate: activity with closest distance and elevation
+    const targetDist = parseFloat(sourceAct.distanceKm || "0");
+    const otherActs = activities.filter((a) => a.id !== sourceAct.id);
+    if (otherActs.length === 0) return;
+
+    // Pick closest match by distance
+    const sortedBySimilarity = [...otherActs].sort((a, b) => {
+      const diffA = Math.abs(parseFloat(a.distanceKm || "0") - targetDist);
+      const diffB = Math.abs(parseFloat(b.distanceKm || "0") - targetDist);
+      return diffA - diffB;
+    });
+
+    const bestMatch = sortedBySimilarity[0];
+    setActiveComparePair({ actA: sourceAct, actB: bestMatch });
   };
 
   // Filter & Search & Sort
@@ -599,8 +653,27 @@ export default function ActivitiesPage() {
                     onClick={() => setSelectedActivity(act)}
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl bg-[#FAF9F5] hover:bg-white border-2 border-zinc-950 hover:shadow-[3px_3px_0px_0px_#09090b] hover:-translate-y-0.5 transition-all cursor-pointer group gap-3 shadow-[2px_2px_0px_0px_#09090b]"
                   >
-                    {/* Left: Icon, Name & Date */}
-                    <div className="flex items-center gap-3 min-w-0">
+                    {/* Left: Checkbox, Icon, Name & Date */}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {/* Compare Checkbox */}
+                      <div
+                        onClick={(e) => toggleCompare(act.id, e)}
+                        className={`h-5 w-5 rounded-md border-2 border-zinc-950 flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                          compareIds.includes(act.id)
+                            ? "bg-amber-400 shadow-[1px_1px_0px_0px_#09090b]"
+                            : "bg-white hover:bg-zinc-100"
+                        }`}
+                        title={
+                          compareIds.includes(act.id)
+                            ? "Selected for comparison"
+                            : "Click to compare with another activity"
+                        }
+                      >
+                        {compareIds.includes(act.id) && (
+                          <Check className="h-3.5 w-3.5 text-black stroke-[3]" />
+                        )}
+                      </div>
+
                       <div className="h-10 w-10 rounded-xl bg-white border-2 border-zinc-950 flex items-center justify-center shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
                         {getSportIcon(act.sportType, act.elevationGain)}
                       </div>
@@ -786,6 +859,15 @@ export default function ActivitiesPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCompareFromDrawer(selectedActivity)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-sky-200 hover:bg-sky-300 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
+                  title="Compare this run with a benchmark or previous run"
+                >
+                  <Scale className="h-3.5 w-3.5 stroke-[2.5]" />
+                  <span>Compare</span>
+                </button>
                 <button
                   onClick={() => setSharingActivity(selectedActivity)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-amber-300 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
@@ -1066,6 +1148,56 @@ export default function ActivitiesPage() {
           onClose={() => setSharingActivity(null)}
         />
       )}
+
+      {/* Floating Compare Action Dock (When 1 or 2 activities selected) */}
+      {compareIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 text-white border-2 border-zinc-950 px-4 py-3 rounded-2xl shadow-[4px_4px_0px_0px_#09090b] flex items-center gap-3.5 animate-in slide-in-from-bottom-3 duration-200">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-full bg-amber-400 text-zinc-950 font-black text-xs flex items-center justify-center font-mono">
+              {compareIds.length}
+            </div>
+            <span className="text-xs font-bold text-zinc-200">
+              {compareIds.length === 1
+                ? "Select 1 more activity to compare"
+                : "2 Activities selected"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {compareIds.length === 2 && (
+              <button
+                type="button"
+                onClick={handleLaunchCompare}
+                className="px-3.5 py-1.5 rounded-xl bg-orange-400 hover:bg-orange-500 text-zinc-950 font-black text-xs border-2 border-zinc-950 flex items-center gap-1.5 transition-all shadow-[1.5px_1.5px_0px_0px_#ffffff] cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <Scale className="h-3.5 w-3.5 stroke-[2.5]" />
+                <span>Compare Head-to-Head</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setCompareIds([])}
+              className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Activity Comparison Modal */}
+      {activeComparePair && (
+        <ActivityCompareModal
+          activityA={activeComparePair.actA}
+          activityB={activeComparePair.actB}
+          allActivities={activities}
+          onSelectActivityB={(newB) =>
+            setActiveComparePair((prev) => (prev ? { ...prev, actB: newB } : null))
+          }
+          onClose={() => setActiveComparePair(null)}
+        />
+      )}
     </div>
   );
 }
+
