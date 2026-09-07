@@ -562,7 +562,7 @@ export const PmcChart: React.FC<PmcChartProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-zinc-200">
             <div className="flex items-center gap-2.5">
               <div className="h-8 w-8 rounded-lg bg-violet-600 border-2 border-zinc-950 flex items-center justify-center text-white shadow-[1.5px_1.5px_0px_0px_#09090b]">
-                <Sliders className="h-4 w-4" />
+                <TrendingUp className="h-4 w-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
