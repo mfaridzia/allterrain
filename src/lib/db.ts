@@ -89,6 +89,7 @@ export async function initSchema(client: Client): Promise<void> {
       vam_meters_per_hour REAL DEFAULT 0,
       decoupling_pct REAL DEFAULT 0,
       efficiency_factor REAL DEFAULT 0,
+      gps_track TEXT,
       raw_data TEXT,
       created_at INTEGER NOT NULL
     );`,
@@ -132,6 +133,7 @@ export async function initSchema(client: Client): Promise<void> {
   // 2. Safe Column Additions for backward compatibility with existing databases
   const alterStatements = [
     "ALTER TABLE activities ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
+    "ALTER TABLE activities ADD COLUMN gps_track TEXT;",
     "ALTER TABLE daily_metrics ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
     "ALTER TABLE user_settings ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
     "ALTER TABLE chat_messages ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",

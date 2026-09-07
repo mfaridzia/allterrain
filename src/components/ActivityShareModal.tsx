@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import {
   X,
   Download,
@@ -27,95 +27,73 @@ interface ActivityShareModalProps {
   onClose: () => void;
 }
 
-/**
- * Deterministic pseudo-random number generator for consistent seeded route visualization
- */
-function seededRandom(seed: number) {
-  const x = Math.sin(seed++) * 10000;
-  return x - Math.floor(x);
+interface LatLng {
+  lat: number;
+  lng: number;
 }
 
 /**
- * Generate a realistic, smooth SVG route polyline based on activity properties
+ * Convert authentic GPS coordinates (lat/lng) into normalized SVG coordinates (x, y)
+ * preserving real geographical aspect ratio via equirectangular projection with cosine latitude scaling.
  */
-function generateRoutePath(
-  activityId: string,
-  distanceKm: number,
-  sportType: string,
+function convertGpsToSvgPath(
+  points: LatLng[],
   width: number,
   height: number
 ) {
-  let seed = 0;
-  for (let i = 0; i < activityId.length; i++) {
-    seed = (seed << 5) - seed + activityId.charCodeAt(i);
-    seed |= 0;
+  if (!points || points.length < 2) return null;
+
+  let minLat = Infinity, maxLat = -Infinity;
+  let minLng = Infinity, maxLng = -Infinity;
+
+  for (const p of points) {
+    if (p.lat < minLat) minLat = p.lat;
+    if (p.lat > maxLat) maxLat = p.lat;
+    if (p.lng < minLng) minLng = p.lng;
+    if (p.lng > maxLng) maxLng = p.lng;
   }
 
-  const padding = 36;
+  const dLat = maxLat - minLat;
+  const midLatRad = ((minLat + maxLat) / 2) * (Math.PI / 180);
+  const cosMidLat = Math.cos(midLatRad);
+  const dLng = (maxLng - minLng) * cosMidLat;
+
+  if (dLat < 0.00001 && dLng < 0.00001) return null;
+
+  const padding = 32;
   const usableW = width - padding * 2;
   const usableH = height - padding * 2;
 
-  const numPoints = Math.min(36, Math.max(16, Math.round(distanceKm * 3)));
-  const rawPoints: { x: number; y: number }[] = [];
+  const scale = Math.min(
+    usableW / (dLng || 0.0001),
+    usableH / (dLat || 0.0001)
+  );
 
-  let cx = 0;
-  let cy = 0;
-  rawPoints.push({ x: cx, y: cy });
+  const actualW = dLng * scale;
+  const actualH = dLat * scale;
+  const offsetX = padding + (usableW - actualW) / 2;
+  const offsetY = padding + (usableH - actualH) / 2;
 
-  let angle = seededRandom(seed++) * Math.PI * 2;
-  const isLoop = distanceKm > 2.5;
+  const projected = points.map((p) => {
+    const normLng = (p.lng - minLng) * cosMidLat;
+    const normLat = maxLat - p.lat; // Latitude increases North, SVG Y increases Down
+    return {
+      x: offsetX + normLng * scale,
+      y: offsetY + normLat * scale,
+    };
+  });
 
-  for (let i = 1; i < numPoints; i++) {
-    const turn = (seededRandom(seed++) - 0.48) * 1.5;
-    angle += turn;
-
-    // Gentle pull towards start if loop
-    if (isLoop && i > numPoints * 0.5) {
-      const targetAngle = Math.atan2(-cy, -cx);
-      const diff = Math.atan2(Math.sin(targetAngle - angle), Math.cos(targetAngle - angle));
-      angle += diff * 0.35;
-    }
-
-    const step = 20 + seededRandom(seed++) * 35;
-    cx += Math.cos(angle) * step;
-    cy += Math.sin(angle) * step;
-    rawPoints.push({ x: cx, y: cy });
+  let pathD = `M ${projected[0].x.toFixed(1)},${projected[0].y.toFixed(1)}`;
+  for (let i = 1; i < projected.length; i++) {
+    pathD += ` L ${projected[i].x.toFixed(1)},${projected[i].y.toFixed(1)}`;
   }
 
-  // Normalize points to fit within SVG viewBox
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const p of rawPoints) {
-    if (p.x < minX) minX = p.x;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.y > maxY) maxY = p.y;
-  }
-
-  const rangeX = maxX - minX || 1;
-  const rangeY = maxY - minY || 1;
-  const scale = Math.min(usableW / rangeX, usableH / rangeY);
-
-  const offsetX = padding + (usableW - rangeX * scale) / 2;
-  const offsetY = padding + (usableH - rangeY * scale) / 2;
-
-  const points = rawPoints.map((p) => ({
-    x: offsetX + (p.x - minX) * scale,
-    y: offsetY + (p.y - minY) * scale,
-  }));
-
-  // Build SVG smoothed path
-  let pathD = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1];
-    const curr = points[i];
-    const midX = (prev.x + curr.x) / 2;
-    const midY = (prev.y + curr.y) / 2;
-    pathD += ` Q ${prev.x.toFixed(1)},${prev.y.toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;
-  }
-  const last = points[points.length - 1];
-  pathD += ` T ${last.x.toFixed(1)},${last.y.toFixed(1)}`;
-
-  return { pathD, startPoint: points[0], endPoint: points[points.length - 1] };
+  return {
+    pathD,
+    startPoint: projected[0],
+    endPoint: projected[projected.length - 1],
+    pointCount: projected.length,
+  };
 }
 
 /**
@@ -230,19 +208,44 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
   const svgWidth = aspectRatio === "9:16" ? 312 : 340;
   const svgHeight = aspectRatio === "9:16" ? 250 : 150;
 
-  const routeData = useMemo(() => {
-    if (isStrength) return null;
-    return generateRoutePath(
-      activity.id,
-      distKm > 0 ? distKm : 5.0,
-      activity.sportType,
-      svgWidth,
-      svgHeight
-    );
-  }, [activity.id, distKm, activity.sportType, svgWidth, svgHeight, isStrength]);
+  const [gpsPoints, setGpsPoints] = useState<LatLng[] | null>(null);
+  const [isLoadingGps, setIsLoadingGps] = useState(false);
+
+  useEffect(() => {
+    if (!activity) return;
+
+    let isMounted = true;
+    setIsLoadingGps(true);
+
+    fetch(`/api/activities/track?id=${activity.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.success && data.isRealGps && Array.isArray(data.points) && data.points.length > 1) {
+          setGpsPoints(data.points);
+        } else {
+          setGpsPoints(null);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not load GPS track:", err);
+        if (isMounted) setGpsPoints(null);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingGps(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activity?.id]);
+
+  const realRouteData = useMemo(() => {
+    if (isStrength || !gpsPoints || gpsPoints.length < 2) return null;
+    return convertGpsToSvgPath(gpsPoints, svgWidth, svgHeight);
+  }, [gpsPoints, svgWidth, svgHeight, isStrength]);
 
   const hrWaveData = useMemo(() => {
-    if (!isStrength) return null;
     return generateHeartRateWaveform(
       activity.avgHr || 135,
       activity.maxHr || 165,
@@ -250,7 +253,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
       svgWidth,
       svgHeight
     );
-  }, [activity.avgHr, activity.maxHr, activity.durationMin, svgWidth, svgHeight, isStrength]);
+  }, [activity.avgHr, activity.maxHr, activity.durationMin, svgWidth, svgHeight]);
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
@@ -500,8 +503,115 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                 }}
               />
 
-              {isStrength && hrWaveData ? (
-                /* Strength: Heart Rate Waveform SVG */
+              {isLoadingGps ? (
+                /* Loading authentic GPS track */
+                <div className="relative w-full h-full flex flex-col items-center justify-center p-4 gap-2.5">
+                  <div className="h-6 w-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase font-semibold animate-pulse">
+                    Syncing COROS GPS Track...
+                  </span>
+                </div>
+              ) : realRouteData ? (
+                /* Run / Bike: Authentic GPS Route Path SVG */
+                <div className="relative w-full h-full flex items-center justify-center p-2">
+                  <svg
+                    width="100%"
+                    height="100%"
+                    viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                    className="overflow-visible"
+                  >
+                    <defs>
+                      <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop
+                          offset="0%"
+                          stopColor={isBike ? "#10B981" : isTrail ? "#06B6D4" : "#F97316"}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor={isBike ? "#34D399" : isTrail ? "#22D3EE" : "#FF5500"}
+                        />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Outer Glow Route Under-stroke (Dark mode) */}
+                    {theme === "dark" && (
+                      <path
+                        d={realRouteData.pathD}
+                        fill="none"
+                        stroke={isBike ? "#10B981" : isTrail ? "#06B6D4" : "#FF5500"}
+                        strokeWidth="8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        opacity="0.25"
+                        style={{ filter: "blur(4px)" }}
+                      />
+                    )}
+
+                    {/* Main Sharp Route Line */}
+                    <path
+                      d={realRouteData.pathD}
+                      fill="none"
+                      stroke={
+                        theme === "dark"
+                          ? "url(#routeGrad)"
+                          : isBike
+                          ? "#059669"
+                          : isTrail
+                          ? "#0891B2"
+                          : "#EA580C"
+                      }
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    {/* Start Dot (Emerald pulse) */}
+                    <circle
+                      cx={realRouteData.startPoint.x}
+                      cy={realRouteData.startPoint.y}
+                      r="4.5"
+                      fill="#10B981"
+                      stroke="#FFFFFF"
+                      strokeWidth="2"
+                    />
+
+                    {/* Finish Dot (Orange/White) */}
+                    <circle
+                      cx={realRouteData.endPoint.x}
+                      cy={realRouteData.endPoint.y}
+                      r="5"
+                      fill="#F97316"
+                      stroke="#FFFFFF"
+                      strokeWidth="2"
+                    />
+                  </svg>
+
+                  {/* Route Legend Pills */}
+                  <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[8px] font-mono font-bold">
+                    <span className="flex items-center gap-1 text-emerald-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      START
+                    </span>
+                    <span className="text-zinc-500">•</span>
+                    <span className="flex items-center gap-1 text-orange-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                      FINISH
+                    </span>
+                    <span className="text-zinc-500">•</span>
+                    <span className="text-[7.5px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/30 font-black tracking-wider">
+                      📍 COROS GPS
+                    </span>
+                  </div>
+
+                  {activity.elevationGain > 0 && (
+                    <div className="absolute bottom-2 right-3 text-[9px] font-mono font-black text-emerald-500 flex items-center gap-0.5">
+                      <ArrowUpRight className="h-3 w-3 stroke-[3]" />
+                      +{activity.elevationGain}m D+
+                    </div>
+                  )}
+                </div>
+              ) : hrWaveData ? (
+                /* Indoor / Gym / Non-GPS: Authentic Pace & HR Intensity Waveform */
                 <div className="relative w-full h-full flex flex-col items-center justify-center p-2">
                   <svg
                     width="100%"
@@ -583,104 +693,9 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
 
                   {/* Bottom legend */}
                   <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[9px] font-mono text-zinc-500">
-                    <span>Cardio-Strength Waveform</span>
+                    <span>{isStrength ? "Cardio-Strength Waveform" : "Pace & HR Intensity Profile"}</span>
                     <span>Avg {activity.avgHr} bpm</span>
                   </div>
-                </div>
-              ) : routeData ? (
-                /* Run / Bike: Aesthetic Route Path SVG */
-                <div className="relative w-full h-full flex items-center justify-center p-2">
-                  <svg
-                    width="100%"
-                    height="100%"
-                    viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                    className="overflow-visible"
-                  >
-                    <defs>
-                      <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop
-                          offset="0%"
-                          stopColor={isBike ? "#10B981" : isTrail ? "#06B6D4" : "#F97316"}
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor={isBike ? "#34D399" : isTrail ? "#22D3EE" : "#FF5500"}
-                        />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Outer Glow Route Under-stroke (Dark mode) */}
-                    {theme === "dark" && (
-                      <path
-                        d={routeData.pathD}
-                        fill="none"
-                        stroke={isBike ? "#10B981" : isTrail ? "#06B6D4" : "#FF5500"}
-                        strokeWidth="8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        opacity="0.25"
-                        style={{ filter: "blur(4px)" }}
-                      />
-                    )}
-
-                    {/* Main Sharp Route Line */}
-                    <path
-                      d={routeData.pathD}
-                      fill="none"
-                      stroke={
-                        theme === "dark"
-                          ? "url(#routeGrad)"
-                          : isBike
-                          ? "#059669"
-                          : isTrail
-                          ? "#0891B2"
-                          : "#EA580C"
-                      }
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-
-                    {/* Start Dot (Emerald pulse) */}
-                    <circle
-                      cx={routeData.startPoint.x}
-                      cy={routeData.startPoint.y}
-                      r="4.5"
-                      fill="#10B981"
-                      stroke="#FFFFFF"
-                      strokeWidth="2"
-                    />
-
-                    {/* Finish Dot (Orange/White) */}
-                    <circle
-                      cx={routeData.endPoint.x}
-                      cy={routeData.endPoint.y}
-                      r="5"
-                      fill="#F97316"
-                      stroke="#FFFFFF"
-                      strokeWidth="2"
-                    />
-                  </svg>
-
-                  {/* Route Legend Pills */}
-                  <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[8px] font-mono font-bold">
-                    <span className="flex items-center gap-1 text-emerald-500">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      START
-                    </span>
-                    <span className="text-zinc-500">•</span>
-                    <span className="flex items-center gap-1 text-orange-500">
-                      <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                      FINISH
-                    </span>
-                  </div>
-
-                  {activity.elevationGain > 0 && (
-                    <div className="absolute bottom-2 right-3 text-[9px] font-mono font-black text-emerald-500 flex items-center gap-0.5">
-                      <ArrowUpRight className="h-3 w-3 stroke-[3]" />
-                      +{activity.elevationGain}m D+
-                    </div>
-                  )}
                 </div>
               ) : null}
             </div>
@@ -843,16 +858,22 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
           <button
             onClick={handleDownload}
-            disabled={isExporting}
+            disabled={isExporting || isLoadingGps}
             className="flex-1 w-full py-3 px-4 rounded-2xl bg-zinc-950 hover:bg-zinc-850 text-white font-black text-xs sm:text-sm border-2 border-zinc-950 shadow-[3px_3px_0px_0px_#09090b] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
           >
             <Download className="h-4 w-4 stroke-[2.5]" />
-            <span>{isExporting ? "Rendering Image..." : "Download Image (PNG)"}</span>
+            <span>
+              {isExporting
+                ? "Rendering Image..."
+                : isLoadingGps
+                ? "Syncing GPS..."
+                : "Download Image (PNG)"}
+            </span>
           </button>
 
           <button
             onClick={handleCopy}
-            disabled={isExporting}
+            disabled={isExporting || isLoadingGps}
             className="flex-1 w-full py-3 px-4 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-950 font-black text-xs sm:text-sm border-2 border-zinc-950 shadow-[3px_3px_0px_0px_#09090b] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
           >
             {copied ? (
