@@ -795,7 +795,7 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                       : "bg-violet-100 text-violet-950 hover:bg-violet-200"
                   }`}
                 >
-                  <SlidersHorizontal className="h-3 w-3" />
+                  <TrendingUp className="h-3 w-3" />
                   <span>{isForecastOpen ? "Hide What-If" : "What-If Forecast"}</span>
                 </button>
               </div>
