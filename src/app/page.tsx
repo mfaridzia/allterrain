@@ -11,6 +11,7 @@ import { EvoLabSuite } from "@/components/EvoLabSuite";
 import { RecoveryRadar } from "@/components/RecoveryRadar";
 import { TrainingReadinessCard } from "@/components/TrainingReadinessCard";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { WeeklyZoneProgressionCard } from "@/components/WeeklyZoneProgressionCard";
 import dynamic from "next/dynamic";
 import { Trophy, Mountain, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
 import { useDashboardData, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
@@ -160,6 +161,11 @@ export default function DashboardPage() {
                 />
               </div>
             </div>
+
+            {/* Weekly Hours in Zones & Seiler 80/20 Progression */}
+            <WeeklyZoneProgressionCard
+              progression={dashboardData.weeklyZoneProgression}
+            />
 
             {/* Suite Tabs: Road EvoLab vs Trail & Mountain */}
             <div className="space-y-4">

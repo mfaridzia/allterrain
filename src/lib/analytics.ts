@@ -1604,4 +1604,478 @@ export function generateActivityComparison(
   };
 }
 
+// ---------------------------------------------------------------------------
+// WEEKLY HOURS IN ZONES & POLARIZATION PROGRESSION (SEILER 80/20 & GREY ZONE)
+// Based on:
+// - Stephen Seiler (2006, 2010): Polarized Training Model (80% Low, 20% High)
+// - Matt Fitzgerald (2014): '80/20 Running' and the Moderate-Intensity / Grey Zone Trap
+// ---------------------------------------------------------------------------
+
+export interface WeeklyZoneData {
+  weekKey: string; // e.g. "2026-W36"
+  weekLabel: string; // e.g. "Minggu Ini", "25-31 Agu"
+  weekRange: string; // e.g. "1 Sep - 7 Sep 2026"
+  startDate: string;
+  endDate: string;
+  isCurrentWeek: boolean;
+  activityCount: number;
+  totalHours: number;
+  totalDurationMinutes: number;
+  formattedTotalDuration: string;
+
+  // 5-Zone breakdown (hours)
+  z1Hours: number;
+  z2Hours: number;
+  z3Hours: number;
+  z4Hours: number;
+  z5Hours: number;
+
+  // 5-Zone percentages (0-100)
+  z1Pct: number;
+  z2Pct: number;
+  z3Pct: number;
+  z4Pct: number;
+  z5Pct: number;
+
+  // 3-Category Seiler Model breakdown (hours)
+  lowIntensityHours: number; // Z1 + Z2
+  greyZoneHours: number; // Z3 (Grey Zone)
+  highIntensityHours: number; // Z4 + Z5
+
+  // 3-Category Seiler percentages (0-100)
+  lowIntensityPct: number;
+  greyZonePct: number;
+  highIntensityPct: number;
+
+  classification: "polarized" | "pyramidal" | "grey_zone_trap" | "base_building" | "threshold_heavy";
+  classificationLabel: string;
+  classificationDescription: string;
+  statusBadge: {
+    text: string;
+    bgColor: string;
+    textColor: string;
+    borderColor: string;
+  };
+  tacticalAdvice: string;
+}
+
+export interface WeeklyZoneProgressionResult {
+  currentWeek: WeeklyZoneData | null;
+  weeks: WeeklyZoneData[];
+  overallAverage: {
+    lowIntensityPct: number;
+    greyZonePct: number;
+    highIntensityPct: number;
+    totalHours: number;
+    avgWeeklyHours: number;
+    isPolarized: boolean;
+    verdictLabel: string;
+  };
+  zoneThresholds: {
+    lthr: number;
+    z1Max: number;
+    z2Max: number;
+    z3Max: number;
+    z4Max: number;
+  };
+}
+
+/**
+ * Helper: Estimate activity time spent in 5 heart rate zones
+ */
+export function estimateActivityHrZones(params: {
+  durationSeconds: number;
+  avgHr: number;
+  maxHr?: number;
+  aerobicTe?: number;
+  anaerobicTe?: number;
+}): {
+  z1: number;
+  z2: number;
+  z3: number;
+  z4: number;
+  z5: number;
+} {
+  const dur = Math.max(0, params.durationSeconds || 1800);
+  const avgHr = params.avgHr || 140;
+  const maxHr = params.maxHr || (avgHr + 20);
+  const anaeroTe = params.anaerobicTe || 0;
+
+  let z1Ratio = 0;
+  let z2Ratio = 0;
+  let z3Ratio = 0;
+  let z4Ratio = 0;
+  let z5Ratio = 0;
+
+  if (avgHr < 125) {
+    // Easy recovery
+    z1Ratio = 0.85;
+    z2Ratio = 0.15;
+  } else if (avgHr <= 145) {
+    // Aerobic base Zone 2
+    if (maxHr > 165) {
+      z1Ratio = 0.15;
+      z2Ratio = 0.65;
+      z3Ratio = 0.15;
+      z4Ratio = 0.05;
+    } else {
+      z1Ratio = 0.20;
+      z2Ratio = 0.72;
+      z3Ratio = 0.08;
+    }
+  } else if (avgHr <= 158) {
+    // Tempo / Grey Zone
+    z1Ratio = 0.12;
+    z2Ratio = 0.28;
+    z3Ratio = 0.45;
+    z4Ratio = 0.12;
+    z5Ratio = 0.03;
+  } else {
+    // Threshold or hard interval workout
+    const highIntensityFraction = Math.min(0.65, 0.35 + (avgHr - 158) * 0.02 + anaeroTe * 0.08);
+    z5Ratio = Math.min(0.25, Math.max(0.05, anaeroTe * 0.10));
+    z4Ratio = Math.max(0.15, highIntensityFraction - z5Ratio);
+    z3Ratio = 0.15;
+    z2Ratio = 0.25;
+    z1Ratio = Math.max(0.05, 1 - (z2Ratio + z3Ratio + z4Ratio + z5Ratio));
+  }
+
+  return {
+    z1: Math.round(dur * z1Ratio),
+    z2: Math.round(dur * z2Ratio),
+    z3: Math.round(dur * z3Ratio),
+    z4: Math.round(dur * z4Ratio),
+    z5: Math.round(dur * z5Ratio),
+  };
+}
+
+/**
+ * Calculates Weekly Zone Progression (Weekly Hours in Zones)
+ * Analyzes whether athlete is truly Polarized (80/20) or stuck in the Grey Zone (Zone 3).
+ */
+export function calculateWeeklyZoneProgression(
+  activities: Array<{
+    id?: string;
+    startTime: number;
+    durationSeconds?: number;
+    durationMin?: number;
+    avgHr?: number;
+    maxHr?: number;
+    aerobicTe?: number;
+    anaerobicTe?: number;
+  }>,
+  lthr: number = 162,
+  maxWeeks: number = 12
+): WeeklyZoneProgressionResult {
+  if (!activities || activities.length === 0) {
+    return {
+      currentWeek: null,
+      weeks: [],
+      overallAverage: {
+        lowIntensityPct: 80,
+        greyZonePct: 15,
+        highIntensityPct: 5,
+        totalHours: 0,
+        avgWeeklyHours: 0,
+        isPolarized: true,
+        verdictLabel: "Belum Ada Data",
+      },
+      zoneThresholds: {
+        lthr,
+        z1Max: Math.round(lthr * 0.8),
+        z2Max: Math.round(lthr * 0.91),
+        z3Max: Math.round(lthr * 0.98),
+        z4Max: Math.round(lthr * 1.04),
+      },
+    };
+  }
+
+  // Helper to get ISO week Monday date and key
+  const getWeekMeta = (timestamp: number) => {
+    const d = new Date(timestamp);
+    const day = d.getUTCDay() || 7;
+    // Set to Monday of this week
+    const monday = new Date(d);
+    monday.setUTCDate(d.getUTCDate() - day + 1);
+    monday.setUTCHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    sunday.setUTCHours(23, 59, 59, 999);
+
+    const dCopy = new Date(monday);
+    dCopy.setUTCDate(monday.getUTCDate() + 3);
+    const yearStart = new Date(Date.UTC(dCopy.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((dCopy.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    const weekKey = `${dCopy.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const startM = monthNames[monday.getUTCMonth()];
+    const endM = monthNames[sunday.getUTCMonth()];
+    const startDay = monday.getUTCDate();
+    const endDay = sunday.getUTCDate();
+
+    let weekLabel = "";
+    if (startM === endM) {
+      weekLabel = `${startDay}–${endDay} ${startM}`;
+    } else {
+      weekLabel = `${startDay} ${startM} – ${endDay} ${endM}`;
+    }
+
+    const weekRange = `${startDay} ${startM} – ${endDay} ${endM} ${sunday.getUTCFullYear()}`;
+
+    return {
+      weekKey,
+      weekLabel,
+      weekRange,
+      mondayMs: monday.getTime(),
+      sundayMs: sunday.getTime(),
+      startDate: monday.toISOString().split("T")[0],
+      endDate: sunday.toISOString().split("T")[0],
+    };
+  };
+
+  // Find latest activity timestamp to determine current week
+  let latestTimestamp = 0;
+  for (const act of activities) {
+    const t = Number(act.startTime || 0);
+    if (t > latestTimestamp) latestTimestamp = t;
+  }
+  const currentWeekKey = latestTimestamp > 0 ? getWeekMeta(latestTimestamp).weekKey : "";
+
+  // Group activities by week
+  interface WeekAccumulator {
+    meta: ReturnType<typeof getWeekMeta>;
+    z1: number;
+    z2: number;
+    z3: number;
+    z4: number;
+    z5: number;
+    totalSeconds: number;
+    activityCount: number;
+  }
+
+  const weeksMap = new Map<string, WeekAccumulator>();
+
+  for (const act of activities) {
+    const t = Number(act.startTime || 0);
+    if (!t) continue;
+    const durSec = act.durationSeconds || (act.durationMin ? act.durationMin * 60 : 1800);
+    const meta = getWeekMeta(t);
+
+    if (!weeksMap.has(meta.weekKey)) {
+      weeksMap.set(meta.weekKey, {
+        meta,
+        z1: 0,
+        z2: 0,
+        z3: 0,
+        z4: 0,
+        z5: 0,
+        totalSeconds: 0,
+        activityCount: 0,
+      });
+    }
+
+    const item = weeksMap.get(meta.weekKey)!;
+    const z = estimateActivityHrZones({
+      durationSeconds: durSec,
+      avgHr: act.avgHr || 140,
+      maxHr: act.maxHr,
+      aerobicTe: act.aerobicTe,
+      anaerobicTe: act.anaerobicTe,
+    });
+
+    item.z1 += z.z1;
+    item.z2 += z.z2;
+    item.z3 += z.z3;
+    item.z4 += z.z4;
+    item.z5 += z.z5;
+    item.totalSeconds += durSec;
+    item.activityCount += 1;
+  }
+
+  // Sort weeks chronologically
+  const sortedWeeks = Array.from(weeksMap.values()).sort(
+    (a, b) => a.meta.mondayMs - b.meta.mondayMs
+  );
+
+  // Take up to maxWeeks
+  const selectedWeeks = sortedWeeks.slice(-maxWeeks);
+
+  // Format into WeeklyZoneData
+  const weeklyDataList: WeeklyZoneData[] = selectedWeeks.map((wk) => {
+    const totalSec = Math.max(1, wk.totalSeconds);
+    const totalHours = Math.round((totalSec / 3600) * 10) / 10;
+    const totalDurationMinutes = Math.round(totalSec / 60);
+    const h = Math.floor(totalDurationMinutes / 60);
+    const m = totalDurationMinutes % 60;
+    const formattedTotalDuration = h > 0 ? `${h}j ${m}m` : `${m}m`;
+
+    const z1Hours = Math.round((wk.z1 / 3600) * 10) / 10;
+    const z2Hours = Math.round((wk.z2 / 3600) * 10) / 10;
+    const z3Hours = Math.round((wk.z3 / 3600) * 10) / 10;
+    const z4Hours = Math.round((wk.z4 / 3600) * 10) / 10;
+    const z5Hours = Math.round((wk.z5 / 3600) * 10) / 10;
+
+    const z1Pct = Math.round((wk.z1 / totalSec) * 100);
+    const z2Pct = Math.round((wk.z2 / totalSec) * 100);
+    const z3Pct = Math.round((wk.z3 / totalSec) * 100);
+    const z4Pct = Math.round((wk.z4 / totalSec) * 100);
+    const z5Pct = Math.max(0, 100 - (z1Pct + z2Pct + z3Pct + z4Pct));
+
+    const lowIntensityHours = Math.round((z1Hours + z2Hours) * 10) / 10;
+    const greyZoneHours = z3Hours;
+    const highIntensityHours = Math.round((z4Hours + z5Hours) * 10) / 10;
+
+    const lowIntensityPct = Math.min(100, z1Pct + z2Pct);
+    const greyZonePct = z3Pct;
+    const highIntensityPct = Math.max(0, 100 - lowIntensityPct - greyZonePct);
+
+    const isCurrentWeek = wk.meta.weekKey === currentWeekKey;
+    const weekLabel = isCurrentWeek ? "Minggu Ini" : wk.meta.weekLabel;
+
+    // Classification
+    let classification: WeeklyZoneData["classification"] = "polarized";
+    let classificationLabel = "Polarized (80/20)";
+    let classificationDescription = "Distribusi terpolarisasi sempurna: mayoritas aerobik ringan & porsi intensitas tinggi terukur.";
+    let statusBadge = {
+      text: "Polarized (80/20)",
+      bgColor: "bg-emerald-300",
+      textColor: "text-zinc-950",
+      borderColor: "border-zinc-950",
+    };
+    let tacticalAdvice = "Eksekusi latihan sangat solid! Hari santai benar-benar santai di Zona 1/2, bebas dari kelelahan grey zone.";
+
+    if (greyZonePct > 24) {
+      classification = "grey_zone_trap";
+      classificationLabel = "Grey Zone Trap (Kebablasan Z3)";
+      classificationDescription = `Sebanyak ${greyZonePct}% waktu dihabiskan di Zona 3 (Tempo). Terlalu keras untuk pemulihan, namun belum cukup keras untuk adaptasi anaerobik.`;
+      statusBadge = {
+        text: "Kebablasan di Z3",
+        bgColor: "bg-amber-300",
+        textColor: "text-zinc-950",
+        borderColor: "border-zinc-950",
+      };
+      tacticalAdvice = "Perlambat pace lari santai Anda! Jaga agar nafas tetap bisa berbicara lancar (Zona 2) agar tidak menumpuk kelelahan tak perlu.";
+    } else if (highIntensityPct >= 30) {
+      classification = "threshold_heavy";
+      classificationLabel = "Threshold Heavy (High Stress)";
+      classificationDescription = `Intensitas tinggi mencapai ${highIntensityPct}%. Beban sistem saraf simpatik tinggi.`;
+      statusBadge = {
+        text: "High Stress",
+        bgColor: "bg-rose-300",
+        textColor: "text-zinc-950",
+        borderColor: "border-zinc-950",
+      };
+      tacticalAdvice = "Kurangi interval keras minggu depan dan perbanyak easy jog Zona 1 untuk memulihkan cadangan glikogen dan hormon stres.";
+    } else if (lowIntensityPct >= 88 && highIntensityPct < 5) {
+      classification = "base_building";
+      classificationLabel = "Pure Aerobic Base";
+      classificationDescription = "Latihan murni aerobik fondasi dasar (>88% Zona 1/2).";
+      statusBadge = {
+        text: "Aerobic Base",
+        bgColor: "bg-blue-300",
+        textColor: "text-zinc-950",
+        borderColor: "border-zinc-950",
+      };
+      tacticalAdvice = "Fondasi mitokondria yang sangat bagus. Tambahkan 1 sesi strides / short pickups untuk menjaga turnover kaki.";
+    } else if (greyZonePct > highIntensityPct) {
+      classification = "pyramidal";
+      classificationLabel = "Pyramidal Model";
+      classificationDescription = "Distribusi piramid: porsi Zone 1-2 dominan, disusul Zone 3 tempo, dan sedikit Zone 4-5.";
+      statusBadge = {
+        text: "Pyramidal",
+        bgColor: "bg-cyan-200",
+        textColor: "text-zinc-950",
+        borderColor: "border-zinc-950",
+      };
+      tacticalAdvice = "Cocok untuk persiapan maraton/ultra, namun pastikan tidak membakar energi berlebihan di hari-hari mudah.";
+    }
+
+    return {
+      weekKey: wk.meta.weekKey,
+      weekLabel,
+      weekRange: wk.meta.weekRange,
+      startDate: wk.meta.startDate,
+      endDate: wk.meta.endDate,
+      isCurrentWeek,
+      activityCount: wk.activityCount,
+      totalHours,
+      totalDurationMinutes,
+      formattedTotalDuration,
+      z1Hours,
+      z2Hours,
+      z3Hours,
+      z4Hours,
+      z5Hours,
+      z1Pct,
+      z2Pct,
+      z3Pct,
+      z4Pct,
+      z5Pct,
+      lowIntensityHours,
+      greyZoneHours,
+      highIntensityHours,
+      lowIntensityPct,
+      greyZonePct,
+      highIntensityPct,
+      classification,
+      classificationLabel,
+      classificationDescription,
+      statusBadge,
+      tacticalAdvice,
+    };
+  });
+
+  // Calculate overall average across selected window
+  let totalLowSec = 0;
+  let totalGreySec = 0;
+  let totalHighSec = 0;
+  let totalAllSec = 0;
+
+  selectedWeeks.forEach((w) => {
+    totalLowSec += w.z1 + w.z2;
+    totalGreySec += w.z3;
+    totalHighSec += w.z4 + w.z5;
+    totalAllSec += w.totalSeconds;
+  });
+
+  const grandTotalSec = Math.max(1, totalAllSec);
+  const avgLowPct = Math.round((totalLowSec / grandTotalSec) * 100);
+  const avgGreyPct = Math.round((totalGreySec / grandTotalSec) * 100);
+  const avgHighPct = Math.max(0, 100 - avgLowPct - avgGreyPct);
+  const totalHours = Math.round((grandTotalSec / 3600) * 10) / 10;
+  const avgWeeklyHours = selectedWeeks.length > 0 ? Math.round((totalHours / selectedWeeks.length) * 10) / 10 : 0;
+  const isPolarized = avgLowPct >= 75 && avgGreyPct <= 20;
+
+  let verdictLabel = "Polarized (80/20)";
+  if (avgGreyPct > 22) verdictLabel = "Kebablasan di Grey Zone (Z3)";
+  else if (avgLowPct >= 85) verdictLabel = "Fondasi Aerobik Tinggi (Base)";
+  else if (!isPolarized) verdictLabel = "Piramidal";
+
+  const currentWeek = weeklyDataList.find((w) => w.isCurrentWeek) || weeklyDataList[weeklyDataList.length - 1] || null;
+
+  return {
+    currentWeek,
+    weeks: weeklyDataList,
+    overallAverage: {
+      lowIntensityPct: avgLowPct,
+      greyZonePct: avgGreyPct,
+      highIntensityPct: avgHighPct,
+      totalHours,
+      avgWeeklyHours,
+      isPolarized,
+      verdictLabel,
+    },
+    zoneThresholds: {
+      lthr,
+      z1Max: Math.round(lthr * 0.8),
+      z2Max: Math.round(lthr * 0.91),
+      z3Max: Math.round(lthr * 0.98),
+      z4Max: Math.round(lthr * 1.04),
+    },
+  };
+}
+
+
 

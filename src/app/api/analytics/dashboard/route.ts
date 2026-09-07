@@ -7,6 +7,7 @@ import {
   calculateMonotonyAndStrain,
   calculatePmcSeries,
   calculateTrainingReadiness,
+  calculateWeeklyZoneProgression,
   PmcPoint,
 } from "@/lib/analytics";
 
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
       acwr: { acwr: 1.0, status: "sweet_spot", label: "Baseline", description: "" },
       monotony: { monotony: 0, strain: 0, monotonyAlert: false },
       tid: { z1z2Pct: 80, z3Pct: 15, z4z5Pct: 5, isPolarized: true },
+      weeklyZoneProgression: calculateWeeklyZoneProgression([], 162, 14),
       trail: { totalGainM: 0, totalLossM: 0, trailRunsCount: 0, avgVam: 0, avgDecoupling: 0, specificTrailHours: 0, totalHours: 0, specificityPct: 0 },
       recovery: { hrvStatus: "NORMAL", recoveryScore: 100, restingHr: 50, avgSleepDurationMin: 480, sleepRegularityScore: 90, daysLogged: 0 },
       modes: {},
@@ -350,6 +352,20 @@ export async function GET(req: NextRequest) {
     scaleDescription: "Threshold pace/power scale calibrated to Coggan rTSS model (Threshold: 4:42 /km).",
   };
 
+  const weeklyZoneProgression = calculateWeeklyZoneProgression(
+    activities.map((a) => ({
+      id: String(a.id),
+      startTime: Number(a.start_time),
+      durationSeconds: Number(a.duration_seconds || 0),
+      avgHr: Number(a.avg_hr || 0),
+      maxHr: Number(a.max_hr || 0),
+      aerobicTe: Number(a.aerobic_te || 0),
+      anaerobicTe: Number(a.anaerobic_te || 0),
+    })),
+    162,
+    14
+  );
+
   return NextResponse.json({
     connected: isConnected,
     hasData: dailyRows.length > 0 || activities.length > 0,
@@ -362,6 +378,7 @@ export async function GET(req: NextRequest) {
     acwr: acwrData,
     monotony: monotonyData,
     tid,
+    weeklyZoneProgression,
     trail: {
       totalElevationGain: Math.round(totalElevationGain),
       totalElevationLoss: Math.round(totalElevationLoss),

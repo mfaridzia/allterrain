@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { PieChart, Heart, CheckCircle, AlertTriangle } from "lucide-react";
+import { PieChart, Heart, CheckCircle, AlertTriangle, Layers } from "lucide-react";
 import { MetricTooltip } from "@/components/MetricTooltip";
 
 interface TidCardProps {
@@ -112,6 +112,18 @@ export const TidCard: React.FC<TidCardProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Link to Weekly Zone Progression */}
+      <a
+        href="#weekly-zone-progression"
+        className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 border-2 border-zinc-950 text-[11px] font-black text-zinc-900 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all"
+      >
+        <span className="flex items-center gap-1.5">
+          <Layers className="h-3.5 w-3.5 text-violet-700 stroke-[2.5]" />
+          <span>Tren Jam per Zona (Weekly)</span>
+        </span>
+        <span className="text-zinc-600 font-bold group-hover:text-zinc-950">↓</span>
+      </a>
     </div>
   );
 };
