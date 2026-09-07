@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
       return;
     }
 
-    if (window.confirm("Apakah Anda yakin ingin memutuskan sambungan akun COROS?")) {
+    if (window.confirm("Are you sure you want to disconnect your COROS account?")) {
       try {
         await disconnectMutation.mutateAsync();
         window.location.href = "/";
@@ -108,21 +108,21 @@ export const Header: React.FC<HeaderProps> = ({
     {
       href: "/",
       label: "Dashboard",
-      description: "Ringkasan metrik beban & grafik PMC",
+      description: "Load metrics summary & PMC chart",
       icon: Activity,
       exact: true,
     },
     {
       href: "/trail-planner",
       label: "GPX Planner",
-      description: "Simulasi & profil elevasi rute trail",
+      description: "Trail elevation profile & route simulation",
       icon: Mountain,
       exact: false,
     },
     {
       href: "/activities",
       label: "Logbook",
-      description: "Daftar riwayat aktivitas COROS",
+      description: "COROS activity history & logbook",
       icon: ClipboardList,
       exact: false,
     },
@@ -210,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Connection Status Indicator - Desktop */}
                 <div
                   className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/50 border-2 border-zinc-950 dark:border-zinc-700 text-emerald-950 dark:text-emerald-300 text-xs font-bold font-mono shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000]"
-                  title="COROS MCP terhubung aktif"
+                  title="COROS MCP connected"
                 >
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse border border-zinc-950 dark:border-zinc-700" />
                   <span>Online</span>
@@ -238,7 +238,7 @@ export const Header: React.FC<HeaderProps> = ({
                         ? "bg-orange-500 text-white"
                         : "bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-950 dark:text-zinc-100"
                     }`}
-                    title="Buka AI Coach Drawer"
+                    title="Open AI Coach Drawer"
                   >
                     <Bot className={`h-3.5 w-3.5 ${isAiOpen ? "text-white" : "text-orange-600"}`} />
                     <span>AI Coach</span>
@@ -249,7 +249,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={handleOpenSettings}
                   className="hidden md:flex p-1.5 text-zinc-950 dark:text-zinc-100 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
-                  title="Pengaturan & Kunci API"
+                  title="Settings & API Keys"
                 >
                   <Settings className="h-4 w-4" />
                 </button>
@@ -258,7 +258,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={handleDisconnect}
                   className="hidden md:flex p-1.5 text-rose-600 dark:text-rose-400 bg-white dark:bg-zinc-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
-                  title="Putuskan Sambungan COROS"
+                  title="Disconnect COROS Account"
                 >
                   <LogOut className="h-4 w-4" />
                 </button>
@@ -266,7 +266,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Mobile Menu Hamburger Toggle */}
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  aria-label={isMobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+                  aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
                   aria-expanded={isMobileMenuOpen}
                   className="md:hidden flex items-center justify-center p-2 text-zinc-950 dark:text-zinc-100 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                 >
@@ -287,7 +287,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Nav Route Links */}
             <div>
               <div className="text-[10px] font-mono font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2 px-1">
-                Menu Navigasi
+                Navigation Menu
               </div>
               <div className="space-y-1.5">
                 {navLinks.map((item) => {
@@ -337,7 +337,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Quick Actions & Status Section */}
             <div className="pt-3 border-t-2 border-zinc-200 dark:border-zinc-800 space-y-2.5">
               <div className="text-[10px] font-mono font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1 flex items-center justify-between">
-                <span>Aksi & Integrasi</span>
+                <span>Actions & Integration</span>
                 <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse border border-zinc-950 dark:border-zinc-700" />
                   COROS Online
@@ -388,7 +388,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                 >
                   <Settings className="h-3.5 w-3.5 text-zinc-700 dark:text-zinc-300" />
-                  <span>Pengaturan</span>
+                  <span>Settings</span>
                 </button>
 
                 {/* Disconnect Action */}
@@ -400,7 +400,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border-2 border-zinc-950 dark:border-zinc-700 text-rose-700 dark:text-rose-400 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                 >
                   <LogOut className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-                  <span>Putuskan</span>
+                  <span>Disconnect</span>
                 </button>
               </div>
             </div>
