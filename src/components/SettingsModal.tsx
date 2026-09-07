@@ -9,6 +9,30 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
+const MODEL_PRESETS: Record<string, { id: string; label: string }[]> = {
+  gemini: [
+    { id: "gemini-2.5-flash", label: "Flash 2.5 (Cepat & Irit)" },
+    { id: "gemini-2.5-pro", label: "Pro 2.5 (Analisis Mendalam)" },
+  ],
+  deepseek: [
+    { id: "deepseek-chat", label: "V3 Chat (Default)" },
+    { id: "deepseek-reasoner", label: "R1 Reasoner" },
+  ],
+  openai: [
+    { id: "gpt-4o-mini", label: "GPT-4o Mini (Hemat)" },
+    { id: "gpt-4o", label: "GPT-4o (Full)" },
+  ],
+  claude: [
+    { id: "claude-3-5-sonnet-20241022", label: "Sonnet 3.5 (Optimal)" },
+    { id: "claude-3-7-sonnet-20250219", label: "Sonnet 3.7" },
+    { id: "claude-3-5-haiku-20241022", label: "Haiku 3.5 (Cepat)" },
+  ],
+  ollama: [
+    { id: "llama3.2", label: "Llama 3.2" },
+    { id: "mistral", label: "Mistral" },
+  ],
+};
+
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const { data: settingsData } = useAppSettings();
   const updateSettingsMutation = useUpdateSettingsMutation();
@@ -116,14 +140,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           </div>
 
           {/* Model Name */}
-          <div className="space-y-1">
-            <label className="text-xs font-black text-zinc-900">Model Name</label>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black text-zinc-900">Model Name</label>
+              <span className="text-[10px] text-zinc-600 font-bold font-mono">
+                Kosongkan untuk default
+              </span>
+            </div>
             <input
               type="text"
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
+              placeholder="e.g. claude-3-5-sonnet-20241022"
               className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
             />
+            {MODEL_PRESETS[provider] && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[9px] font-black uppercase text-zinc-600">Preset:</span>
+                {MODEL_PRESETS[provider].map((preset) => (
+                  <button
+                    type="button"
+                    key={preset.id}
+                    onClick={() => setModelName(preset.id)}
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border transition-all ${
+                      modelName === preset.id
+                        ? "bg-zinc-950 text-white border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                        : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-950 hover:bg-zinc-50"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* API Key Input */}

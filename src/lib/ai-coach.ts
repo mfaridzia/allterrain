@@ -90,36 +90,90 @@ ${activitiesSummary}
 `;
 }
 
+/**
+ * Safely normalize user-entered model names to valid official provider model IDs
+ */
+export function normalizeModelName(provider: string, userModel?: string): string {
+  const p = provider.toLowerCase();
+  const raw = (userModel || "").trim().toLowerCase();
+
+  if (p === "anthropic" || p === "claude") {
+    if (!raw) return "claude-3-5-sonnet-20241022";
+    if (raw.includes("3-7") || raw.includes("3.7")) return "claude-3-7-sonnet-20250219";
+    if (raw.includes("haiku")) return "claude-3-5-haiku-20241022";
+    if (raw.includes("opus")) return "claude-3-opus-20240229";
+    if (raw.includes("sonnet") || raw.includes("claude")) {
+      if (raw === "claude-3-5-sonnet" || raw === "claude-sonnet" || raw === "sonnet") {
+        return "claude-3-5-sonnet-20241022";
+      }
+      return userModel!.trim();
+    }
+    return "claude-3-5-sonnet-20241022";
+  }
+
+  if (p === "openai") {
+    if (!raw) return "gpt-4o-mini";
+    if (raw.includes("4o-mini") || raw === "mini") return "gpt-4o-mini";
+    if (raw.includes("4o")) return "gpt-4o";
+    if (raw.includes("o1-mini")) return "o1-mini";
+    if (raw.includes("o1")) return "o1";
+    if (raw.includes("o3")) return "o3-mini";
+    if (raw.startsWith("gpt-")) return userModel!.trim();
+    return "gpt-4o-mini";
+  }
+
+  if (p === "deepseek") {
+    if (!raw) return "deepseek-chat";
+    if (raw.includes("reasoner") || raw.includes("r1")) return "deepseek-reasoner";
+    if (raw.includes("chat") || raw.includes("deepseek") || raw.includes("v3")) return "deepseek-chat";
+    return "deepseek-chat";
+  }
+
+  if (p === "gemini") {
+    if (!raw) return "gemini-2.5-flash";
+    if (raw.includes("flash")) return raw.includes("2.5") ? "gemini-2.5-flash" : "gemini-1.5-flash";
+    if (raw.includes("pro")) return raw.includes("2.5") ? "gemini-2.5-pro" : "gemini-1.5-pro";
+    if (raw.startsWith("gemini-")) return userModel!.trim();
+    return "gemini-2.5-flash";
+  }
+
+  return userModel?.trim() || "gpt-4o-mini";
+}
+
 export function getAiModelInstance(provider: string, apiKey: string, modelName?: string) {
-  switch (provider.toLowerCase()) {
+  const p = provider.toLowerCase();
+  const normalizedModel = normalizeModelName(p, modelName);
+
+  switch (p) {
     case "openai": {
       const openai = createOpenAI({ apiKey: apiKey || process.env.OPENAI_API_KEY });
-      return openai(modelName || "gpt-4o-mini");
+      return openai(normalizedModel);
     }
+    case "claude":
     case "anthropic": {
       const anthropic = createAnthropic({ apiKey: apiKey || process.env.ANTHROPIC_API_KEY });
-      return anthropic(modelName || "claude-3-5-sonnet-20241022");
+      return anthropic(normalizedModel);
     }
     case "deepseek": {
       const deepseek = createOpenAI({
         baseURL: "https://api.deepseek.com",
         apiKey: apiKey || process.env.DEEPSEEK_API_KEY,
       });
-      return deepseek(modelName || "deepseek-chat");
+      return deepseek(normalizedModel);
     }
     case "ollama": {
       const openaiCompat = createOpenAI({
         baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1",
         apiKey: "ollama",
       });
-      return openaiCompat(modelName || "llama3.2");
+      return openaiCompat(modelName?.trim() || "llama3.2");
     }
     case "gemini":
     default: {
       const google = createGoogleGenerativeAI({
         apiKey: apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
       });
-      return google(modelName || "gemini-2.5-flash");
+      return google(normalizedModel);
     }
   }
 }
