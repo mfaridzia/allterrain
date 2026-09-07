@@ -816,6 +816,10 @@ export function calculateRacePreparationVolume(
   peakWeeklyKmRange: string;
   peakWeeklyVertRange: string;
   monthlyVertRange: string;
+  peakWeeklyKmMin: number;
+  peakWeeklyKmMax: number;
+  monthlyVertMin: number;
+  monthlyVertMax: number;
   keyLongRunKm: number;
   keyLongRunVertM: number;
   minWeeklyVertTarget: number;
@@ -836,6 +840,10 @@ export function calculateRacePreparationVolume(
       peakWeeklyKmRange: `${peakWeeklyKmMin} - ${peakWeeklyKmMax} km/minggu`,
       peakWeeklyVertRange: `+${minWeeklyVertTarget.toLocaleString()}m - +${maxWeeklyVertTarget.toLocaleString()}m D+/minggu`,
       monthlyVertRange: `+${monthlyVertMin.toLocaleString()}m - +${monthlyVertMax.toLocaleString()}m D+/bulan`,
+      peakWeeklyKmMin,
+      peakWeeklyKmMax,
+      monthlyVertMin,
+      monthlyVertMax,
       keyLongRunKm,
       keyLongRunVertM,
       minWeeklyVertTarget,
@@ -884,6 +892,10 @@ export function calculateRacePreparationVolume(
     peakWeeklyKmRange: `${peakWeeklyKmMin} - ${peakWeeklyKmMax} km/minggu`,
     peakWeeklyVertRange: `+${minWeeklyVertTarget.toLocaleString()}m - +${maxWeeklyVertTarget.toLocaleString()}m D+/minggu`,
     monthlyVertRange: `+${monthlyVertMin.toLocaleString()}m - +${monthlyVertMax.toLocaleString()}m D+/bulan`,
+    peakWeeklyKmMin,
+    peakWeeklyKmMax,
+    monthlyVertMin,
+    monthlyVertMax,
     keyLongRunKm,
     keyLongRunVertM,
     minWeeklyVertTarget,

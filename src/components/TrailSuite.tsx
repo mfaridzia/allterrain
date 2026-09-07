@@ -437,45 +437,69 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
             {/* Weekly Mileage */}
-            <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 space-y-0.5 shadow-[2px_2px_0px_0px_#09090b]">
-              <span className="text-[10px] text-zinc-600 block font-sans font-bold">Target Weekly Mileage</span>
-              <div className="text-lg font-black text-zinc-950 font-mono">
-                {prepTargets.peakWeeklyKmRange}
+            <div className="p-3 sm:p-3.5 rounded-xl bg-white border-2 border-zinc-950 flex flex-col justify-between shadow-[2px_2px_0px_0px_#09090b] min-w-0">
+              <div>
+                <span className="text-[10px] text-zinc-500 block font-sans font-bold uppercase tracking-wider">
+                  Weekly Mileage
+                </span>
+                <div className="text-sm sm:text-base font-black text-zinc-950 font-mono leading-tight mt-1">
+                  {prepTargets.peakWeeklyKmMin}–{prepTargets.peakWeeklyKmMax}{" "}
+                  <span className="text-[11px] font-bold text-zinc-500 font-sans">km/wk</span>
+                </div>
               </div>
-              <p className="text-[10px] text-zinc-600 font-sans font-medium">
+              <p className="text-[10px] text-zinc-600 font-sans font-medium mt-2 leading-snug">
                 {trainingTier === "finisher" ? "Volume aman pelari pekerja" : "Volume puncak atlet pro"}
               </p>
             </div>
 
             {/* Weekly Elevation */}
-            <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 space-y-0.5 shadow-[2px_2px_0px_0px_#09090b]">
-              <span className="text-[10px] text-zinc-600 block font-sans font-bold">Target Weekly Vert (D+)</span>
-              <div className="text-lg font-black text-emerald-700 font-mono">
-                {prepTargets.peakWeeklyVertRange}
+            <div className="p-3 sm:p-3.5 rounded-xl bg-white border-2 border-zinc-950 flex flex-col justify-between shadow-[2px_2px_0px_0px_#09090b] min-w-0">
+              <div>
+                <span className="text-[10px] text-zinc-500 block font-sans font-bold uppercase tracking-wider">
+                  Weekly Vert (D+)
+                </span>
+                <div className="text-sm sm:text-base font-black text-emerald-700 font-mono leading-tight mt-1">
+                  +{prepTargets.minWeeklyVertTarget.toLocaleString()}–{prepTargets.maxWeeklyVertTarget.toLocaleString()}{" "}
+                  <span className="text-[11px] font-bold text-emerald-600 font-sans">m/wk</span>
+                </div>
               </div>
-              <p className="text-[10px] text-zinc-600 font-sans font-medium">
+              <p className="text-[10px] text-zinc-600 font-sans font-medium mt-2 leading-snug">
                 {trainingTier === "finisher" ? "Fokus Back-to-Back weekend" : "75% - 110% dari total D+ race"}
               </p>
             </div>
 
             {/* Monthly Elevation */}
-            <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 space-y-0.5 shadow-[2px_2px_0px_0px_#09090b]">
-              <span className="text-[10px] text-zinc-600 block font-sans font-bold">Target Monthly Vert (D+)</span>
-              <div className="text-lg font-black text-cyan-700 font-mono">
-                {prepTargets.monthlyVertRange}
+            <div className="p-3 sm:p-3.5 rounded-xl bg-white border-2 border-zinc-950 flex flex-col justify-between shadow-[2px_2px_0px_0px_#09090b] min-w-0">
+              <div>
+                <span className="text-[10px] text-zinc-500 block font-sans font-bold uppercase tracking-wider">
+                  Monthly Vert (D+)
+                </span>
+                <div className="text-sm sm:text-base font-black text-cyan-700 font-mono leading-tight mt-1">
+                  +{prepTargets.monthlyVertMin.toLocaleString()}–{prepTargets.monthlyVertMax.toLocaleString()}{" "}
+                  <span className="text-[11px] font-bold text-cyan-600 font-sans">m/mo</span>
+                </div>
               </div>
-              <p className="text-[10px] text-zinc-600 font-sans font-medium">Beban vertikal per bulan</p>
+              <p className="text-[10px] text-zinc-600 font-sans font-medium mt-2 leading-snug">
+                Beban vertikal per bulan
+              </p>
             </div>
 
             {/* Key Long Run Simulation */}
-            <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 space-y-0.5 shadow-[2px_2px_0px_0px_#09090b]">
-              <span className="text-[10px] text-zinc-600 block font-sans font-bold">Key Long Run Simulation</span>
-              <div className="text-lg font-black text-amber-700 font-mono">
-                {prepTargets.keyLongRunKm}k (+{prepTargets.keyLongRunVertM}m)
+            <div className="p-3 sm:p-3.5 rounded-xl bg-white border-2 border-zinc-950 flex flex-col justify-between shadow-[2px_2px_0px_0px_#09090b] min-w-0">
+              <div>
+                <span className="text-[10px] text-zinc-500 block font-sans font-bold uppercase tracking-wider">
+                  Key Long Run
+                </span>
+                <div className="text-sm sm:text-base font-black text-amber-700 font-mono leading-tight mt-1">
+                  {prepTargets.keyLongRunKm}k{" "}
+                  <span className="text-[11px] font-bold text-amber-600 font-sans">(+{prepTargets.keyLongRunVertM}m)</span>
+                </div>
               </div>
-              <p className="text-[10px] text-zinc-600 font-sans font-medium">Lari simulasi terpanjang</p>
+              <p className="text-[10px] text-zinc-600 font-sans font-medium mt-2 leading-snug">
+                Lari simulasi terpanjang
+              </p>
             </div>
           </div>
 

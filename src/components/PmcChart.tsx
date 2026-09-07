@@ -627,11 +627,11 @@ export const PmcChart: React.FC<PmcChartProps> = ({
           </div>
 
           {/* Interactive Controls Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 pt-1">
             {/* 1. Target Strategy Preset */}
-            <div className="space-y-1.5 md:col-span-2">
+            <div className="space-y-1.5 min-w-0 md:col-span-2 xl:col-span-2">
               <label className="text-[11px] font-black uppercase text-zinc-700 flex items-center gap-1.5">
-                <Flame className="h-3.5 w-3.5 text-orange-500" />
+                <Flame className="h-3.5 w-3.5 text-orange-500 shrink-0" />
                 <span>Training Load Strategy</span>
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -688,10 +688,10 @@ export const PmcChart: React.FC<PmcChartProps> = ({
             </div>
 
             {/* 2. Forecast Horizon / Days */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0 md:col-span-1 xl:col-span-1">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-black uppercase text-zinc-700 flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-violet-600" />
+                  <Calendar className="h-3.5 w-3.5 text-violet-600 shrink-0" />
                   <span>Horizon ({forecastDays} Days)</span>
                 </label>
                 <span className="text-xs font-mono font-black text-zinc-900">
@@ -717,29 +717,31 @@ export const PmcChart: React.FC<PmcChartProps> = ({
             </div>
 
             {/* 3. Target Race Day Marker (Optional) */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0 md:col-span-1 xl:col-span-1">
               <label className="text-[11px] font-black uppercase text-zinc-700 flex items-center gap-1.5">
-                <Flag className="h-3.5 w-3.5 text-amber-500" />
-                <span>Target Race Date</span>
+                <Flag className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                <span className="truncate">Target Race Date</span>
               </label>
-              <div className="relative">
+              <div className="relative min-w-0 w-full">
                 <input
                   type="date"
                   value={targetRaceDate}
                   onChange={(e) => setTargetRaceDate(e.target.value)}
-                  className="w-full min-h-[38px] px-3 py-1.5 rounded-xl bg-white border-2 border-zinc-950 text-xs font-mono font-bold shadow-[2px_2px_0px_0px_#09090b] focus:outline-none text-zinc-950 block"
+                  className={`w-full min-w-0 max-w-full min-h-[38px] pl-3 ${
+                    targetRaceDate ? "pr-14" : "pr-3"
+                  } py-1.5 rounded-xl bg-white border-2 border-zinc-950 text-xs font-mono font-bold shadow-[2px_2px_0px_0px_#09090b] focus:outline-none text-zinc-950 block box-border [color-scheme:light]`}
                 />
                 {targetRaceDate && (
                   <button
                     type="button"
                     onClick={() => setTargetRaceDate("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded bg-zinc-200 hover:bg-zinc-300 text-[10px] text-zinc-800 font-black"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded bg-zinc-200 hover:bg-zinc-300 text-[10px] text-zinc-800 font-black cursor-pointer shadow-sm"
                   >
                     Clear
                   </button>
                 )}
               </div>
-              <p className="text-[10px] text-zinc-500 font-medium">
+              <p className="text-[10px] text-zinc-500 font-medium leading-tight">
                 Puts a 🏁 marker on the chart to read exact race day form.
               </p>
             </div>
