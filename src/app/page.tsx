@@ -13,7 +13,7 @@ import { TrainingReadinessCard } from "@/components/TrainingReadinessCard";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { WeeklyZoneProgressionCard } from "@/components/WeeklyZoneProgressionCard";
 import dynamic from "next/dynamic";
-import { Trophy, Mountain, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
+import { Trophy, Mountain, RefreshCw, AlertCircle, Sparkles, Layers } from "lucide-react";
 import { useDashboardData, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
 
 const AiCoachDrawer = dynamic(
@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"evolab" | "trail">("evolab");
+  const [activeTab, setActiveTab] = useState<"evolab" | "trail" | "zones">("evolab");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [scaleMode, setScaleMode] = useState<"coros" | "intervals">("coros");
 
@@ -146,6 +146,10 @@ export default function DashboardPage() {
                   z4z5Pct={dashboardData.tid?.z4z5Pct || 5}
                   isPolarized={dashboardData.tid?.isPolarized ?? true}
                   avgDecoupling={dashboardData.trail?.avgDecoupling || 3.5}
+                  onOpenZonesTab={() => {
+                    setActiveTab("zones");
+                    document.getElementById("suite-tabs")?.scrollIntoView({ behavior: "smooth" });
+                  }}
                 />
               </div>
 
@@ -162,14 +166,9 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Weekly Hours in Zones & Seiler 80/20 Progression */}
-            <WeeklyZoneProgressionCard
-              progression={dashboardData.weeklyZoneProgression}
-            />
-
-            {/* Suite Tabs: Road EvoLab vs Trail & Mountain */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2.5 pb-1">
+            {/* Suite Tabs: Road EvoLab vs Trail & Mountain vs Weekly Zones */}
+            <div id="suite-tabs" className="space-y-4">
+              <div className="flex items-center gap-2.5 pb-1 flex-wrap">
                 <button
                   onClick={() => setActiveTab("evolab")}
                   className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all ${
@@ -192,6 +191,18 @@ export default function DashboardPage() {
                 >
                   <Mountain className="h-4 w-4 text-zinc-950" />
                   <span>Trail & Mountain Running Suite</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("zones")}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all ${
+                    activeTab === "zones"
+                      ? "bg-violet-400 text-black shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
+                      : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b] dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  <Layers className="h-4 w-4 text-zinc-950" />
+                  <span>Weekly Zones & 80/20</span>
                 </button>
               </div>
 
@@ -232,6 +243,12 @@ export default function DashboardPage() {
                   savedTargetRaceElev={dashboardData.trail?.targetRaceElev}
                   savedWeeklyVertTarget={dashboardData.trail?.weeklyVertTarget}
                   savedTrainingTier={dashboardData.trail?.trainingTier}
+                />
+              </div>
+
+              <div className={activeTab === "zones" ? "block" : "hidden"}>
+                <WeeklyZoneProgressionCard
+                  progression={dashboardData.weeklyZoneProgression}
                 />
               </div>
             </div>

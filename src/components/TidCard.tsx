@@ -10,6 +10,7 @@ interface TidCardProps {
   z4z5Pct: number;
   isPolarized: boolean;
   avgDecoupling: number;
+  onOpenZonesTab?: () => void;
 }
 
 export const TidCard: React.FC<TidCardProps> = ({
@@ -18,6 +19,7 @@ export const TidCard: React.FC<TidCardProps> = ({
   z4z5Pct,
   isPolarized,
   avgDecoupling,
+  onOpenZonesTab,
 }) => {
   const isDecouplingSolid = avgDecoupling <= 5.0;
 
@@ -113,17 +115,25 @@ export const TidCard: React.FC<TidCardProps> = ({
         </div>
       </div>
 
-      {/* Link to Weekly Zone Progression */}
-      <a
-        href="#weekly-zone-progression"
-        className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 border-2 border-zinc-950 text-[11px] font-black text-zinc-900 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all"
+      {/* Shortcut to Weekly Zone Progression Tab */}
+      <button
+        type="button"
+        onClick={() => {
+          if (onOpenZonesTab) {
+            onOpenZonesTab();
+          } else {
+            const el = document.getElementById("suite-tabs");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }
+        }}
+        className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 border-2 border-zinc-950 text-[11px] font-black text-zinc-900 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer text-left group"
       >
         <span className="flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5 text-violet-700 stroke-[2.5]" />
           <span>Tren Jam per Zona (Weekly)</span>
         </span>
-        <span className="text-zinc-600 font-bold group-hover:text-zinc-950">↓</span>
-      </a>
+        <span className="text-zinc-600 font-bold group-hover:text-zinc-950 group-hover:translate-x-0.5 transition-transform">→</span>
+      </button>
     </div>
   );
 };

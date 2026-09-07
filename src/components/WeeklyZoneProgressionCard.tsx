@@ -482,7 +482,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
             <BarChart
               layout="vertical"
               data={chartData}
-              margin={{ top: 26, right: 28, left: 16, bottom: 10 }}
+              margin={{ top: 32, right: 28, left: 16, bottom: 10 }}
               barCategoryGap={6}
             >
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e4e4e7" />
@@ -506,21 +506,39 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0, 0, 0, 0.04)" }} />
 
-              {/* 80% Threshold reference line when in percentage mode - position insideTopLeft ensures it's never cut off */}
+              {/* 80% Threshold reference line when in percentage mode - cleanly positioned above the bars in the top margin */}
               {metricMode === "percentage" && (
                 <ReferenceLine
                   x={80}
                   stroke="#09090b"
                   strokeWidth={2}
                   strokeDasharray="4 4"
-                  label={{
-                    value: "Target 80%",
-                    position: "insideTopLeft",
-                    fill: "#09090b",
-                    fontSize: 10,
-                    fontWeight: 900,
-                    dy: 4,
-                    dx: -4,
+                  label={({ viewBox }: any) => {
+                    const x = viewBox?.x ?? 0;
+                    const y = viewBox?.y ?? 0;
+                    return (
+                      <g className="pointer-events-none">
+                        <rect
+                          x={x - 36}
+                          y={y - 24}
+                          width={72}
+                          height={18}
+                          rx={5}
+                          fill="#09090b"
+                        />
+                        <text
+                          x={x}
+                          y={y - 11}
+                          fill="#ffffff"
+                          textAnchor="middle"
+                          fontSize={10}
+                          fontWeight={900}
+                          letterSpacing="0.02em"
+                        >
+                          Target 80%
+                        </text>
+                      </g>
+                    );
                   }}
                 />
               )}
