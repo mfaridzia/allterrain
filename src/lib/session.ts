@@ -136,3 +136,30 @@ export async function deleteSession(sessionId: string): Promise<void> {
     args: [sessionId],
   });
 }
+
+/**
+ * Safely validate an IANA timezone identifier (e.g. 'Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura')
+ */
+export function isValidTimezone(tz?: string | null): boolean {
+  if (!tz || typeof tz !== "string") return false;
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Retrieve user's timezone from request header (x-timezone) or default to Indonesian timezone (Asia/Jakarta)
+ */
+export function getRequestTimezone(req?: NextRequest | Request | null): string {
+  if (req && "headers" in req && typeof req.headers?.get === "function") {
+    const tzHeader = req.headers.get("x-timezone");
+    if (tzHeader && isValidTimezone(tzHeader)) {
+      return tzHeader;
+    }
+  }
+  return "Asia/Jakarta";
+}
+

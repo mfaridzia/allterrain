@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, getCorosToken, getSetting } from "@/lib/db";
 import { refreshCorosToken } from "@/lib/coros-auth";
-import { getCurrentAthleteId } from "@/lib/session";
+import { getCurrentAthleteId, getRequestTimezone } from "@/lib/session";
 import {
   classifyFormZone,
   calculateAcwr,
@@ -252,8 +252,9 @@ export async function GET(req: NextRequest) {
   }
 
   // Generate full continuous calendar days sequence for Standard rTSS
+  const userTimezone = getRequestTimezone(req);
   const localTodayStr = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Makassar",
+    timeZone: userTimezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

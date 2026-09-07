@@ -1,5 +1,6 @@
 import { getValidAccessToken } from "./coros-auth";
 import { getDb, setSetting } from "./db";
+import { isValidTimezone } from "./session";
 import {
   calculatePmcSeries,
   calculateAcwr,
@@ -98,7 +99,10 @@ function parsePredictionToSeconds(timeStr: string): number {
 /**
  * High-level sync function that syncs real workouts and physiological metrics from COROS MCP.
  */
-export async function syncCorosData(athleteId: string = "athlete_primary"): Promise<{
+export async function syncCorosData(
+  athleteId: string = "athlete_primary",
+  userTimezone?: string
+): Promise<{
   syncedActivities: number;
   syncedDays: number;
   latestPmc: any;
@@ -222,9 +226,19 @@ export async function syncCorosData(athleteId: string = "athlete_primary"): Prom
     console.warn("Could not fetch resting heart rate:", err);
   }
 
+  let watchTimezone: string | null = null;
   try {
     const hrvText = await callCorosMcpTool("querySleepHrv", {}, athleteId);
     if (typeof hrvText === "string") {
+      const tzMatch = hrvText.match(/timezone=(-?\d+)/);
+      if (tzMatch) {
+        const offsetQuarterHours = parseInt(tzMatch[1], 10);
+        const offsetHours = offsetQuarterHours / 4;
+        if (offsetHours === 7) watchTimezone = "Asia/Jakarta"; // WIB (UTC+7)
+        else if (offsetHours === 8) watchTimezone = "Asia/Makassar"; // WITA (UTC+8)
+        else if (offsetHours === 9) watchTimezone = "Asia/Jayapura"; // WIT (UTC+9)
+      }
+
       const dateBlocks = hrvText.split(/(?=\d{4}-\d{2}-\d{2}:)/);
       for (const block of dateBlocks) {
         const dateMatch = block.match(/^(\d{4}-\d{2}-\d{2}):/);
@@ -436,10 +450,13 @@ export async function syncCorosData(athleteId: string = "athlete_primary"): Prom
   const activityLoadsMap = new Map<string, number>();
   pastDays.forEach((p) => activityLoadsMap.set(p.date, p.daily_load));
 
-  // Determine continuous date range: from earliest activity to latest available date
-  // (combining activities, sleep, resting HR, HRV, and local calendar date)
+  // Determine effective timezone: priority: user request header > COROS watch data > Asia/Jakarta fallback
+  const effectiveTimezone = userTimezone && isValidTimezone(userTimezone)
+    ? userTimezone
+    : watchTimezone || "Asia/Jakarta";
+
   const localTodayStr = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Makassar", // Athlete timezone (WITA / UTC+8)
+    timeZone: effectiveTimezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

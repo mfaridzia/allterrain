@@ -7,11 +7,18 @@ export const QUERY_KEYS = {
 };
 
 function getSessionHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
   if (typeof window !== "undefined") {
     const s = localStorage.getItem("allterrain_session");
-    if (s) return { "x-allterrain-session": s };
+    if (s) headers["x-allterrain-session"] = s;
+
+    // Automatically pass user's browser timezone (e.g. Asia/Jakarta, Asia/Makassar, Asia/Jayapura)
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz) headers["x-timezone"] = tz;
+    } catch {}
   }
-  return {};
+  return headers;
 }
 
 /**

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncCorosData } from "@/lib/coros-mcp";
-import { getCurrentAthleteId } from "@/lib/session";
+import { getCurrentAthleteId, getRequestTimezone } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   try {
     const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
-    const result = await syncCorosData(athleteId);
+    const userTimezone = getRequestTimezone(req);
+    const result = await syncCorosData(athleteId, userTimezone);
     return NextResponse.json({
       success: true,
       ...result,
