@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Footprints,
 } from "lucide-react";
 import { SettingsModal } from "./SettingsModal";
 import { ThemeToggle } from "./ThemeToggle";
@@ -124,6 +125,13 @@ export const Header: React.FC<HeaderProps> = ({
       label: "Logbook",
       description: "COROS activity history & logbook",
       icon: ClipboardList,
+      exact: false,
+    },
+    {
+      href: "/gear",
+      label: "Gear",
+      description: "Shoe mileage, D+ elevation wear & alerts",
+      icon: Footprints,
       exact: false,
     },
   ];

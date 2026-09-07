@@ -11,6 +11,7 @@ import { EvoLabSuite } from "@/components/EvoLabSuite";
 import { RecoveryRadar } from "@/components/RecoveryRadar";
 import { TrainingReadinessCard } from "@/components/TrainingReadinessCard";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { GearWidget } from "@/components/GearWidget";
 import dynamic from "next/dynamic";
 import { Trophy, Mountain, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
 import { useDashboardData, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
@@ -229,6 +230,9 @@ export default function DashboardPage() {
                 />
               </div>
             </div>
+
+            {/* Active Footwear & Gear Mileage Preview */}
+            <GearWidget />
 
             {/* Activities Feed & Workout Deep Dive (Compact Preview) */}
             <ActivityFeed

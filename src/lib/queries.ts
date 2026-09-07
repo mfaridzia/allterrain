@@ -4,6 +4,7 @@ export const QUERY_KEYS = {
   dashboard: ["dashboard"] as const,
   authStatus: ["auth-status"] as const,
   settings: ["settings"] as const,
+  gear: ["gear"] as const,
 };
 
 /**
@@ -144,3 +145,119 @@ export function useManualTokenMutation() {
     },
   });
 }
+
+/**
+ * Hook to fetch gear & shoes tracking data
+ */
+export function useGearData() {
+  return useQuery({
+    queryKey: QUERY_KEYS.gear,
+    queryFn: async () => {
+      const res = await fetch("/api/gear");
+      if (!res.ok) {
+        throw new Error(`Failed to fetch gear data: ${res.status}`);
+      }
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Mutation to add a new shoe
+ */
+export function useAddShoeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await fetch("/api/gear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to add shoe");
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.gear });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dashboard });
+    },
+  });
+}
+
+/**
+ * Mutation to update or retire a shoe
+ */
+export function useUpdateShoeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await fetch("/api/gear", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to update shoe");
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.gear });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dashboard });
+    },
+  });
+}
+
+/**
+ * Mutation to delete a shoe
+ */
+export function useDeleteShoeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/gear?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to delete shoe");
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.gear });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dashboard });
+    },
+  });
+}
+
+/**
+ * Mutation to assign a shoe to an activity
+ */
+export function useAssignShoeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { activityId: string; shoeId: string | null }) => {
+      const res = await fetch("/api/gear/assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to assign shoe");
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.gear });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dashboard });
+    },
+  });
+}
+
