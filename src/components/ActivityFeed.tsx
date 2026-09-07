@@ -63,8 +63,12 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
 }) => {
   const [filter, setFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
-  const [sharingActivity, setSharingActivity] = useState<ActivityItem | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(
+    null,
+  );
+  const [sharingActivity, setSharingActivity] = useState<ActivityItem | null>(
+    null,
+  );
   const [activeComparePair, setActiveComparePair] = useState<{
     actA: ActivityItem;
     actB: ActivityItem;
@@ -77,9 +81,14 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
     setCurrentPage(1);
   };
 
-  const hasBike = activities.some((a) => a.sportType === "bike" || a.sportType === "cycling");
+  const hasBike = activities.some(
+    (a) => a.sportType === "bike" || a.sportType === "cycling",
+  );
   const hasStrength = activities.some(
-    (a) => a.sportType === "strength" || a.sportType === "gym" || a.sportType === "weight"
+    (a) =>
+      a.sportType === "strength" ||
+      a.sportType === "gym" ||
+      a.sportType === "weight",
   );
 
   const filterTabs = [
@@ -92,10 +101,14 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
   const filtered = activities.filter((a) => {
     if (filter === "all") return true;
-    if (filter === "trail") return a.sportType === "trail_run" || a.elevationGain > 200;
-    if (filter === "road") return a.sportType === "run" && a.elevationGain <= 200;
-    if (filter === "bike") return a.sportType === "bike" || a.sportType === "cycling";
-    if (filter === "strength") return a.sportType === "strength" || a.sportType === "gym";
+    if (filter === "trail")
+      return a.sportType === "trail_run" || a.elevationGain > 200;
+    if (filter === "road")
+      return a.sportType === "run" && a.elevationGain <= 200;
+    if (filter === "bike")
+      return a.sportType === "bike" || a.sportType === "cycling";
+    if (filter === "strength")
+      return a.sportType === "strength" || a.sportType === "gym";
     return a.sportType.toLowerCase().includes(filter);
   });
 
@@ -111,7 +124,11 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
     if (sportType === "bike" || sportType === "cycling") {
       return <Bike className="h-4 w-4 text-emerald-600 stroke-[2.5]" />;
     }
-    if (sportType === "strength" || sportType === "gym" || sportType === "weight") {
+    if (
+      sportType === "strength" ||
+      sportType === "gym" ||
+      sportType === "weight"
+    ) {
       return <Dumbbell className="h-4 w-4 text-purple-600 stroke-[2.5]" />;
     }
     return <Footprints className="h-4 w-4 text-orange-600 stroke-[2.5]" />;
@@ -164,8 +181,12 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
             <Activity className="h-4 w-4 stroke-[2.5]" />
           </div>
           <div>
-            <h3 className="text-base font-black text-zinc-950 tracking-tight">Recent Workouts & Sessions</h3>
-            <p className="text-[11px] font-mono text-zinc-600 font-semibold">Pace • HR Zones • Training Load • VAM</p>
+            <h3 className="text-base font-black text-zinc-950 tracking-tight">
+              Recent Workouts & Sessions
+            </h3>
+            <p className="text-[11px] font-mono text-zinc-600 font-semibold">
+              Pace • HR Zones • Training Load • VAM
+            </p>
           </div>
         </div>
 
@@ -208,12 +229,16 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
       ) : (
         <div className="space-y-2.5">
           {itemsToDisplay.map((act) => {
-            const isTrail = act.sportType === "trail_run" || act.elevationGain > 200;
+            const isTrail =
+              act.sportType === "trail_run" || act.elevationGain > 200;
             const decoupling = calculateDecouplingAnalysis(act);
-            const dateStr = new Date(act.startTime).toLocaleDateString("en-US", {
-              day: "numeric",
-              month: "short",
-            });
+            const dateStr = new Date(act.startTime).toLocaleDateString(
+              "en-US",
+              {
+                day: "numeric",
+                month: "short",
+              },
+            );
 
             return (
               <div
@@ -237,14 +262,17 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                             decoupling.status === "optimal"
                               ? "bg-emerald-100 text-emerald-900 border-emerald-400"
                               : decoupling.status === "solid"
-                              ? "bg-teal-100 text-teal-900 border-teal-400"
-                              : decoupling.status === "moderate"
-                              ? "bg-amber-100 text-amber-900 border-amber-400"
-                              : "bg-rose-100 text-rose-900 border-rose-400"
+                                ? "bg-teal-100 text-teal-900 border-teal-400"
+                                : decoupling.status === "moderate"
+                                  ? "bg-amber-100 text-amber-900 border-amber-400"
+                                  : "bg-rose-100 text-rose-900 border-rose-400"
                           }`}
                           title={`Aerobic Decoupling: ${decoupling.decouplingPct}% • ${decoupling.statusLabel}`}
                         >
-                          Pa:HR {decoupling.decouplingPct > 0 ? `+${decoupling.decouplingPct}%` : `${decoupling.decouplingPct}%`}
+                          Pa:HR{" "}
+                          {decoupling.decouplingPct > 0
+                            ? `+${decoupling.decouplingPct}%`
+                            : `${decoupling.decouplingPct}%`}
                         </span>
                       )}
                     </div>
@@ -264,11 +292,17 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                   <div>
                     {act.sportType === "strength" ? (
                       <div className="text-sm font-black text-purple-700 font-mono">
-                        {act.durationMin} <span className="text-[10px] font-normal text-zinc-500">min</span>
+                        {act.durationMin}{" "}
+                        <span className="text-[10px] font-normal text-zinc-500">
+                          min
+                        </span>
                       </div>
                     ) : (
                       <div className="text-sm font-black text-zinc-950 font-mono">
-                        {act.distanceKm} <span className="text-[10px] font-normal text-zinc-500">km</span>
+                        {act.distanceKm}{" "}
+                        <span className="text-[10px] font-normal text-zinc-500">
+                          km
+                        </span>
                       </div>
                     )}
                     <div className="text-[10px] text-zinc-600 font-mono font-bold">
@@ -279,10 +313,25 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                   {isTrail && act.elevationGain > 0 && (
                     <div className="hidden sm:block text-right">
                       <div className="text-xs font-black text-cyan-800 font-mono">
-                        +{act.elevationGain}m • {calculateKmEffort(parseFloat(act.distanceKm), act.elevationGain)} <span className="text-[9px] font-normal text-zinc-600">km-eff</span>
+                        +{act.elevationGain}m •{" "}
+                        {calculateKmEffort(
+                          parseFloat(act.distanceKm),
+                          act.elevationGain,
+                        )}{" "}
+                        <span className="text-[9px] font-normal text-zinc-600">
+                          km-eff
+                        </span>
                       </div>
                       <div className="text-[10px] text-zinc-600 font-mono font-semibold">
-                        GAP {formatPace(calculateGapPace(act.avgPaceSec, parseFloat(act.distanceKm) * 1000, act.elevationGain))}/km
+                        GAP{" "}
+                        {formatPace(
+                          calculateGapPace(
+                            act.avgPaceSec,
+                            parseFloat(act.distanceKm) * 1000,
+                            act.elevationGain,
+                          ),
+                        )}
+                        /km
                       </div>
                     </div>
                   )}
@@ -302,7 +351,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
             href="/activities"
             className="w-full py-2.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 hover:bg-orange-100 text-xs font-black text-zinc-950 flex items-center justify-center gap-2 transition-all shadow-[2px_2px_0px_0px_#09090b] group"
           >
-            <span>Buka Logbook Lengkap ({activities.length} Aktivitas Tersimpan)</span>
+            <span>
+              Open Full Logbook ({activities.length} Saved Activities)
+            </span>
             <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform stroke-[2.5]" />
           </Link>
         </div>
@@ -310,9 +361,19 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
         totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t-2 border-zinc-100 text-xs">
             <div className="text-zinc-600 font-mono text-[11px] font-medium">
-              Menampilkan <strong className="text-zinc-950 font-black">{(currentPage - 1) * PAGE_SIZE + 1}</strong> -{" "}
-              <strong className="text-zinc-950 font-black">{Math.min(currentPage * PAGE_SIZE, filtered.length)}</strong> dari{" "}
-              <strong className="text-zinc-950 font-black">{filtered.length}</strong> aktivitas
+              Menampilkan{" "}
+              <strong className="text-zinc-950 font-black">
+                {(currentPage - 1) * PAGE_SIZE + 1}
+              </strong>{" "}
+              -{" "}
+              <strong className="text-zinc-950 font-black">
+                {Math.min(currentPage * PAGE_SIZE, filtered.length)}
+              </strong>{" "}
+              dari{" "}
+              <strong className="text-zinc-950 font-black">
+                {filtered.length}
+              </strong>{" "}
+              aktivitas
             </div>
 
             <div className="flex items-center gap-2">
@@ -324,22 +385,26 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                 Prev
               </button>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                <button
-                  key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`w-8 h-8 rounded-xl font-mono text-xs font-black transition-all border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] ${
-                    currentPage === pageNum
-                      ? "bg-orange-400 text-zinc-950"
-                      : "bg-white text-zinc-700 hover:bg-zinc-100"
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-8 h-8 rounded-xl font-mono text-xs font-black transition-all border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] ${
+                      currentPage === pageNum
+                        ? "bg-orange-400 text-zinc-950"
+                        : "bg-white text-zinc-700 hover:bg-zinc-100"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ),
+              )}
 
               <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="px-3 py-1.5 rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 font-black hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-[1.5px_1.5px_0px_0px_#09090b]"
               >
@@ -357,15 +422,23 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
-                  {getSportIcon(selectedActivity.sportType, selectedActivity.elevationGain)}
+                  {getSportIcon(
+                    selectedActivity.sportType,
+                    selectedActivity.elevationGain,
+                  )}
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-zinc-950">{selectedActivity.name}</h3>
+                  <h3 className="text-base font-black text-zinc-950">
+                    {selectedActivity.name}
+                  </h3>
                   <p className="text-xs font-mono font-medium text-zinc-600">
-                    {new Date(selectedActivity.startTime).toLocaleString("id-ID", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {new Date(selectedActivity.startTime).toLocaleString(
+                      "id-ID",
+                      {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      },
+                    )}
                   </p>
                 </div>
               </div>
@@ -374,15 +447,26 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const targetDist = parseFloat(selectedActivity.distanceKm || "0");
-                    const otherActs = activities.filter((a) => a.id !== selectedActivity.id);
+                    const targetDist = parseFloat(
+                      selectedActivity.distanceKm || "0",
+                    );
+                    const otherActs = activities.filter(
+                      (a) => a.id !== selectedActivity.id,
+                    );
                     if (otherActs.length > 0) {
                       const sortedBySimilarity = [...otherActs].sort((a, b) => {
-                        const diffA = Math.abs(parseFloat(a.distanceKm || "0") - targetDist);
-                        const diffB = Math.abs(parseFloat(b.distanceKm || "0") - targetDist);
+                        const diffA = Math.abs(
+                          parseFloat(a.distanceKm || "0") - targetDist,
+                        );
+                        const diffB = Math.abs(
+                          parseFloat(b.distanceKm || "0") - targetDist,
+                        );
                         return diffA - diffB;
                       });
-                      setActiveComparePair({ actA: selectedActivity, actB: sortedBySimilarity[0] });
+                      setActiveComparePair({
+                        actA: selectedActivity,
+                        actB: sortedBySimilarity[0],
+                      });
                     }
                   }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-sky-200 hover:bg-sky-300 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
@@ -412,58 +496,90 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
             {selectedActivity.sportType === "strength" ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[11px] font-bold text-zinc-700">Duration</span>
-                  <div className="text-lg font-black text-purple-700 font-mono">{selectedActivity.durationMin} min</div>
+                  <span className="text-[11px] font-bold text-zinc-700">
+                    Duration
+                  </span>
+                  <div className="text-lg font-black text-purple-700 font-mono">
+                    {selectedActivity.durationMin} min
+                  </div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[11px] font-bold text-zinc-700">Avg / Max HR</span>
+                  <span className="text-[11px] font-bold text-zinc-700">
+                    Avg / Max HR
+                  </span>
                   <div className="text-xs font-black text-zinc-950 font-mono mt-1">
                     {selectedActivity.avgHr} / {selectedActivity.maxHr} bpm
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[11px] font-bold text-zinc-700">Training Load</span>
-                  <div className="text-lg font-black text-amber-600 font-mono">{selectedActivity.trainingLoad}</div>
+                  <span className="text-[11px] font-bold text-zinc-700">
+                    Training Load
+                  </span>
+                  <div className="text-lg font-black text-amber-600 font-mono">
+                    {selectedActivity.trainingLoad}
+                  </div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[11px] font-bold text-zinc-700">Training Effect</span>
+                  <span className="text-[11px] font-bold text-zinc-700">
+                    Training Effect
+                  </span>
                   <div className="text-xs font-black text-emerald-700 font-mono mt-1">
-                    A: {selectedActivity.aerobicTe} | An: {selectedActivity.anaerobicTe}
+                    A: {selectedActivity.aerobicTe} | An:{" "}
+                    {selectedActivity.anaerobicTe}
                   </div>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[11px] font-bold text-zinc-700">Distance</span>
-                  <div className="text-lg font-black text-zinc-950 font-mono">{selectedActivity.distanceKm} km</div>
-                </div>
-                <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[11px] font-bold text-zinc-700">Moving Time</span>
-                  <div className="text-lg font-black text-zinc-950 font-mono">{selectedActivity.durationMin} min</div>
+                  <span className="text-[11px] font-bold text-zinc-700">
+                    Distance
+                  </span>
+                  <div className="text-lg font-black text-zinc-950 font-mono">
+                    {selectedActivity.distanceKm} km
+                  </div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                   <span className="text-[11px] font-bold text-zinc-700">
-                    {selectedActivity.sportType === "bike" ? "Avg Speed" : "Avg Pace"}
+                    Moving Time
+                  </span>
+                  <div className="text-lg font-black text-zinc-950 font-mono">
+                    {selectedActivity.durationMin} min
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
+                  <span className="text-[11px] font-bold text-zinc-700">
+                    {selectedActivity.sportType === "bike"
+                      ? "Avg Speed"
+                      : "Avg Pace"}
                   </span>
                   <div className="text-lg font-black text-orange-600 font-mono">
                     {formatSpeedOrPace(selectedActivity)}
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[11px] font-bold text-zinc-700">Avg / Max HR</span>
+                  <span className="text-[11px] font-bold text-zinc-700">
+                    Avg / Max HR
+                  </span>
                   <div className="text-xs font-black text-zinc-950 font-mono">
                     {selectedActivity.avgHr} / {selectedActivity.maxHr} bpm
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[11px] font-bold text-zinc-700">Training Load</span>
-                  <div className="text-lg font-black text-amber-600 font-mono">{selectedActivity.trainingLoad}</div>
+                  <span className="text-[11px] font-bold text-zinc-700">
+                    Training Load
+                  </span>
+                  <div className="text-lg font-black text-amber-600 font-mono">
+                    {selectedActivity.trainingLoad}
+                  </div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[11px] font-bold text-zinc-700">Training Effect</span>
+                  <span className="text-[11px] font-bold text-zinc-700">
+                    Training Effect
+                  </span>
                   <div className="text-xs font-black text-emerald-700 font-mono">
-                    A: {selectedActivity.aerobicTe} | An: {selectedActivity.anaerobicTe}
+                    A: {selectedActivity.aerobicTe} | An:{" "}
+                    {selectedActivity.anaerobicTe}
                   </div>
                 </div>
               </div>
@@ -494,7 +610,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                     <span
                       className={`px-2 py-0.5 rounded-md border text-[10px] font-black font-mono flex items-center gap-1.5 ${decoupling.badgeClass}`}
                     >
-                      <span className={`h-1.5 w-1.5 rounded-full ${decoupling.dotColor}`} />
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${decoupling.dotColor}`}
+                      />
                       {decoupling.statusLabel}
                     </span>
                   </div>
@@ -513,19 +631,26 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                       <div className="mt-1 flex items-baseline gap-1">
                         <span
                           className={`text-2xl font-black ${
-                            decoupling.status === "optimal" || decoupling.status === "solid"
+                            decoupling.status === "optimal" ||
+                            decoupling.status === "solid"
                               ? "text-emerald-700"
                               : decoupling.status === "moderate"
-                              ? "text-amber-700"
-                              : "text-rose-700"
+                                ? "text-amber-700"
+                                : "text-rose-700"
                           }`}
                         >
-                          {decoupling.decouplingPct > 0 ? `+${decoupling.decouplingPct}%` : `${decoupling.decouplingPct}%`}
+                          {decoupling.decouplingPct > 0
+                            ? `+${decoupling.decouplingPct}%`
+                            : `${decoupling.decouplingPct}%`}
                         </span>
-                        <span className="text-[10px] font-medium text-zinc-500 font-sans">drift</span>
+                        <span className="text-[10px] font-medium text-zinc-500 font-sans">
+                          drift
+                        </span>
                       </div>
                       <div className="text-[10px] text-zinc-500 font-sans mt-0.5">
-                        {decoupling.driftDeltaHr > 0 ? `+${decoupling.driftDeltaHr} bpm HR drift` : "Steady heart rate"}
+                        {decoupling.driftDeltaHr > 0
+                          ? `+${decoupling.driftDeltaHr} bpm HR drift`
+                          : "Steady heart rate"}
                       </div>
                     </div>
 
@@ -542,7 +667,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                         <span className="text-2xl font-black text-zinc-950">
                           {decoupling.efficiencyFactor}
                         </span>
-                        <span className="text-[10px] font-medium text-zinc-500 font-sans">m/min/bpm</span>
+                        <span className="text-[10px] font-medium text-zinc-500 font-sans">
+                          m/min/bpm
+                        </span>
                       </div>
                       <div className="text-[10px] text-zinc-500 font-sans mt-0.5">
                         Running speed produced per heartbeat
@@ -559,26 +686,38 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
                     <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                       <div className="p-2 rounded-lg bg-white border border-zinc-200">
-                        <div className="text-[10px] font-bold text-zinc-500 uppercase">1st Half</div>
+                        <div className="text-[10px] font-bold text-zinc-500 uppercase">
+                          1st Half
+                        </div>
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-zinc-600">Pace:</span>
-                          <span className="font-bold text-zinc-900">{formatPace(decoupling.firstHalf.paceSec)}/km</span>
+                          <span className="font-bold text-zinc-900">
+                            {formatPace(decoupling.firstHalf.paceSec)}/km
+                          </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-zinc-600">HR:</span>
-                          <span className="font-bold text-rose-600">{decoupling.firstHalf.avgHr} bpm</span>
+                          <span className="font-bold text-rose-600">
+                            {decoupling.firstHalf.avgHr} bpm
+                          </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-zinc-600">EF:</span>
-                          <span className="font-bold text-zinc-900">{decoupling.firstHalf.ef}</span>
+                          <span className="font-bold text-zinc-900">
+                            {decoupling.firstHalf.ef}
+                          </span>
                         </div>
                       </div>
 
                       <div className="p-2 rounded-lg bg-white border border-zinc-200">
-                        <div className="text-[10px] font-bold text-zinc-500 uppercase">2nd Half</div>
+                        <div className="text-[10px] font-bold text-zinc-500 uppercase">
+                          2nd Half
+                        </div>
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-zinc-600">Pace:</span>
-                          <span className="font-bold text-zinc-900">{formatPace(decoupling.secondHalf.paceSec)}/km</span>
+                          <span className="font-bold text-zinc-900">
+                            {formatPace(decoupling.secondHalf.paceSec)}/km
+                          </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-zinc-600">HR:</span>
@@ -593,7 +732,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-zinc-600">EF:</span>
-                          <span className="font-bold text-zinc-900">{decoupling.secondHalf.ef}</span>
+                          <span className="font-bold text-zinc-900">
+                            {decoupling.secondHalf.ef}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -603,7 +744,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                   <div className="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-xs flex items-start gap-2">
                     <Zap className="h-3.5 w-3.5 text-amber-700 shrink-0 mt-0.5 stroke-[2.5]" />
                     <div className="text-[11px] leading-relaxed text-zinc-800">
-                      <strong className="text-zinc-950 font-bold block mb-0.5">Physiological Insight:</strong>
+                      <strong className="text-zinc-950 font-bold block mb-0.5">
+                        Physiological Insight:
+                      </strong>
                       {decoupling.coachInsight}
                     </div>
                   </div>
@@ -612,27 +755,45 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
             })()}
 
             {/* Trail / Mountain Section */}
-            {(selectedActivity.sportType === "trail_run" || selectedActivity.elevationGain > 150) && (
+            {(selectedActivity.sportType === "trail_run" ||
+              selectedActivity.elevationGain > 150) && (
               <div className="p-4 rounded-xl bg-cyan-50 border-2 border-zinc-950 space-y-2.5 text-xs shadow-[2px_2px_0px_0px_#09090b]">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 font-black text-zinc-950">
                     <Mountain className="h-4 w-4 stroke-[2.5]" />
                     Mountain Dynamics (Uphill Athlete & ITRA)
                   </span>
-                  <span className="text-[10px] font-mono font-bold text-zinc-600">Minetti Model</span>
+                  <span className="text-[10px] font-mono font-bold text-zinc-600">
+                    Minetti Model
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-1 font-mono">
                   <div className="p-2.5 rounded-xl bg-white border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
-                    <span className="text-[10px] text-zinc-600 block font-bold">ITRA Km-Effort</span>
+                    <span className="text-[10px] text-zinc-600 block font-bold">
+                      ITRA Km-Effort
+                    </span>
                     <span className="text-emerald-700 font-black text-sm">
-                      {calculateKmEffort(parseFloat(selectedActivity.distanceKm), selectedActivity.elevationGain)} km-eff
+                      {calculateKmEffort(
+                        parseFloat(selectedActivity.distanceKm),
+                        selectedActivity.elevationGain,
+                      )}{" "}
+                      km-eff
                     </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-white border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
-                    <span className="text-[10px] text-zinc-600 block font-bold">Effort Pace (GAP)</span>
+                    <span className="text-[10px] text-zinc-600 block font-bold">
+                      Effort Pace (GAP)
+                    </span>
                     <span className="text-orange-600 font-black text-sm">
-                      {formatPace(calculateGapPace(selectedActivity.avgPaceSec, parseFloat(selectedActivity.distanceKm) * 1000, selectedActivity.elevationGain))} /km
+                      {formatPace(
+                        calculateGapPace(
+                          selectedActivity.avgPaceSec,
+                          parseFloat(selectedActivity.distanceKm) * 1000,
+                          selectedActivity.elevationGain,
+                        ),
+                      )}{" "}
+                      /km
                     </span>
                   </div>
                 </div>
@@ -640,19 +801,24 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                 <div className="flex justify-between text-zinc-800 pt-1 font-medium">
                   <span>Elevation Profile</span>
                   <span className="font-mono font-black text-zinc-950">
-                    +{selectedActivity.elevationGain}m / -{selectedActivity.elevationLoss}m
+                    +{selectedActivity.elevationGain}m / -
+                    {selectedActivity.elevationLoss}m
                   </span>
                 </div>
                 {selectedActivity.vam > 0 && (
                   <div className="flex justify-between text-zinc-800 font-medium">
                     <span>Ascent Speed (VAM)</span>
-                    <span className="font-mono font-black text-cyan-800">{selectedActivity.vam} m/h</span>
+                    <span className="font-mono font-black text-cyan-800">
+                      {selectedActivity.vam} m/h
+                    </span>
                   </div>
                 )}
                 {selectedActivity.decouplingPct > 0 && (
                   <div className="flex justify-between text-zinc-800 font-medium">
                     <span>Aerobic Decoupling</span>
-                    <span className="font-mono font-black text-rose-700">{selectedActivity.decouplingPct}%</span>
+                    <span className="font-mono font-black text-rose-700">
+                      {selectedActivity.decouplingPct}%
+                    </span>
                   </div>
                 )}
               </div>
@@ -692,7 +858,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
           activityB={activeComparePair.actB}
           allActivities={activities}
           onSelectActivityB={(newB) =>
-            setActiveComparePair((prev) => (prev ? { ...prev, actB: newB } : null))
+            setActiveComparePair((prev) =>
+              prev ? { ...prev, actB: newB } : null,
+            )
           }
           onClose={() => setActiveComparePair(null)}
         />
