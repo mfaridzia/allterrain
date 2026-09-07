@@ -23,6 +23,7 @@ import {
   Flame,
   HelpCircle,
   Hourglass,
+  Info,
 } from "lucide-react";
 import { WeeklyZoneData, WeeklyZoneProgressionResult } from "@/lib/analytics";
 
@@ -322,10 +323,18 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
       {currentWeek && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Status Badge & Week Indicator */}
-          <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex flex-col justify-between">
-            <span className="text-[10px] font-black font-mono text-zinc-500 uppercase">
-              Status Minggu Ini ({currentWeek.weekLabel})
-            </span>
+          <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex flex-col justify-between group">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black font-mono text-zinc-500 uppercase">
+                Status Minggu Ini ({currentWeek.weekLabel})
+              </span>
+              <div
+                className="cursor-pointer text-zinc-400 hover:text-zinc-950 transition-colors"
+                title={`${currentWeek.classificationLabel}\n${currentWeek.classificationDescription}\n\n💡 Saran Coach: ${currentWeek.tacticalAdvice}`}
+              >
+                <Info className="h-3.5 w-3.5 stroke-[2.5]" />
+              </div>
+            </div>
             <div className="my-1.5 flex items-center gap-2">
               <span
                 className="px-2.5 py-1 rounded-lg text-xs font-black border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]"
@@ -337,7 +346,10 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 {currentWeek.statusBadge.text}
               </span>
             </div>
-            <p className="text-[11px] text-zinc-600 line-clamp-1 font-medium">
+            <p
+              className="text-[11px] text-zinc-700 font-medium leading-snug"
+              title={currentWeek.classificationDescription}
+            >
               {currentWeek.classificationDescription}
             </p>
           </div>

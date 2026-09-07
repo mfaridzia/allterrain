@@ -148,7 +148,12 @@ export default function DashboardPage() {
                   avgDecoupling={dashboardData.trail?.avgDecoupling || 3.5}
                   onOpenZonesTab={() => {
                     setActiveTab("zones");
-                    document.getElementById("suite-tabs")?.scrollIntoView({ behavior: "smooth" });
+                    setTimeout(() => {
+                      const el = document.getElementById("suite-tabs");
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    }, 50);
                   }}
                 />
               </div>
