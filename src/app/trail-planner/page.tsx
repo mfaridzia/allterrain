@@ -41,6 +41,7 @@ import {
   Info,
   Split,
   Trash2,
+  Apple,
 } from "lucide-react";
 import { useAuthStatus } from "@/lib/queries";
 import {
@@ -53,7 +54,12 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { calculateKmEffort, formatPace } from "@/lib/analytics";
+import {
+  calculateKmEffort,
+  formatPace,
+  calculateSegmentLogistics,
+  SegmentLogisticsResult,
+} from "@/lib/analytics";
 import { MapPoint, MapCheckpoint } from "@/components/TrailMap";
 import { Header } from "@/components/Header";
 
@@ -81,6 +87,16 @@ export interface Checkpoint {
   rawDesc?: string;
   waterRefillMl: number;
   carbsTargetGrams: number;
+  waterNeededMl?: number;
+  waterExceedsCapacity?: boolean;
+  waterDeficitMl?: number;
+  gelsNeeded?: number;
+  sodiumNeededMg?: number;
+  saltCapsulesCount?: number;
+  logisticsAdvice?: string;
+  nextSegDurationFormatted?: string;
+  nextSegDistanceKm?: number;
+  nextSegGainM?: number;
 }
 
 export interface ElevationPoint {
@@ -152,6 +168,12 @@ export default function TrailPlannerPage() {
   const [fatigueDegradationPct, setFatigueDegradationPct] = useState<number>(14); // 14% second-half degradation
   const [nightPenaltyPct, setNightPenaltyPct] = useState<number>(16); // 16% slower under headlamp on technical rock
   const [aidStationMinutes, setAidStationMinutes] = useState<number>(8); // Average 8 mins per WS
+
+  // Feature C: Aid Station Nutrition & Hydration Settings
+  const [targetCarbsPerHour, setTargetCarbsPerHour] = useState<number>(60); // 60g carbs/hr (Jeukendrup gold standard)
+  const [targetWaterPerHourMl, setTargetWaterPerHourMl] = useState<number>(500); // 500ml/hr standard
+  const [flaskCapacityMl, setFlaskCapacityMl] = useState<number>(1000); // 2 x 500ml soft flasks (1,000ml)
+  const [showNutritionPlan, setShowNutritionPlan] = useState<boolean>(true);
 
   // Bidirectional Map <-> Chart Hover State
   const [hoverDistanceKm, setHoverDistanceKm] = useState<number | null>(null);
@@ -520,7 +542,7 @@ export default function TrailPlannerPage() {
       descentSecsPer1000m = 380;
     }
 
-    return activeRace.checkpoints.map((cp, idx) => {
+    const baseEvaluated = activeRace.checkpoints.map((cp, idx) => {
       const segDistKm = Math.max(0, cp.distanceKm - prevDistKm);
 
       // Compute TRUE CUMULATIVE SEGMENT ELEVATION GAIN (D+) AND LOSS (D-)
@@ -601,7 +623,6 @@ export default function TrailPlannerPage() {
       const clockTimeStr = `${clockHour12.toString().padStart(2, "0")}:${clockMin.toString().padStart(2, "0")} ${clockAmPm}`;
 
       // Dynamic checkpoint COT based on Mountain Km-Effort Difficulty
-      // Km-Effort = Distance + (Gain / 100).
       let cpCotHours = 0;
       const isFinish = idx === activeRace.checkpoints.length - 1 || cp.id === "finish";
 
@@ -713,6 +734,67 @@ export default function TrailPlannerPage() {
         isFinish,
       };
     });
+
+    // Feature C: Dynamic Aid Station Restock Calculations (Second Pass)
+    return baseEvaluated.map((cp, idx) => {
+      if (idx === baseEvaluated.length - 1 || cp.isFinish) {
+        return {
+          ...cp,
+          waterRefillMl: 0,
+          waterNeededMl: 0,
+          waterExceedsCapacity: false,
+          waterDeficitMl: 0,
+          carbsTargetGrams: 0,
+          gelsNeeded: 0,
+          sodiumNeededMg: 0,
+          saltCapsulesCount: 0,
+          logisticsAdvice: "Garis Finish! Segera rehidrasi elektrolit, protein pemulihan (20-25g), dan makanan padat.",
+          nextSegDurationFormatted: "-",
+          nextSegDistanceKm: 0,
+          nextSegGainM: 0,
+        };
+      }
+
+      const nextCp = baseEvaluated[idx + 1];
+      const nextDist = Math.max(0.1, Math.round((nextCp.distanceKm - cp.distanceKm) * 10) / 10);
+      const nextSegSeconds = Math.max(60, nextCp.predictedSeconds - cp.predictedSeconds);
+
+      let nextSegGain = 0;
+      let nextSegLoss = 0;
+      for (let j = 1; j < pts.length; j++) {
+        if (pts[j].distanceKm >= cp.distanceKm && pts[j].distanceKm <= nextCp.distanceKm) {
+          const diff = pts[j].elevationM - pts[j - 1].elevationM;
+          if (diff > 0) nextSegGain += diff;
+          else nextSegLoss += Math.abs(diff);
+        }
+      }
+
+      const logistics = calculateSegmentLogistics({
+        segmentDurationSeconds: nextSegSeconds,
+        segmentDistanceKm: nextDist,
+        segmentGainM: Math.round(nextSegGain),
+        segmentLossM: Math.round(nextSegLoss),
+        targetCarbsPerHourGrams: targetCarbsPerHour,
+        targetWaterPerHourMl: targetWaterPerHourMl,
+        flaskCapacityMl: flaskCapacityMl,
+      });
+
+      return {
+        ...cp,
+        waterRefillMl: logistics.recommendedWaterRefillMl,
+        waterNeededMl: logistics.waterNeededMl,
+        waterExceedsCapacity: logistics.waterExceedsCapacity,
+        waterDeficitMl: logistics.waterDeficitMl,
+        carbsTargetGrams: logistics.carbsNeededGrams,
+        gelsNeeded: logistics.gelsNeeded,
+        sodiumNeededMg: logistics.sodiumNeededMg,
+        saltCapsulesCount: logistics.saltCapsulesCount,
+        logisticsAdvice: logistics.tacticalLogisticsAdvice,
+        nextSegDurationFormatted: logistics.durationFormatted,
+        nextSegDistanceKm: nextDist,
+        nextSegGainM: Math.round(nextSegGain),
+      };
+    });
   }, [
     activeRace,
     athleteVam,
@@ -723,6 +805,9 @@ export default function TrailPlannerPage() {
     fatigueDegradationPct,
     nightPenaltyPct,
     aidStationMinutes,
+    targetCarbsPerHour,
+    targetWaterPerHourMl,
+    flaskCapacityMl,
   ]);
 
   // Overall finish prediction details
@@ -747,6 +832,41 @@ export default function TrailPlannerPage() {
     }
     return h > 0 ? `-${h}j ${m}m Terkena COT (${raceOfficialCotHours}j)` : `-${m}m Terkena COT`;
   };
+
+  // Feature C: Total Race Nutrition & Hydration Plan Summary
+  const raceNutritionSummary = useMemo(() => {
+    let totalCarbs = 0;
+    let totalGels = 0;
+    let totalWaterMl = 0;
+    let totalSodiumMg = 0;
+    let totalSaltCaps = 0;
+    let highWaterAlertsCount = 0;
+
+    evaluatedCheckpoints.forEach((cp, idx) => {
+      if (idx < evaluatedCheckpoints.length - 1) {
+        totalCarbs += cp.carbsTargetGrams || 0;
+        totalGels += cp.gelsNeeded || 0;
+        totalWaterMl += cp.waterNeededMl || 0;
+        totalSodiumMg += cp.sodiumNeededMg || 0;
+        totalSaltCaps += cp.saltCapsulesCount || 0;
+        if (cp.waterExceedsCapacity) highWaterAlertsCount++;
+      }
+    });
+
+    const totalWaterLiters = Math.round((totalWaterMl / 1000) * 10) / 10;
+    const estTotalHours = Math.round((finishSeconds / 3600) * 10) / 10;
+
+    return {
+      totalCarbs,
+      totalGels,
+      totalWaterLiters,
+      totalWaterMl,
+      totalSodiumMg,
+      totalSaltCaps,
+      estTotalHours,
+      highWaterAlertsCount,
+    };
+  }, [evaluatedCheckpoints, finishSeconds]);
 
   // 3-Category Gradient Distribution (Uphill, Flat, Downhill) - Like Plan Your Trail
   const gradientSummary = useMemo(() => {
@@ -837,8 +957,12 @@ export default function TrailPlannerPage() {
         avgGradePct,
         durationStr,
         paceStr: formatPace(segPaceSec),
-        waterRefillMl: to.waterRefillMl,
-        carbsTargetGrams: to.carbsTargetGrams,
+        waterRefillMl: from.waterRefillMl,
+        waterNeededMl: from.waterNeededMl,
+        waterExceedsCapacity: from.waterExceedsCapacity,
+        carbsTargetGrams: from.carbsTargetGrams,
+        gelsNeeded: from.gelsNeeded,
+        logisticsAdvice: from.logisticsAdvice,
         notes: to.notes,
       });
     }
@@ -1876,11 +2000,18 @@ export default function TrailPlannerPage() {
                           </div>
 
                           <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
-                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Target Refill Logistik</span>
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Target Logistik Segmen</span>
                             {seg.waterRefillMl > 0 || seg.carbsTargetGrams > 0 ? (
-                              <span className="text-zinc-950 font-black">
-                                💧 {seg.waterRefillMl}ml • ⚡ {seg.carbsTargetGrams}g
-                              </span>
+                              <div className="space-y-0.5">
+                                <span className="text-zinc-950 font-black text-xs block">
+                                  💧 {seg.waterRefillMl}ml • ⚡ {seg.carbsTargetGrams}g ({seg.gelsNeeded || Math.ceil(seg.carbsTargetGrams / 25)} gel)
+                                </span>
+                                {seg.waterExceedsCapacity && (
+                                  <span className="text-[9px] font-black text-rose-700 block">
+                                    ⚠️ Butuh {seg.waterNeededMl}ml (&gt;{flaskCapacityMl}ml)
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-zinc-400 font-bold">-</span>
                             )}
@@ -2345,6 +2476,311 @@ export default function TrailPlannerPage() {
           </div>
         </div>
 
+        {/* Feature C: Aid Station Nutrition & Hydration Planner */}
+        <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-zinc-950 pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Apple className="h-4 w-4 text-orange-600 stroke-[2.5]" />
+                <h3 className="text-sm font-black text-zinc-950 tracking-tight">
+                  Aid Station Nutrition & Hydration Planner (Strategi Logistik WS)
+                </h3>
+                <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-cyan-200 text-cyan-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                  Jeukendrup & Costa
+                </span>
+              </div>
+              <p className="text-xs text-zinc-600 font-medium mt-0.5">
+                Kalkulasi kebutuhan restock air dan karbohidrat otomatis antar pos berdasarkan prediksi durasi tempuh & gradien vertikal
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowNutritionPlan(!showNutritionPlan)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 text-zinc-950 transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none self-start sm:self-auto"
+            >
+              {showNutritionPlan ? (
+                <>
+                  <EyeOff className="h-3.5 w-3.5 text-zinc-950" />
+                  <span>Sembunyikan Strategi</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3.5 w-3.5 text-zinc-950" />
+                  <span>Buka Strategi Nutrisi</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {showNutritionPlan && (
+            <div className="space-y-5">
+              {/* Target Controls Deck */}
+              <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
+                    <Sliders className="h-3.5 w-3.5 text-zinc-950" />
+                    Kustomisasi Target Asupan & Kapasitas Vest
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-500 font-bold">
+                    Disesuaikan dengan daya serap lambung (gut training) Anda
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                  {/* Target Carbs Slider */}
+                  <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-zinc-800 flex items-center gap-1">
+                        <Zap className="h-3.5 w-3.5 text-amber-600" />
+                        Target Karbohidrat
+                      </span>
+                      <span className="font-mono font-black text-amber-700 text-sm">
+                        {targetCarbsPerHour}g / jam
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={30}
+                      max={90}
+                      step={5}
+                      value={targetCarbsPerHour}
+                      onChange={(e) => setTargetCarbsPerHour(Number(e.target.value))}
+                      className="w-full accent-amber-600 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
+                    />
+                    <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
+                      <span>30g (Ringan)</span>
+                      <span>~{Math.round((targetCarbsPerHour / 25) * 10) / 10} gel/jam</span>
+                      <span>90g (Gut Trained)</span>
+                    </div>
+                  </div>
+
+                  {/* Target Water Slider */}
+                  <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-zinc-800 flex items-center gap-1">
+                        <Droplets className="h-3.5 w-3.5 text-cyan-600" />
+                        Target Hidrasi Cairan
+                      </span>
+                      <span className="font-mono font-black text-cyan-700 text-sm">
+                        {targetWaterPerHourMl}ml / jam
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={300}
+                      max={800}
+                      step={50}
+                      value={targetWaterPerHourMl}
+                      onChange={(e) => setTargetWaterPerHourMl(Number(e.target.value))}
+                      className="w-full accent-cyan-600 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
+                    />
+                    <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
+                      <span>300ml (Sejuk)</span>
+                      <span>500ml (Standar)</span>
+                      <span>800ml (Panas)</span>
+                    </div>
+                  </div>
+
+                  {/* Flask Capacity Selector */}
+                  <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-zinc-800 flex items-center gap-1">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        Kapasitas Botol Vest
+                      </span>
+                      <span className="font-mono font-black text-emerald-700 text-sm">
+                        {flaskCapacityMl}ml
+                      </span>
+                    </div>
+                    <select
+                      value={flaskCapacityMl}
+                      onChange={(e) => setFlaskCapacityMl(Number(e.target.value))}
+                      className="w-full bg-white border-2 border-zinc-950 text-zinc-950 rounded-lg p-1.5 text-xs font-mono font-bold shadow-[1px_1px_0px_0px_#09090b] focus:outline-none"
+                    >
+                      <option value={500}>500ml (1 Softflask Ringan)</option>
+                      <option value={1000}>1,000ml (2 x 500ml Standar Trail)</option>
+                      <option value={1500}>1,500ml (2 Flasks + 500ml Bladder)</option>
+                      <option value={2000}>2,000ml (2 Flasks + 1L Bladder)</option>
+                    </select>
+                    <p className="text-[10px] text-zinc-500">
+                      Sistem memberi peringatan jika segmen butuh air &gt; kapasitas ini.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Race Total Fuel & Hydration Scorecard */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
+                  <span className="text-[10px] text-zinc-600 font-bold block">Total Karbohidrat Balapan</span>
+                  <div className="text-xl font-black text-amber-700 font-mono">
+                    {raceNutritionSummary.totalCarbs}g
+                  </div>
+                  <p className="text-[10px] text-zinc-600 font-medium font-mono">
+                    ~{raceNutritionSummary.totalGels} Bungkus Energy Gel (@25g)
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
+                  <span className="text-[10px] text-zinc-600 font-bold block">Total Hidrasi Cairan</span>
+                  <div className="text-xl font-black text-cyan-700 font-mono">
+                    {raceNutritionSummary.totalWaterLiters} Liter
+                  </div>
+                  <p className="text-[10px] text-zinc-600 font-medium font-mono">
+                    ~{Math.ceil(raceNutritionSummary.totalWaterMl / 500)} kali refill botol 500ml
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
+                  <span className="text-[10px] text-zinc-600 font-bold block">Penggantian Garam (Sodium)</span>
+                  <div className="text-xl font-black text-emerald-700 font-mono">
+                    {raceNutritionSummary.totalSodiumMg.toLocaleString()} mg
+                  </div>
+                  <p className="text-[10px] text-zinc-600 font-medium font-mono">
+                    ~{raceNutritionSummary.totalSaltCaps} Kapsul Garam (Cegah kram)
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
+                  <span className="text-[10px] text-zinc-600 font-bold block">Status Kapasitas Vest</span>
+                  <div className="text-base font-black text-zinc-950 font-mono">
+                    {raceNutritionSummary.highWaterAlertsCount > 0 ? (
+                      <span className="text-rose-700 flex items-center gap-1">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        {raceNutritionSummary.highWaterAlertsCount} Pos Defisit
+                      </span>
+                    ) : (
+                      <span className="text-emerald-700 flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        Aman Terpenuhi
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-zinc-600 font-medium">
+                    {raceNutritionSummary.highWaterAlertsCount > 0
+                      ? "Butuh extra softflask di tanjakan terjal"
+                      : "2 botol 500ml cukup di semua pos"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Station-by-Station Restock Timeline Cards */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
+                    <Compass className="h-3.5 w-3.5 text-zinc-950" />
+                    Panduan Aksi Restock di Setiap Pos / Water Station (WS)
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-500 font-bold">
+                    Siapkan sebelum checkout dari pos
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {evaluatedCheckpoints.map((cp, idx) => {
+                    const isFinish = idx === evaluatedCheckpoints.length - 1 || cp.isFinish;
+                    const isStart = idx === 0;
+                    const nextCp = evaluatedCheckpoints[idx + 1];
+
+                    return (
+                      <div
+                        key={cp.id || `ws-${idx}`}
+                        className={`p-4 rounded-xl border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b] ${
+                          cp.waterExceedsCapacity
+                            ? "bg-rose-50 border-rose-950"
+                            : isFinish
+                            ? "bg-emerald-50"
+                            : isStart
+                            ? "bg-amber-50"
+                            : "bg-white"
+                        }`}
+                      >
+                        {/* Station Header */}
+                        <div className="flex items-start justify-between gap-2 border-b border-zinc-200 pb-2">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-zinc-200 text-zinc-950 border border-zinc-950">
+                                {isStart ? "START" : isFinish ? "FINISH" : `POS ${idx}`}
+                              </span>
+                              <span className="text-xs font-black text-zinc-950">{cp.name}</span>
+                            </div>
+                            <span className="text-[10px] font-mono text-zinc-500 font-bold">
+                              KM {cp.distanceKm.toFixed(1)} &bull; {cp.elevationM} mdpl &bull; Tiba: {cp.predictedTimeStr} ({cp.clockTimeStr})
+                            </span>
+                          </div>
+
+                          {!isFinish && nextCp && (
+                            <div className="text-right shrink-0">
+                              <span className="text-[9px] font-mono text-zinc-500 block">Menuju {nextCp.name}</span>
+                              <span className="text-[11px] font-mono font-black text-zinc-950">
+                                {cp.nextSegDistanceKm}km &bull; ~{cp.nextSegDurationFormatted}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Checklist for Non-Finish */}
+                        {!isFinish ? (
+                          <div className="space-y-2 text-xs">
+                            <div className="grid grid-cols-3 gap-2 text-[11px]">
+                              {/* Water */}
+                              <div className="p-2 rounded-lg bg-cyan-50 border border-cyan-300">
+                                <span className="text-[9px] text-cyan-900 font-bold block">💧 Refill Air</span>
+                                <span className="font-mono font-black text-cyan-950 text-xs">
+                                  {cp.waterRefillMl} ml
+                                </span>
+                              </div>
+
+                              {/* Carbs */}
+                              <div className="p-2 rounded-lg bg-amber-50 border border-amber-300">
+                                <span className="text-[9px] text-amber-900 font-bold block">⚡ Ambil Karbo</span>
+                                <span className="font-mono font-black text-amber-950 text-xs">
+                                  {cp.carbsTargetGrams}g ({cp.gelsNeeded} gel)
+                                </span>
+                              </div>
+
+                              {/* Salt */}
+                              <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-300">
+                                <span className="text-[9px] text-emerald-900 font-bold block">🧂 Elektrolit</span>
+                                <span className="font-mono font-black text-emerald-950 text-xs">
+                                  {cp.saltCapsulesCount} kapsul
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Alert if water needed exceeds flask capacity */}
+                            {cp.waterExceedsCapacity && (
+                              <div className="p-2.5 rounded-lg bg-rose-100 border border-rose-400 text-rose-950 text-[11px] font-bold flex items-start gap-1.5">
+                                <AlertTriangle className="h-3.5 w-3.5 text-rose-700 shrink-0 mt-0.5" />
+                                <div>
+                                  <strong>Defisit Cairan (+{cp.waterDeficitMl}ml): </strong>
+                                  Durasi tanjakan ke {nextCp?.name} (~{cp.nextSegDurationFormatted}) membutuhkan {cp.waterNeededMl}ml air. Bawa botol extra atau minum 300ml sebelum checkout!
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Logistics Tip */}
+                            <p className="text-[11px] text-zinc-700 font-medium italic">
+                              💡 {cp.logisticsAdvice}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-emerald-900 font-medium space-y-1">
+                            <div className="font-black text-emerald-950">🏆 Target Selesai & Pemulihan Segera:</div>
+                            <p className="text-[11px]">
+                              Segera minum 500ml elektrolit dingin, 20–25g protein recovery, dan karbohidrat padat untuk mempercepat sintesis glikogen otot.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Feature 6: Athlete Finish Prediction & Checkpoint Timetable */}
         <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-5">
           {/* Header with Show/Hide Toggle */}
@@ -2460,12 +2896,12 @@ export default function TrailPlannerPage() {
 
                 {/* Nutrition Targets */}
                 <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-0.5">
-                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">Total Kebutuhan Nutrisi</span>
+                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">Total Kebutuhan Nutrisi Race</span>
                   <div className="text-lg font-black text-emerald-700">
-                    💧 ~{Math.round(finishHours * (strategyTier === "elite" ? 0.7 : 0.65) * 10) / 10}L Air
+                    💧 ~{raceNutritionSummary.totalWaterLiters}L Air
                   </div>
                   <div className="text-[10px] text-amber-700 font-sans font-bold">
-                    ⚡ ~{Math.round(finishHours * (strategyTier === "elite" ? 60 : 45))}g Karbo (~{Math.round((finishHours * (strategyTier === "elite" ? 60 : 45)) / 25)} gel)
+                    ⚡ {raceNutritionSummary.totalCarbs}g Karbo ({raceNutritionSummary.totalGels} gel) • {raceNutritionSummary.totalSaltCaps} Garam
                   </div>
                 </div>
               </div>
@@ -2534,10 +2970,22 @@ export default function TrailPlannerPage() {
                         </span>
                       </td>
                       <td className="py-3 px-3">
-                        {cp.waterRefillMl > 0 || cp.carbsTargetGrams > 0 ? (
-                          <div className="text-[11px] text-zinc-950 font-bold">
-                            <span className="text-cyan-700 font-black">{cp.waterRefillMl}ml air</span> •{" "}
-                            <span className="text-amber-700 font-black">{cp.carbsTargetGrams}g karbo</span>
+                        {cp.isFinish ? (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-200 text-emerald-950 border border-zinc-950">
+                            Finish Recovery
+                          </span>
+                        ) : cp.waterRefillMl > 0 || cp.carbsTargetGrams > 0 ? (
+                          <div className="space-y-1">
+                            <div className="text-[11px] text-zinc-950 font-bold flex items-center gap-1.5 whitespace-nowrap">
+                              <span className="text-cyan-700 font-black font-mono">💧 {cp.waterRefillMl}ml</span>
+                              <span className="text-zinc-400">•</span>
+                              <span className="text-amber-700 font-black font-mono">⚡ {cp.carbsTargetGrams}g ({cp.gelsNeeded} gel)</span>
+                            </div>
+                            {cp.waterExceedsCapacity && (
+                              <span className="text-[9px] font-black text-rose-800 bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded block whitespace-nowrap">
+                                ⚠️ Butuh {cp.waterNeededMl}ml (&gt;{flaskCapacityMl}ml)
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <span className="text-zinc-400 font-bold">-</span>

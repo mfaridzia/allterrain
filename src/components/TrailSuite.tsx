@@ -22,7 +22,21 @@ import {
   CheckCircle2,
   Calendar,
   TrendingUp,
+  Footprints,
+  Flame,
+  Info,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ReferenceLine,
+  ReferenceArea,
+  CartesianGrid,
+} from "recharts";
 import { useUpdateSettingsMutation } from "@/lib/queries";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import {
@@ -31,6 +45,9 @@ import {
   calculateTrailFuelingPlan,
   classifyClimbDensity,
   calculateRacePreparationVolume,
+  calculateGradientEfficiencyCurve,
+  GradientEfficiencyAnalysis,
+  GradientEfficiencyPoint,
 } from "@/lib/analytics";
 
 interface TrailSuiteProps {
@@ -171,6 +188,36 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
   }, [raceDistance, raceElevation, trainingTier]);
 
   const hasHighDescentPenalty = raceElevation >= 1500;
+
+  // Feature B: Climbing & Descent Efficiency Analysis (VAM vs Gradient & Hike vs Run)
+  const [selectedGradient, setSelectedGradient] = useState<number>(12);
+  const efficiencyAnalysis = useMemo(() => {
+    return calculateGradientEfficiencyCurve({
+      athleteVam: avgVam,
+      athleteFlatPaceSec: flatMarathonPaceSec,
+    });
+  }, [avgVam, flatMarathonPaceSec]);
+
+  const activePoint = useMemo(() => {
+    const exact = efficiencyAnalysis.curve.find((p) => p.gradientPct === selectedGradient);
+    if (exact) return exact;
+    return efficiencyAnalysis.curve.reduce((prev, curr) =>
+      Math.abs(curr.gradientPct - selectedGradient) < Math.abs(prev.gradientPct - selectedGradient) ? curr : prev
+    );
+  }, [efficiencyAnalysis, selectedGradient]);
+
+  const chartData = useMemo(() => {
+    return efficiencyAnalysis.uphillPoints.map((pt) => ({
+      gradient: `${pt.gradientPct}%`,
+      gradientPct: pt.gradientPct,
+      runVam: pt.runVam,
+      hikeVam: pt.hikeVam,
+      savingsPct: pt.glycogenSavingsPct,
+      runPace: pt.runPaceStr,
+      hikePace: pt.hikePaceStr,
+      strategy: pt.strategyLabel,
+    }));
+  }, [efficiencyAnalysis]);
 
   return (
     <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 sm:p-6 space-y-6 shadow-[4px_4px_0px_0px_#09090b]">
@@ -512,6 +559,323 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             </span>
           </div>
         )}
+      </div>
+
+      {/* Feature B: Climbing & Descent Efficiency Analysis (VAM vs Gradient & Hike vs Run) */}
+      <div className="p-5 sm:p-6 rounded-2xl bg-white border-2 border-zinc-950 space-y-5 shadow-[4px_4px_0px_0px_#09090b]">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-zinc-950 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-amber-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+              <Footprints className="h-4 w-4 stroke-[2.5]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm sm:text-base font-black text-zinc-950">
+                  Climbing & Descent Efficiency (VAM vs Gradient)
+                </h4>
+                <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-amber-300 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                  Hike vs Run Breakeven
+                </span>
+              </div>
+              <p className="text-xs text-zinc-600 font-medium">
+                Analisis titik temu transisi kemiringan (gradient %) antara lari vs power-hiking berdasarkan model Minetti & Joubert 2022
+              </p>
+            </div>
+          </div>
+
+          {/* Breakeven Sweet Spot Badge */}
+          <div className="p-2.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-right shrink-0 shadow-[2px_2px_0px_0px_#09090b]">
+            <span className="text-[10px] text-zinc-500 font-bold block uppercase tracking-wider">
+              Walk-Run Breakeven
+            </span>
+            <div className="text-sm sm:text-base font-black text-zinc-950 font-mono">
+              {efficiencyAnalysis.breakevenGradientPct}% Kemiringan
+            </div>
+          </div>
+        </div>
+
+        {/* Executive Summary Alert */}
+        <div className="p-3.5 rounded-xl bg-amber-50 border-2 border-zinc-950 text-xs text-zinc-800 leading-relaxed font-medium flex items-start gap-2.5 shadow-[2px_2px_0px_0px_#09090b]">
+          <Sparkles className="h-4 w-4 text-amber-600 stroke-[2.5] shrink-0 mt-0.5" />
+          <div>
+            <strong className="font-black text-zinc-950">Pedoman Taktis: </strong>
+            {efficiencyAnalysis.executiveSummary}
+          </div>
+        </div>
+
+        {/* Interactive Gradient Explorer */}
+        <div className="p-4 sm:p-5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-4 shadow-[2px_2px_0px_0px_#09090b]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="space-y-0.5">
+              <span className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
+                <Gauge className="h-3.5 w-3.5 text-zinc-950 stroke-[2.5]" />
+                Simulasi Kemiringan Tanjakan / Turunan Real-Time
+              </span>
+              <p className="text-[11px] text-zinc-600 font-medium">
+                Geser slider untuk melihat apakah lebih cepat & hemat lari atau power-hiking di kemiringan ini
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-lg bg-white border-2 border-zinc-950 font-mono font-black text-sm text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                {selectedGradient > 0 ? `+${selectedGradient}%` : `${selectedGradient}%`} Gradient
+              </span>
+              <span
+                className={`px-3 py-1 rounded-lg text-xs font-black border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] ${
+                  activePoint.optimalStrategy === "run"
+                    ? "bg-emerald-300 text-zinc-950"
+                    : activePoint.optimalStrategy === "transition"
+                    ? "bg-amber-300 text-zinc-950"
+                    : activePoint.optimalStrategy === "power_hike" || activePoint.optimalStrategy === "poles_mandatory"
+                    ? "bg-orange-300 text-zinc-950"
+                    : "bg-cyan-300 text-zinc-950"
+                }`}
+              >
+                {activePoint.strategyLabel}
+              </span>
+            </div>
+          </div>
+
+          {/* Slider */}
+          <div className="space-y-1">
+            <input
+              type="range"
+              min={-25}
+              max={35}
+              step={1}
+              value={selectedGradient}
+              onChange={(e) => setSelectedGradient(Number(e.target.value))}
+              className="w-full accent-amber-600 cursor-pointer h-2.5 bg-zinc-200 rounded-lg border border-zinc-950"
+            />
+            <div className="flex justify-between text-[10px] font-mono text-zinc-500 font-bold px-1">
+              <span>-25% (Turunan Curam)</span>
+              <span>-10%</span>
+              <span className="text-zinc-950 font-black">0% (Datar)</span>
+              <span className="text-amber-700 font-black">+{efficiencyAnalysis.breakevenGradientPct}% (Breakeven)</span>
+              <span>+20%</span>
+              <span>+35% (Ekstrem)</span>
+            </div>
+          </div>
+
+          {/* Real-time Metric Cards for Selected Gradient */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-0.5">
+              <span className="text-[10px] text-zinc-600 block font-bold">Kecepatan Vertikal (VAM)</span>
+              <div className="text-base font-black text-zinc-950 font-mono">
+                {selectedGradient >= 0 ? `${activePoint.hikeVam} m/h` : `${Math.abs(activePoint.runVam)} m/h (D-)`}
+              </div>
+              <p className="text-[10px] text-zinc-500 font-mono">
+                {selectedGradient >= 0 ? `Lari: ${activePoint.runVam} m/h` : "Laju penurunan"}
+              </p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-0.5">
+              <span className="text-[10px] text-zinc-600 block font-bold">Kecepatan & Pace Datar</span>
+              <div className="text-base font-black text-zinc-950 font-mono">
+                {selectedGradient >= 0 ? activePoint.hikePaceStr : activePoint.runPaceStr}
+              </div>
+              <p className="text-[10px] text-zinc-500 font-mono">
+                {selectedGradient >= 0 ? `${activePoint.hikeSpeedKmh} km/h` : `${activePoint.runSpeedKmh} km/h`}
+              </p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-0.5">
+              <span className="text-[10px] text-zinc-600 block font-bold">Grade-Adjusted Pace (GAP)</span>
+              <div className="text-base font-black text-cyan-700 font-mono">
+                {activePoint.gapPaceStr}
+              </div>
+              <p className="text-[10px] text-zinc-500 font-medium">Usaha setara flat</p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-0.5">
+              <span className="text-[10px] text-zinc-600 block font-bold">Efisiensi / Hemat Glikogen</span>
+              <div className="text-base font-black text-amber-700 font-mono">
+                {activePoint.glycogenSavingsPct > 0 ? `+${activePoint.glycogenSavingsPct}% Lebih Hemat` : "Netral"}
+              </div>
+              <p className="text-[10px] text-zinc-500 font-medium">
+                {activePoint.glycogenSavingsPct > 0 ? "Bila power-hiking" : "Lari efisien"}
+              </p>
+            </div>
+          </div>
+
+          {/* Live Tactical Tip for Selected Gradient */}
+          <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 text-xs text-zinc-800 font-medium flex items-start gap-2 shadow-[1px_1px_0px_0px_#09090b]">
+            <Info className="h-4 w-4 text-zinc-950 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-black text-zinc-950">Rekomendasi Taktis ({selectedGradient}%): </span>
+              <span>{activePoint.tacticalTip}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Dual-Curve Chart: Running VAM vs Power-Hiking VAM */}
+        <div className="space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-zinc-950 stroke-[2.5]" />
+              <span className="text-xs font-black text-zinc-950">
+                Kurva Efisiensi: Lari vs Power-Hiking (0% s/d 35% Tanjakan)
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-[11px] font-mono font-bold">
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-0.5 bg-emerald-600 inline-block border-t-2 border-emerald-600"></span>
+                <span>Lari (Run VAM)</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-0.5 bg-amber-600 inline-block border-t-2 border-amber-600"></span>
+                <span>Power-Hike VAM</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 bg-amber-100 border border-amber-400 inline-block rounded"></span>
+                <span>Zona Transisi</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="h-64 sm:h-72 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                <XAxis
+                  dataKey="gradient"
+                  tick={{ fontSize: 11, fontWeight: 700, fill: "#27272a" }}
+                  interval={0}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fontWeight: 700, fill: "#27272a" }}
+                  unit=" m/h"
+                  domain={[0, "auto"]}
+                />
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="p-3 bg-white border-2 border-zinc-950 rounded-xl shadow-[3px_3px_0px_0px_#09090b] text-xs space-y-1 font-mono">
+                          <div className="font-black text-zinc-950 border-b border-zinc-200 pb-1 flex justify-between gap-4">
+                            <span>Kemiringan: {data.gradient}</span>
+                            <span className="text-amber-600">{data.strategy}</span>
+                          </div>
+                          <div className="text-emerald-700 font-bold">
+                            🏃 Running VAM: {data.runVam} m/h ({data.runPace})
+                          </div>
+                          <div className="text-amber-700 font-bold">
+                            🥾 Hiking VAM: {data.hikeVam} m/h ({data.hikePace})
+                          </div>
+                          {data.savingsPct > 0 && (
+                            <div className="text-zinc-700 text-[10px] font-sans font-bold pt-0.5">
+                              ⚡ Hemat Glikogen: +{data.savingsPct}% dengan jalan
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                {/* Highlight Walk-Run Transition Zone (9% to 15%) */}
+                <ReferenceArea
+                  x1="9%"
+                  x2="15%"
+                  fill="#fef3c7"
+                  fillOpacity={0.6}
+                  stroke="#f59e0b"
+                  strokeDasharray="3 3"
+                />
+                <ReferenceLine
+                  x="12%"
+                  stroke="#d97706"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  label={{
+                    value: "Breakeven (~11.5%)",
+                    position: "top",
+                    fill: "#92400e",
+                    fontSize: 10,
+                    fontWeight: "bold",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="runVam"
+                  stroke="#059669"
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: "#059669", stroke: "#09090b", strokeWidth: 1 }}
+                  name="Run VAM"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="hikeVam"
+                  stroke="#d97706"
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: "#d97706", stroke: "#09090b", strokeWidth: 1 }}
+                  name="Hike VAM"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Tactical Decision Matrix (4 Core Gradient Rules) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+          {/* Card 1: 0-8% */}
+          <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1.5 shadow-[2px_2px_0px_0px_#09090b]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-emerald-200 text-emerald-950 border border-zinc-950">
+                0% s/d 8% Tanjakan
+              </span>
+              <span className="text-[10px] font-bold text-zinc-500">Pure Run</span>
+            </div>
+            <div className="text-xs font-black text-zinc-950">Lari Aerobik Mengalir</div>
+            <p className="text-[11px] text-zinc-600 font-medium leading-relaxed">
+              Manfaatkan elastisitas tendon achilles. Lari menghasilkan VAM lebih tinggi (350–500 m/h) dibanding jalan santai.
+            </p>
+          </div>
+
+          {/* Card 2: 9-14% */}
+          <div className="p-3.5 rounded-xl bg-amber-50 border-2 border-zinc-950 space-y-1.5 shadow-[2px_2px_0px_0px_#09090b]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-amber-300 text-zinc-950 border border-zinc-950">
+                9% s/d 14% Tanjakan
+              </span>
+              <span className="text-[10px] font-bold text-amber-700 font-mono">Breakeven</span>
+            </div>
+            <div className="text-xs font-black text-zinc-950">Zona Transisi Kritis</div>
+            <p className="text-[11px] text-zinc-600 font-medium leading-relaxed">
+              Kecepatan lari dan power-hiking setara (~540 m/h), tapi power-hiking menghemat <strong>~18% glikogen</strong> dan menurunkan detak jantung 10 bpm!
+            </p>
+          </div>
+
+          {/* Card 3: 15-30% */}
+          <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1.5 shadow-[2px_2px_0px_0px_#09090b]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-orange-200 text-orange-950 border border-zinc-950">
+                15% s/d 30%+ Tanjakan
+              </span>
+              <span className="text-[10px] font-bold text-orange-700 font-mono">Poles Mode</span>
+            </div>
+            <div className="text-xs font-black text-zinc-950">Power-Hiking & Poles</div>
+            <p className="text-[11px] text-zinc-600 font-medium leading-relaxed">
+              Jangan paksakan lari! Dorong tangan di paha (hands-on-knees) atau trekking pole. Otot gluteus & hamstring menghasilkan torsi pendakian tertinggi.
+            </p>
+          </div>
+
+          {/* Card 4: Descents */}
+          <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1.5 shadow-[2px_2px_0px_0px_#09090b]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-cyan-200 text-cyan-950 border border-zinc-950">
+                -10% s/d -25% Turunan
+              </span>
+              <span className="text-[10px] font-bold text-rose-700 font-mono">Quad Armor</span>
+            </div>
+            <div className="text-xs font-black text-zinc-950">Rem Paha & Kecepatan</div>
+            <p className="text-[11px] text-zinc-600 font-medium leading-relaxed">
+              Turunan terjal memberi beban eksentrik berat. Pendekkan langkah kaki, hindari over-striding, dan gunakan pole untuk menyerap tumbukan lutut.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* 1. Kilian Jornet Weekly Vertical Accumulator & Mountain Specificity */}
