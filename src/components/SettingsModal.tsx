@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings, X, Key, Cpu, Check, AlertCircle } from "lucide-react";
+import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
 import { useAppSettings, useUpdateSettingsMutation } from "@/lib/queries";
 
 interface SettingsModalProps {
@@ -9,27 +9,33 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-const MODEL_PRESETS: Record<string, { id: string; label: string }[]> = {
+const CURATED_MODELS: Record<string, { id: string; label: string }[]> = {
   gemini: [
-    { id: "gemini-2.5-flash", label: "Flash 2.5 (Cepat & Irit)" },
-    { id: "gemini-2.5-pro", label: "Pro 2.5 (Analisis Mendalam)" },
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Rekomendasi • Cepat & Irit)" },
+    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Penalaran & Analisis Mendalam)" },
+    { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash (Legacy Fast)" },
+    { id: "gemini-1.5-pro", label: "Gemini 1.5 Pro (Legacy Deep)" },
   ],
   deepseek: [
-    { id: "deepseek-chat", label: "V3 Chat (Default)" },
-    { id: "deepseek-reasoner", label: "R1 Reasoner" },
+    { id: "deepseek-chat", label: "DeepSeek V3 (deepseek-chat • Default)" },
+    { id: "deepseek-reasoner", label: "DeepSeek R1 (deepseek-reasoner • Penalaran)" },
   ],
   openai: [
-    { id: "gpt-4o-mini", label: "GPT-4o Mini (Hemat)" },
-    { id: "gpt-4o", label: "GPT-4o (Full)" },
+    { id: "gpt-4o-mini", label: "GPT-4o Mini (Rekomendasi • Cepat & Hemat)" },
+    { id: "gpt-4o", label: "GPT-4o (Omni Flagship)" },
+    { id: "o3-mini", label: "o3-mini (Reasoning Cepat)" },
+    { id: "o1", label: "o1 (Deep Reasoning)" },
   ],
   claude: [
-    { id: "claude-3-5-sonnet-20241022", label: "Sonnet 3.5 (Optimal)" },
-    { id: "claude-3-7-sonnet-20250219", label: "Sonnet 3.7" },
-    { id: "claude-3-5-haiku-20241022", label: "Haiku 3.5 (Cepat)" },
+    { id: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet (Rekomendasi Utama)" },
+    { id: "claude-3-7-sonnet-20250219", label: "Claude 3.7 Sonnet (Hybrid Reasoning Terbaru)" },
+    { id: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (Paling Cepat & Ringan)" },
+    { id: "claude-3-opus-20240229", label: "Claude 3 Opus" },
   ],
   ollama: [
-    { id: "llama3.2", label: "Llama 3.2" },
+    { id: "llama3.2", label: "Llama 3.2 (Default)" },
     { id: "mistral", label: "Mistral" },
+    { id: "deepseek-r1", label: "DeepSeek R1 (Local)" },
   ],
 };
 
@@ -42,10 +48,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [apiKey, setApiKey] = useState<string>("");
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
+  const [dynamicModels, setDynamicModels] = useState<Record<string, { id: string; label: string }[]>>({});
+  const [isFetchingModels, setIsFetchingModels] = useState<boolean>(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isCustomModel, setIsCustomModel] = useState<boolean>(false);
+
   useEffect(() => {
     if (settingsData) {
       if (settingsData.aiProvider) setProvider(settingsData.aiProvider);
-      if (settingsData.aiModelName) setModelName(settingsData.aiModelName);
+      if (settingsData.aiModelName) {
+        setModelName(settingsData.aiModelName);
+        const models = dynamicModels[settingsData.aiProvider] || CURATED_MODELS[settingsData.aiProvider] || [];
+        if (!models.some((m) => m.id === settingsData.aiModelName)) {
+          setIsCustomModel(true);
+        }
+      }
     }
   }, [settingsData]);
 
@@ -53,6 +70,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   const configuredKeys = settingsData?.configuredKeys || {};
   const saving = updateSettingsMutation.isPending;
+
+  const handleFetchLiveModels = async () => {
+    setIsFetchingModels(true);
+    setFetchError(null);
+    try {
+      const res = await fetch("/api/settings/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          apiKey: apiKey.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Gagal mengambil daftar model dari provider.");
+      }
+      if (Array.isArray(data.models) && data.models.length > 0) {
+        setDynamicModels((prev) => ({
+          ...prev,
+          [provider]: data.models,
+        }));
+        if (!data.models.some((m: any) => m.id === modelName)) {
+          setModelName(data.models[0].id);
+          setIsCustomModel(false);
+        }
+      }
+    } catch (err: any) {
+      setFetchError(err.message || "Gagal mengambil model.");
+      setTimeout(() => setFetchError(null), 5000);
+    } finally {
+      setIsFetchingModels(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +131,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       console.error(err);
     }
   };
+
+  const displayModels = dynamicModels[provider] || CURATED_MODELS[provider] || [];
 
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
@@ -121,6 +174,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   onClick={() => {
                     setProvider(p.id);
                     setModelName(p.defModel);
+                    setIsCustomModel(false);
+                    setFetchError(null);
                   }}
                   className={`p-2.5 rounded-xl text-left transition-all min-w-0 ${
                     idx === 4 ? "sm:col-span-2" : ""
@@ -139,38 +194,79 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
-          {/* Model Name */}
+          {/* Model Selection Dropdown */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black text-zinc-900">Model Name</label>
-              <span className="text-[10px] text-zinc-600 font-bold font-mono">
-                Kosongkan untuk default
-              </span>
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-black text-zinc-900 flex items-center gap-1.5 truncate">
+                <Sparkles className="h-3.5 w-3.5 text-orange-600 stroke-[2.5] shrink-0" />
+                <span>Model AI</span>
+                {dynamicModels[provider] && (
+                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-300">
+                    Live API
+                  </span>
+                )}
+              </label>
+              <button
+                type="button"
+                onClick={handleFetchLiveModels}
+                disabled={isFetchingModels}
+                className="text-[10px] font-bold text-zinc-700 hover:text-zinc-950 flex items-center gap-1 px-2 py-0.5 rounded-lg border border-zinc-300 hover:border-zinc-950 bg-white hover:bg-zinc-50 transition-all shadow-sm active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 shrink-0"
+                title="Tarik daftar model resmi terbaru dari API provider"
+              >
+                <RefreshCw className={`h-3 w-3 ${isFetchingModels ? "animate-spin text-orange-600" : ""}`} />
+                <span>{isFetchingModels ? "Fetching..." : "Tarik Model Terbaru"}</span>
+              </button>
             </div>
-            <input
-              type="text"
-              value={modelName}
-              onChange={(e) => setModelName(e.target.value)}
-              placeholder="e.g. claude-3-5-sonnet-20241022"
-              className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
-            />
-            {MODEL_PRESETS[provider] && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <span className="text-[9px] font-black uppercase text-zinc-600">Preset:</span>
-                {MODEL_PRESETS[provider].map((preset) => (
-                  <button
-                    type="button"
-                    key={preset.id}
-                    onClick={() => setModelName(preset.id)}
-                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border transition-all ${
-                      modelName === preset.id
-                        ? "bg-zinc-950 text-white border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
-                        : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-950 hover:bg-zinc-50"
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
+
+            {fetchError && (
+              <div className="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-xl p-2 flex items-center gap-1.5">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="break-all">{fetchError}</span>
+              </div>
+            )}
+
+            {/* Model Select Dropdown */}
+            <div className="relative">
+              <select
+                value={isCustomModel ? "__custom__" : modelName}
+                onChange={(e) => {
+                  if (e.target.value === "__custom__") {
+                    setIsCustomModel(true);
+                  } else {
+                    setIsCustomModel(false);
+                    setModelName(e.target.value);
+                  }
+                }}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer appearance-none pr-8 font-medium"
+              >
+                {displayModels.map((m) => (
+                  <option key={m.id} value={m.id} className="font-mono text-xs py-1">
+                    {m.label}
+                  </option>
                 ))}
+                <option value="__custom__" className="font-sans font-bold text-zinc-800">
+                  ✏️ Custom Model... (Input Manual)
+                </option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-600 text-xs font-bold">
+                ▼
+              </div>
+            </div>
+
+            {/* If Custom Model chosen */}
+            {isCustomModel && (
+              <div className="pt-1 space-y-1">
+                <input
+                  type="text"
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
+                  placeholder="e.g. claude-3-7-sonnet-20250219 atau model fine-tune"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                  autoFocus
+                />
+                <p className="text-[10px] text-zinc-500 font-medium">
+                  Ketik model ID persis seperti di dokumentasi API provider.
+                </p>
               </div>
             )}
           </div>
