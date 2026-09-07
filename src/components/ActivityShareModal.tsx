@@ -227,8 +227,8 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
   });
 
   // Calculate route or heart rate visual dimensions
-  const svgWidth = aspectRatio === "9:16" ? 312 : 352;
-  const svgHeight = aspectRatio === "9:16" ? 220 : 150;
+  const svgWidth = aspectRatio === "9:16" ? 312 : 340;
+  const svgHeight = aspectRatio === "9:16" ? 250 : 150;
 
   const routeData = useMemo(() => {
     if (isStrength) return null;
@@ -260,6 +260,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
         pixelRatio: 3, // Crisp 3x retina export for Instagram
         quality: 1,
         cacheBust: true,
+        backgroundColor: theme === "dark" ? "#0B0D10" : "#FAF8F5",
       });
 
       const cleanName = activity.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -281,6 +282,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
       const dataUrl = await toPng(cardRef.current, {
         pixelRatio: 2.5,
         quality: 1,
+        backgroundColor: theme === "dark" ? "#0B0D10" : "#FAF8F5",
       });
       const res = await fetch(dataUrl);
       const blob = await res.blob();
@@ -389,19 +391,22 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
 
         {/* Live Card Preview Box (Scrollable horizontally on very small viewports) */}
         <div className="w-full flex justify-center items-center py-2 bg-zinc-200/60 rounded-2xl p-2 sm:p-4 overflow-x-auto max-w-full">
-          {/* TARGET CAPTURE ELEMENT */}
-          <div
-            ref={cardRef}
-            style={{
-              width: aspectRatio === "9:16" ? "360px" : "390px",
-              height: aspectRatio === "9:16" ? "560px" : "390px",
-            }}
-            className={`relative flex flex-col justify-between p-5 rounded-3xl transition-all select-none ${
-              theme === "dark"
-                ? "bg-[#0B0D10] text-zinc-100 border-[3px] border-zinc-800 shadow-[6px_6px_0px_0px_#000000]"
-                : "bg-[#FAF8F5] text-zinc-950 border-[3px] border-zinc-950 shadow-[6px_6px_0px_0px_#09090b]"
-            }`}
-          >
+          {/* Card Presentation Frame for Modal Preview */}
+          <div className="rounded-2xl overflow-hidden shadow-[4px_4px_0px_0px_#09090b] border-2 border-zinc-950 shrink-0">
+            {/* TARGET CAPTURE ELEMENT - Full-bleed, borderless, seamless background all the way to the edges */}
+            <div
+              ref={cardRef}
+              style={{
+                width: aspectRatio === "9:16" ? "360px" : "380px",
+                height: aspectRatio === "9:16" ? "640px" : "380px",
+                backgroundColor: theme === "dark" ? "#0B0D10" : "#FAF8F5",
+              }}
+              className={`relative flex flex-col justify-between p-5 sm:p-6 transition-all select-none ${
+                theme === "dark"
+                  ? "text-zinc-100"
+                  : "text-zinc-950"
+              }`}
+            >
             {/* Ambient Corner Glow in dark mode */}
             {theme === "dark" && (
               <div className="absolute top-0 right-0 w-44 h-44 bg-orange-600/10 blur-3xl pointer-events-none rounded-full" />
@@ -681,7 +686,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
             </div>
 
             {/* Bottom Hero Metric Blocks */}
-            <div className="relative z-10 space-y-2">
+            <div className="relative z-10 space-y-2.5">
               {isStrength ? (
                 /* Strength Metric Grid */
                 <div className="grid grid-cols-3 gap-2">
@@ -799,30 +804,32 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
 
               {/* Mini Footer: Avg HR & Elevation / Load */}
               <div
-                className={`flex items-center justify-between text-[10px] font-mono px-2 pt-0.5 ${
-                  theme === "dark" ? "text-zinc-500" : "text-zinc-500"
+                className={`flex items-center justify-between text-[10px] font-mono px-1.5 pt-2 border-t ${
+                  theme === "dark"
+                    ? "text-zinc-400 border-zinc-800/80"
+                    : "text-zinc-600 border-zinc-200"
                 }`}
               >
-                <div className="flex items-center gap-1.5">
-                  <Heart className="h-3 w-3 text-rose-500 fill-current" />
-                  <span>
-                    Avg {activity.avgHr} bpm • Max {activity.maxHr} bpm
+                <div className="flex items-center gap-1.5 shrink-0 min-w-0">
+                  <Heart className="h-3 w-3 text-rose-500 fill-current shrink-0" />
+                  <span className="whitespace-nowrap">
+                    Avg {activity.avgHr} • Max {activity.maxHr} bpm
                   </span>
                 </div>
-                <div className="flex items-center gap-2 font-bold">
+                <div className="flex items-center gap-1.5 font-bold shrink-0">
                   {decoupling.isApplicable && (
                     <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded border font-mono ${
+                      className={`text-[9px] px-1.5 py-0.5 rounded border font-mono whitespace-nowrap ${
                         theme === "dark"
-                          ? "bg-zinc-800 text-emerald-400 border-zinc-700"
-                          : "bg-emerald-100 text-emerald-950 border-emerald-300"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          : "bg-emerald-50 text-emerald-900 border-emerald-300"
                       }`}
                     >
                       Pa:HR {decoupling.decouplingPct > 0 ? `+${decoupling.decouplingPct}%` : `${decoupling.decouplingPct}%`}
                     </span>
                   )}
-                  <div className="flex items-center gap-1 text-orange-500">
-                    <Zap className="h-3 w-3 fill-current" />
+                  <div className="flex items-center gap-1 text-orange-500 whitespace-nowrap">
+                    <Zap className="h-3 w-3 fill-current shrink-0" />
                     <span>TL {activity.trainingLoad}</span>
                   </div>
                 </div>
@@ -830,6 +837,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
             </div>
           </div>
         </div>
+      </div>
 
         {/* Action Buttons: Download PNG & Copy to Clipboard */}
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
