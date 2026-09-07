@@ -125,9 +125,34 @@ export function getAiModelInstance(provider: string, apiKey: string, modelName?:
 }
 
 export async function runCoachStream(messages: ChatMessage[], athleteId: string = "athlete_primary") {
-  const provider = await getSetting("ai_provider", "gemini", athleteId);
+  let provider = await getSetting("ai_provider", "", athleteId);
+  if (!provider) {
+    if (process.env.AI_PROVIDER) {
+      provider = process.env.AI_PROVIDER;
+    } else if (process.env.DEEPSEEK_API_KEY) {
+      provider = "deepseek";
+    } else if (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      provider = "gemini";
+    } else if (process.env.OPENAI_API_KEY) {
+      provider = "openai";
+    } else if (process.env.ANTHROPIC_API_KEY) {
+      provider = "claude";
+    } else {
+      provider = "deepseek";
+    }
+  } else if (provider === "gemini" && !process.env.GEMINI_API_KEY && process.env.DEEPSEEK_API_KEY) {
+    // If set to gemini default but only DEEPSEEK_API_KEY is configured in env
+    provider = "deepseek";
+  }
+
   const apiKey = await getSetting(`${provider}_api_key`, "", athleteId);
-  const modelName = await getSetting("ai_model_name", "", athleteId);
+  let modelName = await getSetting("ai_model_name", "", athleteId);
+  if (!modelName) {
+    if (provider === "deepseek") modelName = "deepseek-chat";
+    else if (provider === "openai") modelName = "gpt-4o-mini";
+    else if (provider === "claude") modelName = "claude-3-5-sonnet-20241022";
+    else modelName = "gemini-2.5-flash";
+  }
 
   const athleteContext = await buildAthleteContext(athleteId);
 
