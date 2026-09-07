@@ -19,7 +19,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { ActivityItem } from "./ActivityFeed";
-import { formatPace, calculateKmEffort } from "@/lib/analytics";
+import { formatPace, calculateKmEffort, calculateDecouplingAnalysis } from "@/lib/analytics";
 import { toPng } from "html-to-image";
 
 interface ActivityShareModalProps {
@@ -211,6 +211,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
     activity.sportType === "weight";
   const isBike = activity.sportType === "bike" || activity.sportType === "cycling";
   const isTrail = activity.sportType === "trail_run" || activity.elevationGain > 200;
+  const decoupling = calculateDecouplingAnalysis(activity);
 
   const distKm = parseFloat(activity.distanceKm) || 0;
 
@@ -808,9 +809,22 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                     Avg {activity.avgHr} bpm • Max {activity.maxHr} bpm
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-orange-500 font-bold">
-                  <Zap className="h-3 w-3 fill-current" />
-                  <span>TL {activity.trainingLoad}</span>
+                <div className="flex items-center gap-2 font-bold">
+                  {decoupling.isApplicable && (
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded border font-mono ${
+                        theme === "dark"
+                          ? "bg-zinc-800 text-emerald-400 border-zinc-700"
+                          : "bg-emerald-100 text-emerald-950 border-emerald-300"
+                      }`}
+                    >
+                      Pa:HR {decoupling.decouplingPct > 0 ? `+${decoupling.decouplingPct}%` : `${decoupling.decouplingPct}%`}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-1 text-orange-500">
+                    <Zap className="h-3 w-3 fill-current" />
+                    <span>TL {activity.trainingLoad}</span>
+                  </div>
                 </div>
               </div>
             </div>
