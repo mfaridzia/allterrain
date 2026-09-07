@@ -394,12 +394,12 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
         </div>
 
         {/* Climb Density Badge & Desc */}
-        <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-xs shadow-[2px_2px_0px_0px_#09090b]">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-xs shadow-[2px_2px_0px_0px_#09090b]">
+          <div className="flex items-center gap-2 min-w-0">
             <Mountain className="h-4 w-4 text-zinc-950 stroke-[2.5] shrink-0" />
-            <span className="text-zinc-900 font-bold">{climbDensity.description}</span>
+            <span className="text-zinc-900 font-bold leading-snug">{climbDensity.description}</span>
           </div>
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-black border-2 border-zinc-950 bg-cyan-200 text-cyan-950 shrink-0 whitespace-nowrap shadow-[1px_1px_0px_0px_#09090b]">
+          <span className="self-start sm:self-auto px-2.5 py-1 rounded-full text-[10px] font-black border-2 border-zinc-950 bg-cyan-200 text-cyan-950 shrink-0 whitespace-nowrap shadow-[1px_1px_0px_0px_#09090b]">
             {climbDensity.category}
           </span>
         </div>
@@ -536,13 +536,13 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
         </div>
 
         {/* Kilian Jornet & Uphill Athlete Aerobic Deficiency Syndrome (ADS) Diagnostic */}
-        <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-2 shadow-[2px_2px_0px_0px_#09090b]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-black text-zinc-950">
-              <Activity className="h-4 w-4 text-cyan-600 stroke-[2.5]" />
+        <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-black text-zinc-950 min-w-0">
+              <Activity className="h-4 w-4 text-cyan-600 stroke-[2.5] shrink-0" />
               <span>Training for the Uphill Athlete: Aerobic Base Diagnostic</span>
             </div>
-            <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-300 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+            <span className="self-start sm:self-auto text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-300 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] whitespace-nowrap shrink-0">
               No ADS Detected • Robust Base
             </span>
           </div>
@@ -570,11 +570,11 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
               <Footprints className="h-4 w-4 stroke-[2.5]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h4 className="text-sm sm:text-base font-black text-zinc-950">
                   Climbing & Descent Efficiency (VAM vs Gradient)
                 </h4>
-                <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-amber-300 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-amber-300 text-zinc-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] whitespace-nowrap shrink-0">
                   Hike vs Run Breakeven
                 </span>
               </div>
@@ -648,13 +648,21 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
               onChange={(e) => setSelectedGradient(Number(e.target.value))}
               className="w-full accent-amber-600 cursor-pointer h-2.5 bg-zinc-200 rounded-lg border border-zinc-950"
             />
-            <div className="flex justify-between text-[10px] font-mono text-zinc-500 font-bold px-1">
+            {/* Desktop slider tick labels */}
+            <div className="hidden sm:flex justify-between text-[10px] font-mono text-zinc-500 font-bold px-1">
               <span>-25% (Turunan Curam)</span>
               <span>-10%</span>
               <span className="text-zinc-950 font-black">0% (Datar)</span>
               <span className="text-amber-700 font-black">+{efficiencyAnalysis.breakevenGradientPct}% (Breakeven)</span>
               <span>+20%</span>
               <span>+35% (Ekstrem)</span>
+            </div>
+            {/* Mobile compact slider tick labels */}
+            <div className="flex sm:hidden justify-between text-[10px] font-mono text-zinc-500 font-bold px-1">
+              <span>-25% (Curam)</span>
+              <span className="text-zinc-950 font-black">0% (Datar)</span>
+              <span className="text-amber-700 font-black">+{efficiencyAnalysis.breakevenGradientPct}% (Hike)</span>
+              <span>+35%</span>
             </div>
           </div>
 

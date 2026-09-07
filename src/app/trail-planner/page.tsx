@@ -1573,33 +1573,33 @@ export default function TrailPlannerPage() {
           <>
             {/* Active GPX Course Info & Action Bar */}
             <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
                 <div className="h-10 w-10 rounded-xl bg-amber-400 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[2px_2px_0px_0px_#09090b]">
                   <Mountain className="h-5 w-5" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-base font-black text-zinc-950 tracking-tight">
                       {activeRace.name}
                     </h2>
-                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-[#FAF9F5] text-zinc-950 border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-[#FAF9F5] text-zinc-950 border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] whitespace-nowrap shrink-0">
                       GPX Aktif
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-600 flex flex-wrap items-center gap-2 mt-0.5 font-mono font-bold">
+                  <div className="text-[11px] sm:text-xs text-zinc-600 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 font-mono font-bold">
                     <span>{trackStats.distanceKm} km</span>
-                    <span>•</span>
+                    <span className="text-zinc-400">•</span>
                     <span className="text-emerald-700 font-black">+{trackStats.gainM}m D+</span>
-                    <span>•</span>
+                    <span className="text-zinc-400">•</span>
                     <span className="text-rose-700 font-black">-{trackStats.lossM}m D-</span>
-                    <span>•</span>
-                    <span>{activeRace.checkpoints.length} Pos/WS</span>
-                  </p>
+                    <span className="text-zinc-400">•</span>
+                    <span className="text-zinc-800">{activeRace.checkpoints.length} Pos/WS</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 self-start md:self-auto">
-                <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border-2 border-zinc-950 hover:bg-zinc-100 text-zinc-950 text-xs font-black cursor-pointer shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">
+              <div className="flex items-center gap-2.5 self-start md:self-auto w-full md:w-auto">
+                <label className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border-2 border-zinc-950 hover:bg-zinc-100 text-zinc-950 text-xs font-black cursor-pointer shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">
                   <Upload className="h-3.5 w-3.5 text-zinc-950" />
                   <span>{isUploading ? "Memproses..." : "Ganti File GPX"}</span>
                   <input
@@ -1612,7 +1612,7 @@ export default function TrailPlannerPage() {
 
                 <button
                   onClick={() => setCustomRace(null)}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 hover:bg-rose-50 text-rose-700 text-xs font-black shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                  className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 hover:bg-rose-50 text-rose-700 text-xs font-black shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all shrink-0"
                   title="Tutup rute GPX ini dan kembali ke menu upload"
                 >
                   <Trash2 className="h-3.5 w-3.5" />

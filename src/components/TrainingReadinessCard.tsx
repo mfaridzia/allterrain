@@ -65,15 +65,16 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
               </h3>
               <MetricTooltip term="readiness" />
             </div>
-            <p className="text-xs font-mono text-zinc-600 font-semibold truncate">
-              Tomorrow&apos;s Workout Prescription • Workload Governor
+            <p className="text-xs font-mono text-zinc-600 font-semibold mt-0.5">
+              <span className="hidden sm:inline">Tomorrow&apos;s Workout Prescription • Workload Governor</span>
+              <span className="sm:hidden">Workout Prescription & Readiness</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0">
           {/* Readiness Score Pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex-1 sm:flex-initial justify-center sm:justify-start">
             <div className="flex flex-col items-end leading-none">
               <span className="text-[10px] uppercase font-black tracking-wider text-zinc-600">Readiness</span>
               <span className="text-sm font-mono font-black text-zinc-950">{score}/100</span>
@@ -82,7 +83,7 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
           </div>
 
           {/* Tier Label Badge */}
-          <div className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 ${badgeColor}`}>
+          <div className={`px-3 py-2 rounded-xl text-xs font-black shrink-0 flex-1 sm:flex-initial text-center ${badgeColor}`}>
             <span>{label}</span>
           </div>
         </div>

@@ -339,34 +339,36 @@ export const TrailMap: React.FC<TrailMapProps> = ({
       {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full z-10" />
 
-      {/* Map Header Floating Overlay */}
-      <div className="absolute top-3 left-3 z-20 flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border-2 border-zinc-950 text-xs shadow-[2px_2px_0px_0px_#09090b]">
-        <Mountain className="h-4 w-4 text-zinc-950" />
-        <span className="font-black text-zinc-950 tracking-tight">{raceName}</span>
-        <span className="text-[10px] text-zinc-600 font-mono font-bold hidden sm:inline">
-          ({points.length} GPS pts)
-        </span>
-      </div>
+      {/* Map Top Floating Bar: Route Title & Layer Controls */}
+      <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between gap-2 pointer-events-none">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md px-2.5 sm:px-3.5 py-1.5 rounded-xl border-2 border-zinc-950 text-xs shadow-[2px_2px_0px_0px_#09090b] pointer-events-auto min-w-0 max-w-[48%] sm:max-w-none">
+          <Mountain className="h-4 w-4 text-zinc-950 shrink-0" />
+          <span className="font-black text-zinc-950 tracking-tight truncate">{raceName}</span>
+          <span className="text-[10px] text-zinc-600 font-mono font-bold hidden md:inline shrink-0">
+            ({points.length} pts)
+          </span>
+        </div>
 
-      {/* Layer Switcher Floating Controls */}
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-        {[
-          { id: "topo", label: "Topografi" },
-          { id: "satellite", label: "Satelit" },
-          { id: "street", label: "Jalan" },
-        ].map((layer) => (
-          <button
-            key={layer.id}
-            onClick={() => setActiveLayer(layer.id as any)}
-            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
-              activeLayer === layer.id
-                ? "bg-amber-400 text-zinc-950 font-black border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
-                : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
-            }`}
-          >
-            {layer.label}
-          </button>
-        ))}
+        {/* Layer Switcher Floating Controls */}
+        <div className="flex items-center gap-0.5 sm:gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] pointer-events-auto shrink-0">
+          {[
+            { id: "topo", label: "Topografi" },
+            { id: "satellite", label: "Satelit" },
+            { id: "street", label: "Jalan" },
+          ].map((layer) => (
+            <button
+              key={layer.id}
+              onClick={() => setActiveLayer(layer.id as any)}
+              className={`px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${
+                activeLayer === layer.id
+                  ? "bg-amber-400 text-zinc-950 font-black border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                  : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
+              }`}
+            >
+              {layer.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Bottom Gradient Legend */}

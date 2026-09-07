@@ -565,11 +565,11 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                 <TrendingUp className="h-4 w-4" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-sm font-black text-zinc-950">
                     What-If Forward PMC Simulator
                   </h3>
-                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-violet-200 text-violet-900 border border-violet-950">
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-violet-200 text-violet-900 border border-violet-950 whitespace-nowrap shrink-0">
                     Bannister Impulse-Response
                   </span>
                 </div>
@@ -581,8 +581,8 @@ export const PmcChart: React.FC<PmcChartProps> = ({
 
             {/* Target Outcome Preview Badge */}
             {targetForecastPoint && (
-              <div className="flex items-center gap-3 bg-white px-3 py-2 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                <div className="text-right">
+              <div className="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-start gap-2 sm:gap-3 bg-white px-3 py-2 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] w-full sm:w-auto">
+                <div className="text-left sm:text-right">
                   <div className="text-[9px] font-black uppercase text-zinc-500">
                     {targetForecastPoint.isRaceDay ? "Race Day Outcome" : `Projected at +${forecastDays}d`}
                   </div>
@@ -590,8 +590,8 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                     {formatChartDate(targetForecastPoint.date)}
                   </div>
                 </div>
-                <div className="h-7 w-px bg-zinc-200" />
-                <div className="flex items-center gap-2">
+                <div className="h-7 w-px bg-zinc-200 hidden sm:block" />
+                <div className="flex items-center gap-3">
                   <div className="text-center">
                     <span className="text-[9px] font-bold text-sky-700 block">CTL</span>
                     <span className="font-mono font-black text-xs text-sky-700">
@@ -616,7 +616,7 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                   </div>
                 </div>
                 <span
-                  className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded shadow-[1px_1px_0px_0px_#09090b] ${
+                  className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded shadow-[1px_1px_0px_0px_#09090b] whitespace-nowrap shrink-0 ${
                     getFormZone(targetForecastPoint.tsb).badgeClass
                   }`}
                 >
@@ -639,42 +639,49 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                   {
                     id: "taper_light",
                     label: "Standard Taper",
-                    desc: "-15% load/wk (Ideal fresh form)",
+                    rate: "-15% load/wk",
+                    goal: "Fresh form",
                   },
                   {
                     id: "taper_aggressive",
                     label: "Deep Taper",
-                    desc: "-25% load/wk (Fast recovery)",
+                    rate: "-25% load/wk",
+                    goal: "Fast recovery",
                   },
                   {
                     id: "maintain",
                     label: "Maintain",
-                    desc: `~${baselineWeeklyLoad} TL/wk (Holds fitness)`,
+                    rate: `~${baselineWeeklyLoad} TL/wk`,
+                    goal: "Hold fitness",
                   },
                   {
                     id: "build_conservative",
                     label: "Build Phase",
-                    desc: "+8% load/wk (Progressive overload)",
+                    rate: "+8% load/wk",
+                    goal: "Progressive",
                   },
                 ].map((strat) => (
                   <button
                     key={strat.id}
                     type="button"
                     onClick={() => setForecastStrategy(strat.id as any)}
-                    className={`p-2 rounded-xl text-left border-2 transition-all text-xs flex flex-col justify-between ${
+                    className={`p-2 sm:p-2.5 rounded-xl text-left border-2 transition-all text-xs flex flex-col justify-between ${
                       forecastStrategy === strat.id
                         ? "bg-violet-600 text-white border-zinc-950 font-black shadow-[2px_2px_0px_0px_#09090b]"
                         : "bg-white text-zinc-800 border-zinc-950 hover:bg-zinc-100 font-bold shadow-[1px_1px_0px_0px_#09090b]"
                     }`}
                   >
-                    <span>{strat.label}</span>
-                    <span
-                      className={`text-[9px] mt-1 line-clamp-1 ${
-                        forecastStrategy === strat.id ? "text-violet-100 font-normal" : "text-zinc-500 font-medium"
-                      }`}
-                    >
-                      {strat.desc}
-                    </span>
+                    <span className="font-black leading-tight">{strat.label}</span>
+                    <div className="mt-1 leading-tight">
+                      <span className="text-[10px] font-mono font-bold block">{strat.rate}</span>
+                      <span
+                        className={`text-[9px] ${
+                          forecastStrategy === strat.id ? "text-violet-100 font-normal" : "text-zinc-500 font-medium"
+                        }`}
+                      >
+                        {strat.goal}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -720,13 +727,13 @@ export const PmcChart: React.FC<PmcChartProps> = ({
                   type="date"
                   value={targetRaceDate}
                   onChange={(e) => setTargetRaceDate(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-xl bg-white border-2 border-zinc-950 text-xs font-mono font-bold shadow-[2px_2px_0px_0px_#09090b] focus:outline-none"
+                  className="w-full min-h-[38px] px-3 py-1.5 rounded-xl bg-white border-2 border-zinc-950 text-xs font-mono font-bold shadow-[2px_2px_0px_0px_#09090b] focus:outline-none text-zinc-950 block"
                 />
                 {targetRaceDate && (
                   <button
                     type="button"
                     onClick={() => setTargetRaceDate("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500 hover:text-zinc-950 font-black"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded bg-zinc-200 hover:bg-zinc-300 text-[10px] text-zinc-800 font-black"
                   >
                     Clear
                   </button>
