@@ -721,9 +721,9 @@ export default function ActivitiesPage() {
                     </div>
 
                     {/* Right: Metrics row */}
-                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 font-mono text-xs shrink-0 pt-2 sm:pt-0 border-t-2 sm:border-t-0 border-zinc-200">
+                    <div className="grid grid-cols-3 sm:flex sm:items-center sm:justify-end gap-2 sm:gap-6 font-mono text-xs shrink-0 pt-2 sm:pt-0 border-t-2 sm:border-t-0 border-zinc-200 w-full sm:w-auto">
                       {/* Distance or Duration for Strength */}
-                      <div className="text-right">
+                      <div className="text-left sm:text-right">
                         {act.sportType === "strength" || act.sportType === "gym" ? (
                           <>
                             <div className="font-black text-purple-700 text-sm">
@@ -742,7 +742,7 @@ export default function ActivitiesPage() {
                       </div>
 
                       {/* Pace or Speed */}
-                      <div className="text-right">
+                      <div className="text-center sm:text-right">
                         <div className="font-black text-zinc-900">{formatSpeedOrPace(act)}</div>
                         <div className="text-[10px] text-zinc-600 font-sans font-bold">
                           {act.sportType === "bike" || act.sportType === "cycling"
@@ -753,7 +753,7 @@ export default function ActivitiesPage() {
                         </div>
                       </div>
 
-                      {/* Heart Rate */}
+                      {/* Heart Rate (Desktop only) */}
                       <div className="text-right hidden sm:block">
                         <div className="font-black text-rose-700 flex items-center justify-end gap-1">
                           <Heart className="h-3 w-3 shrink-0 stroke-[2.5]" />
@@ -773,7 +773,7 @@ export default function ActivitiesPage() {
 
                       {/* Trail D+ & Km-Effort */}
                       {isTrail ? (
-                        <div className="text-right pl-2 border-l-2 border-zinc-200">
+                        <div className="text-right pl-2 border-l-2 border-zinc-200 hidden sm:block">
                           <div className="font-black text-cyan-800 text-xs">+{act.elevationGain}m</div>
                           <div className="text-[10px] text-emerald-700 font-black">
                             {calculateKmEffort(parseFloat(act.distanceKm), act.elevationGain)} km-eff
@@ -786,7 +786,7 @@ export default function ActivitiesPage() {
                         </div>
                       )}
 
-                      <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-zinc-950 transition-colors stroke-[2.5] shrink-0" />
+                      <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-zinc-950 transition-colors stroke-[2.5] shrink-0 hidden sm:block" />
                     </div>
                   </div>
                 );
@@ -803,7 +803,29 @@ export default function ActivitiesPage() {
                 <strong className="text-zinc-950 font-black">{filteredAndSorted.length}</strong> activities
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Mobile pagination */}
+              <div className="flex sm:hidden items-center justify-between w-full gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 font-black hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                >
+                  Prev
+                </button>
+                <span className="font-mono text-xs font-black text-zinc-950 px-3 py-1.5 rounded-xl bg-zinc-100 border-2 border-zinc-950">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 font-black hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                >
+                  Next
+                </button>
+              </div>
+
+              {/* Desktop pagination */}
+              <div className="hidden sm:flex items-center gap-1.5">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
@@ -812,19 +834,34 @@ export default function ActivitiesPage() {
                   Prev
                 </button>
 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`w-8 h-8 rounded-xl font-mono text-xs font-black transition-all border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] ${
-                      currentPage === pageNum
-                        ? "bg-orange-400 text-zinc-950"
-                        : "bg-white text-zinc-700 hover:bg-zinc-100"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                ))}
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => {
+                    if (totalPages <= 7) return true;
+                    if (p === 1 || p === totalPages) return true;
+                    return Math.abs(p - currentPage) <= 1;
+                  })
+                  .map((pageNum, idx, arr) => {
+                    const prev = arr[idx - 1];
+                    const showEllipsis = prev && pageNum - prev > 1;
+                    return (
+                      <React.Fragment key={pageNum}>
+                        {showEllipsis && (
+                          <span className="px-1 text-zinc-400 font-black font-mono">…</span>
+                        )}
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-8 h-8 rounded-xl font-mono text-xs font-black transition-all border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] ${
+                            currentPage === pageNum
+                              ? "bg-orange-400 text-zinc-950"
+                              : "bg-white text-zinc-700 hover:bg-zinc-100"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
 
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
@@ -978,13 +1015,13 @@ export default function ActivitiesPage() {
                   </div>
 
                   {/* Primary Metric Grid: Decoupling Rate vs Efficiency Factor */}
-                  <div className="grid grid-cols-2 gap-2.5 font-mono">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 font-mono">
                     <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-1">
                         <span className="text-[10px] font-sans font-bold text-zinc-600 uppercase tracking-wide">
                           Decoupling Rate
                         </span>
-                        <span className="text-[9px] font-sans font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-300">
+                        <span className="text-[9px] font-sans font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-300 shrink-0">
                           Target &lt; 5.0%
                         </span>
                       </div>
@@ -1008,11 +1045,11 @@ export default function ActivitiesPage() {
                     </div>
 
                     <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-sans font-bold text-zinc-600 uppercase tracking-wide">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[10px] font-sans font-bold text-zinc-600 uppercase tracking-wide truncate">
                           Efficiency Factor (EF)
                         </span>
-                        <span className="text-[9px] font-sans font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-300">
+                        <span className="text-[9px] font-sans font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-300 shrink-0">
                           Output/HR
                         </span>
                       </div>
@@ -1030,12 +1067,12 @@ export default function ActivitiesPage() {
 
                   {/* Split Half Comparison (1st Half vs 2nd Half) */}
                   <div className="p-2.5 rounded-xl bg-zinc-50 border border-zinc-300 space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-zinc-600 font-sans">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[10px] font-bold text-zinc-600 font-sans">
                       <span>Workout Split Breakdown</span>
                       <span>1st Half (0–50%) vs 2nd Half (50–100%)</span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
                       <div className="p-2 rounded-lg bg-white border border-zinc-200">
                         <div className="text-[10px] font-bold text-zinc-500 uppercase">1st Half</div>
                         <div className="flex justify-between items-center mt-1">

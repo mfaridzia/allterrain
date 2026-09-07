@@ -823,12 +823,18 @@ export default function TrailPlannerPage() {
     activeRace && activeRace.distanceKm > 0 ? Math.round(finishSeconds / activeRace.distanceKm) : 0;
 
   // Format Buffer Minutes into clean Indonesian text (+2j 30m Aman)
-  const formatBufferText = (mins: number) => {
+  const formatBufferText = (mins: number, compact: boolean = false) => {
     const absM = Math.abs(mins);
     const h = Math.floor(absM / 60);
     const m = absM % 60;
     if (mins >= 0) {
+      if (compact) {
+        return h > 0 ? `+${h}j ${m}m Aman` : `+${m}m Aman`;
+      }
       return h > 0 ? `+${h}j ${m}m Aman dari COT (${raceOfficialCotHours}j)` : `+${m}m Aman dari COT`;
+    }
+    if (compact) {
+      return h > 0 ? `-${h}j ${m}m Terkena COT` : `-${m}m Terkena COT`;
     }
     return h > 0 ? `-${h}j ${m}m Terkena COT (${raceOfficialCotHours}j)` : `-${m}m Terkena COT`;
   };
@@ -2696,21 +2702,21 @@ export default function TrailPlannerPage() {
                         }`}
                       >
                         {/* Station Header */}
-                        <div className="flex items-start justify-between gap-2 border-b border-zinc-200 pb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 sm:gap-2 border-b border-zinc-200 pb-2">
                           <div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-zinc-200 text-zinc-950 border border-zinc-950">
                                 {isStart ? "START" : isFinish ? "FINISH" : `POS ${idx}`}
                               </span>
                               <span className="text-xs font-black text-zinc-950">{cp.name}</span>
                             </div>
-                            <span className="text-[10px] font-mono text-zinc-500 font-bold">
+                            <span className="text-[10px] font-mono text-zinc-500 font-bold block mt-0.5">
                               KM {cp.distanceKm.toFixed(1)} &bull; {cp.elevationM} mdpl &bull; Tiba: {cp.predictedTimeStr} ({cp.clockTimeStr})
                             </span>
                           </div>
 
                           {!isFinish && nextCp && (
-                            <div className="text-right shrink-0">
+                            <div className="text-left sm:text-right shrink-0">
                               <span className="text-[9px] font-mono text-zinc-500 block">Menuju {nextCp.name}</span>
                               <span className="text-[11px] font-mono font-black text-zinc-950">
                                 {cp.nextSegDistanceKm}km &bull; ~{cp.nextSegDurationFormatted}
@@ -2722,28 +2728,28 @@ export default function TrailPlannerPage() {
                         {/* Action Checklist for Non-Finish */}
                         {!isFinish ? (
                           <div className="space-y-2 text-xs">
-                            <div className="grid grid-cols-3 gap-2 text-[11px]">
+                            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-[11px]">
                               {/* Water */}
-                              <div className="p-2 rounded-lg bg-cyan-50 border border-cyan-300">
-                                <span className="text-[9px] text-cyan-900 font-bold block">💧 Refill Air</span>
-                                <span className="font-mono font-black text-cyan-950 text-xs">
+                              <div className="p-2 rounded-lg bg-cyan-50 border border-cyan-300 min-w-0">
+                                <span className="text-[9px] text-cyan-900 font-bold block truncate">💧 Refill Air</span>
+                                <span className="font-mono font-black text-cyan-950 text-xs block truncate">
                                   {cp.waterRefillMl} ml
                                 </span>
                               </div>
 
                               {/* Carbs */}
-                              <div className="p-2 rounded-lg bg-amber-50 border border-amber-300">
-                                <span className="text-[9px] text-amber-900 font-bold block">⚡ Ambil Karbo</span>
-                                <span className="font-mono font-black text-amber-950 text-xs">
-                                  {cp.carbsTargetGrams}g ({cp.gelsNeeded} gel)
+                              <div className="p-2 rounded-lg bg-amber-50 border border-amber-300 min-w-0">
+                                <span className="text-[9px] text-amber-900 font-bold block truncate">⚡ Ambil Karbo</span>
+                                <span className="font-mono font-black text-amber-950 text-xs block truncate">
+                                  {cp.carbsTargetGrams}g <span className="text-[9px] font-normal hidden sm:inline">({cp.gelsNeeded} gel)</span>
                                 </span>
                               </div>
 
                               {/* Salt */}
-                              <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-300">
-                                <span className="text-[9px] text-emerald-900 font-bold block">🧂 Elektrolit</span>
-                                <span className="font-mono font-black text-emerald-950 text-xs">
-                                  {cp.saltCapsulesCount} kapsul
+                              <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-300 min-w-0">
+                                <span className="text-[9px] text-emerald-900 font-bold block truncate">🧂 Elektrolit</span>
+                                <span className="font-mono font-black text-emerald-950 text-xs block truncate">
+                                  {cp.saltCapsulesCount} kap
                                 </span>
                               </div>
                             </div>
@@ -2782,14 +2788,16 @@ export default function TrailPlannerPage() {
         </div>
 
         {/* Feature 6: Athlete Finish Prediction & Checkpoint Timetable */}
-        <div className="p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-5">
+        <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-5">
           {/* Header with Show/Hide Toggle */}
-          <div className="flex items-center justify-between border-b-2 border-zinc-950 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-zinc-950 pb-3">
             <div>
-              <h3 className="text-sm font-black text-zinc-950 tracking-tight flex items-center gap-2">
-                <span>Rencana Pos Water Station (WS) & Estimasi Waktu Tiba</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-black text-zinc-950 tracking-tight">
+                  Rencana Pos Water Station (WS) & Estimasi Waktu Tiba
+                </h3>
                 <span
-                  className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] ${
+                  className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] whitespace-nowrap shrink-0 ${
                     overallBufferMinutes >= 45
                       ? "bg-emerald-300 text-zinc-950"
                       : overallBufferMinutes >= 0
@@ -2799,8 +2807,8 @@ export default function TrailPlannerPage() {
                 >
                   {formatBufferText(overallBufferMinutes)}
                 </span>
-              </h3>
-              <p className="text-xs text-zinc-600 font-medium">
+              </div>
+              <p className="text-xs text-zinc-600 font-medium mt-1">
                 Dihitung dari VAM COROS ({athleteVam} m/h), deplesi oksigen di ketinggian, dan batas resmi panitia ({raceOfficialCotHours} jam).
               </p>
             </div>
@@ -2808,7 +2816,7 @@ export default function TrailPlannerPage() {
             {/* Toggle Button */}
             <button
               onClick={() => setShowPacingEstimation(!showPacingEstimation)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 text-zinc-950 transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 text-zinc-950 transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none self-start sm:self-auto shrink-0"
             >
               {showPacingEstimation ? (
                 <>
@@ -2827,9 +2835,9 @@ export default function TrailPlannerPage() {
           {/* Collapsible Athlete Finish Prediction Card */}
           {showPacingEstimation && (
             <div className="p-4 rounded-2xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[3px_3px_0px_0px_#09090b] space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-zinc-950" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Award className="h-5 w-5 text-zinc-950 shrink-0" />
                   <div>
                     <h4 className="text-sm font-black text-zinc-950 tracking-tight">
                       Estimasi Waktu Finish Atlet (Fisiologi Gunung & VAM COROS Realistis)
@@ -2842,7 +2850,7 @@ export default function TrailPlannerPage() {
                 </div>
 
                 <span
-                  className={`px-3 py-1 rounded-md text-xs font-black uppercase border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] ${
+                  className={`self-start sm:self-auto px-3 py-1 rounded-md text-xs font-black uppercase border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] whitespace-nowrap shrink-0 ${
                     overallBufferMinutes >= 45
                       ? "bg-emerald-300 text-zinc-950"
                       : overallBufferMinutes >= 0
@@ -2911,7 +2919,7 @@ export default function TrailPlannerPage() {
           {/* Timetable of Checkpoints */}
           <div className="space-y-2">
             <div className="overflow-x-auto rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-              <table className="w-full text-left text-xs">
+              <table className="w-full min-w-[780px] text-left text-xs">
                 <thead className="border-b-2 border-zinc-950 text-[11px] text-zinc-950 font-mono uppercase bg-zinc-100 font-black">
                   <tr>
                     <th className="py-3 px-3">Nama Pos / WS Asli</th>
@@ -2956,9 +2964,9 @@ export default function TrailPlannerPage() {
                           <div className="text-[9px] text-zinc-500 font-sans font-medium">Alokasi Km-Effort</div>
                         )}
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-black border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] ${
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-black border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] whitespace-nowrap inline-block ${
                             cp.status === "safe"
                               ? "bg-emerald-300 text-zinc-950"
                               : cp.status === "caution"
@@ -2966,7 +2974,7 @@ export default function TrailPlannerPage() {
                               : "bg-rose-300 text-zinc-950"
                           }`}
                         >
-                          {formatBufferText(cp.bufferMinutes)}
+                          {formatBufferText(cp.bufferMinutes, true)}
                         </span>
                       </td>
                       <td className="py-3 px-3">

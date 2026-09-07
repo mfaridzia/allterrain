@@ -188,41 +188,44 @@ export default function DashboardPage() {
 
             {/* Suite Tabs: Road EvoLab vs Trail & Mountain vs Weekly Zones */}
             <div id="suite-tabs" className="space-y-4">
-              <div className="flex items-center gap-2 pb-1 overflow-x-auto max-w-full">
+              <div className="flex items-center gap-2 p-1 -m-1 pb-2 overflow-x-auto max-w-full">
                 <button
                   onClick={() => setActiveTab("evolab")}
-                  className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all shrink-0 ${
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all shrink-0 ${
                     activeTab === "evolab"
                       ? "bg-orange-400 text-black shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
                       : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b] dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <Trophy className="h-4 w-4 text-zinc-950 shrink-0" />
-                  <span>Road EvoLab & Race Predictor</span>
+                  <span className="sm:inline hidden">Road EvoLab & Race Predictor</span>
+                  <span className="sm:hidden inline">Road & Race</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab("trail")}
-                  className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all shrink-0 ${
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all shrink-0 ${
                     activeTab === "trail"
                       ? "bg-cyan-400 text-black shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
                       : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b] dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <Mountain className="h-4 w-4 text-zinc-950 shrink-0" />
-                  <span>Trail & Mountain Running</span>
+                  <span className="sm:inline hidden">Trail & Mountain Running</span>
+                  <span className="sm:hidden inline">Trail & Mountain</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab("zones")}
-                  className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all shrink-0 ${
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all shrink-0 ${
                     activeTab === "zones"
                       ? "bg-violet-400 text-black shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
                       : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b] dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <Layers className="h-4 w-4 text-zinc-950 shrink-0" />
-                  <span>Weekly Zones & 80/20</span>
+                  <span className="sm:inline hidden">Weekly Zones & 80/20</span>
+                  <span className="sm:hidden inline">Weekly 80/20</span>
                 </button>
               </div>
 

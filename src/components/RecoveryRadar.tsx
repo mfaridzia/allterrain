@@ -87,12 +87,12 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
         </div>
 
         {/* HRV */}
-        <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
-          <div className="flex items-center justify-between gap-1">
+        <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b] min-w-0">
+          <div className="flex items-center justify-between gap-1 min-w-0">
             <MetricTooltip term="hrv">
-              <span className="text-[11px] font-bold text-zinc-700 truncate">HRV (rMSSD)</span>
+              <span className="text-[11px] font-bold text-zinc-700 truncate">HRV</span>
             </MetricTooltip>
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-950 font-black border border-zinc-950 shrink-0">
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-950 font-black border border-zinc-950 shrink-0 whitespace-nowrap">
               {hrvStatus}
             </span>
           </div>
