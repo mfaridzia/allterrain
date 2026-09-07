@@ -127,29 +127,11 @@ export async function initSchema(client: Client): Promise<void> {
       updated_at INTEGER NOT NULL,
       PRIMARY KEY (athlete_id, key)
     );`,
-    `CREATE TABLE IF NOT EXISTS shoes (
-      id TEXT PRIMARY KEY,
-      athlete_id TEXT NOT NULL DEFAULT 'athlete_primary',
-      name TEXT NOT NULL,
-      brand TEXT,
-      model TEXT,
-      sport_type TEXT NOT NULL DEFAULT 'trail',
-      max_distance_km REAL DEFAULT 650,
-      max_elevation_m REAL DEFAULT 20000,
-      initial_distance_km REAL DEFAULT 0,
-      initial_elevation_m REAL DEFAULT 0,
-      is_default INTEGER DEFAULT 0,
-      is_retired INTEGER DEFAULT 0,
-      notes TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );`,
   ]);
 
   // 2. Safe Column Additions for backward compatibility with existing databases
   const alterStatements = [
     "ALTER TABLE activities ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
-    "ALTER TABLE activities ADD COLUMN shoe_id TEXT;",
     "ALTER TABLE daily_metrics ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
     "ALTER TABLE user_settings ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
     "ALTER TABLE chat_messages ADD COLUMN athlete_id TEXT DEFAULT 'athlete_primary';",
@@ -167,8 +149,6 @@ export async function initSchema(client: Client): Promise<void> {
   // 3. Helpful Indexes & Constraints
   try {
     await client.execute(`CREATE INDEX IF NOT EXISTS idx_activities_athlete_time ON activities (athlete_id, start_time DESC);`);
-    await client.execute(`CREATE INDEX IF NOT EXISTS idx_activities_shoe ON activities (shoe_id);`);
-    await client.execute(`CREATE INDEX IF NOT EXISTS idx_shoes_athlete ON shoes (athlete_id);`);
     await client.execute(`CREATE INDEX IF NOT EXISTS idx_daily_metrics_athlete ON daily_metrics (athlete_id, date ASC);`);
     await client.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_metrics_athlete_date ON daily_metrics (athlete_id, date);`);
     await client.execute(`CREATE INDEX IF NOT EXISTS idx_sessions_athlete ON sessions (athlete_id);`);

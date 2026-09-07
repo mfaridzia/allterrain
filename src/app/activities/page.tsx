@@ -38,7 +38,7 @@ import { ActivityItem } from "@/components/ActivityFeed";
 import { Header } from "@/components/Header";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useDashboardData, useGearData, useAssignShoeMutation } from "@/lib/queries";
+import { useDashboardData } from "@/lib/queries";
 
 const ActivityShareModal = dynamic(
   () => import("@/components/ActivityShareModal").then((mod) => mod.ActivityShareModal),
@@ -48,16 +48,7 @@ const ActivityShareModal = dynamic(
 export default function ActivitiesPage() {
   const router = useRouter();
   const { data: dashboardData, isLoading: loading } = useDashboardData();
-  const { data: gearData } = useGearData();
-  const assignShoeMutation = useAssignShoeMutation();
-
   const activities: ActivityItem[] = dashboardData?.activities || [];
-  const shoes = gearData?.shoes || [];
-  const shoesMap = useMemo(() => {
-    const map = new Map<string, any>();
-    shoes.forEach((s: any) => map.set(s.id, s));
-    return map;
-  }, [shoes]);
 
   useEffect(() => {
     if (dashboardData && !dashboardData.connected) {
@@ -649,15 +640,6 @@ export default function ActivitiesPage() {
                               Pa:HR {decoupling.decouplingPct > 0 ? `+${decoupling.decouplingPct}%` : `${decoupling.decouplingPct}%`}
                             </span>
                           )}
-                          {act.shoeId && shoesMap.has(act.shoeId) && (
-                            <span
-                              className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold shrink-0 border bg-amber-100 text-amber-950 border-amber-300 flex items-center gap-1"
-                              title={`Footwear: ${shoesMap.get(act.shoeId).name}`}
-                            >
-                              <Footprints className="h-2.5 w-2.5" />
-                              <span className="truncate max-w-[110px]">{shoesMap.get(act.shoeId).name}</span>
-                            </span>
-                          )}
                         </div>
                         <p className="text-[11px] font-mono font-medium text-zinc-600">
                           {dateStr} • {act.durationMin} mins
@@ -857,49 +839,6 @@ export default function ActivitiesPage() {
                   {selectedActivity.avgHr} <span className="text-xs text-zinc-500 font-normal">/ {selectedActivity.maxHr} max</span>
                 </span>
               </div>
-            </div>
-
-            {/* Footwear & Gear Assignment */}
-            <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-between gap-3 shadow-[2px_2px_0px_0px_#09090b]">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="h-8 w-8 rounded-lg bg-orange-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1px_1px_0px_0px_#09090b]">
-                  <Footprints className="h-4 w-4 stroke-[2.5]" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] font-sans font-bold text-zinc-500 uppercase block">
-                    Footwear & Gear
-                  </span>
-                  <span className="text-xs font-black text-zinc-950 truncate block">
-                    {selectedActivity.shoeId && shoesMap.has(selectedActivity.shoeId)
-                      ? `${shoesMap.get(selectedActivity.shoeId).brand} ${shoesMap.get(selectedActivity.shoeId).name}`
-                      : "No Shoe Assigned"}
-                  </span>
-                </div>
-              </div>
-
-              <select
-                value={selectedActivity.shoeId || ""}
-                onChange={async (e) => {
-                  const val = e.target.value || null;
-                  try {
-                    await assignShoeMutation.mutateAsync({
-                      activityId: selectedActivity.id,
-                      shoeId: val,
-                    });
-                    setSelectedActivity({ ...selectedActivity, shoeId: val });
-                  } catch (err) {
-                    console.error("Failed to assign shoe:", err);
-                  }
-                }}
-                className="px-2.5 py-1.5 rounded-lg bg-white border-2 border-zinc-950 text-xs font-mono font-bold text-zinc-900 shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer focus:outline-none"
-              >
-                <option value="">Select Footwear...</option>
-                {shoes.map((s: any) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.sportType}) - {s.totalDistanceKm}km
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Training Effect & Load */}

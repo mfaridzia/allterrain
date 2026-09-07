@@ -401,7 +401,6 @@ export async function GET(req: NextRequest) {
       efficiencyFactor: Number(a.efficiency_factor || 0),
       aerobicTe: Number(a.aerobic_te || 0),
       anaerobicTe: Number(a.anaerobic_te || 0),
-      shoeId: a.shoe_id ? String(a.shoe_id) : null,
     })),
   });
 }
