@@ -5,6 +5,9 @@ import { getCurrentAthleteId } from "@/lib/session";
 export async function GET(req: NextRequest) {
   const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
 
+  const defaultProvider = process.env.AI_PROVIDER || (process.env.DEEPSEEK_API_KEY ? "deepseek" : "gemini");
+  const defaultModel = defaultProvider === "deepseek" ? "deepseek-chat" : "gemini-2.5-flash";
+
   // Parallel fetch to eliminate async waterfall (Vercel Best Practice: async-parallel)
   const [
     aiProvider,
@@ -18,8 +21,8 @@ export async function GET(req: NextRequest) {
     trailWeeklyVertTargetStr,
     trailTrainingTier,
   ] = await Promise.all([
-    getSetting("ai_provider", "gemini", athleteId),
-    getSetting("ai_model_name", "gemini-2.5-flash", athleteId),
+    getSetting("ai_provider", defaultProvider, athleteId),
+    getSetting("ai_model_name", defaultModel, athleteId),
     getSetting("gemini_api_key", "", athleteId),
     getSetting("openai_api_key", "", athleteId),
     getSetting("claude_api_key", "", athleteId),
