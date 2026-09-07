@@ -1961,14 +1961,14 @@ export function calculateWeeklyZoneProgression(
     if (greyZonePct > 24) {
       classification = "grey_zone_trap";
       classificationLabel = "Grey Zone Trap (Kebablasan Z3)";
-      classificationDescription = `Sebanyak ${greyZonePct}% waktu dihabiskan di Zona 3 (Tempo). Terlalu keras untuk pemulihan, namun belum cukup keras untuk adaptasi anaerobik.`;
+      classificationDescription = `Sebanyak ${greyZonePct}% waktu dihabiskan di Zona 3 (Tempo). Jika bukan sesi terencana (seperti Marathon Pace), porsi ini memicu kelelahan berlebih pada lari santai.`;
       statusBadge = {
         text: "Kebablasan di Z3",
         bgColor: "bg-amber-300",
         textColor: "text-zinc-950",
         borderColor: "border-zinc-950",
       };
-      tacticalAdvice = "Perlambat pace lari santai Anda! Jaga agar nafas tetap bisa berbicara lancar (Zona 2) agar tidak menumpuk kelelahan tak perlu.";
+      tacticalAdvice = "Pastikan lari santai tetap di Zona 2 (bisa berbicara lancar). Jika minggu ini memang ada jadwal Marathon Pace Run, porsi ini wajar.";
     } else if (highIntensityPct >= 30) {
       classification = "threshold_heavy";
       classificationLabel = "Threshold Heavy (High Stress)";
@@ -1994,14 +1994,14 @@ export function calculateWeeklyZoneProgression(
     } else if (greyZonePct > highIntensityPct) {
       classification = "pyramidal";
       classificationLabel = "Pyramidal Model";
-      classificationDescription = "Distribusi piramid: porsi Zone 1-2 dominan, disusul Zone 3 tempo, dan sedikit Zone 4-5.";
+      classificationDescription = "Distribusi piramid: porsi Zone 1-2 dominan, disusul Zone 3 tempo terukur, dan sedikit Zone 4-5.";
       statusBadge = {
         text: "Pyramidal",
         bgColor: "bg-cyan-200",
         textColor: "text-zinc-950",
         borderColor: "border-zinc-950",
       };
-      tacticalAdvice = "Cocok untuk persiapan maraton/ultra, namun pastikan tidak membakar energi berlebihan di hari-hari mudah.";
+      tacticalAdvice = "Model ideal untuk persiapan maraton/ultra. Jaga agar lari mudah tidak ikut terbawa kencang.";
     }
 
     return {
@@ -2061,9 +2061,9 @@ export function calculateWeeklyZoneProgression(
   const isPolarized = avgLowPct >= 75 && avgGreyPct <= 20;
 
   let verdictLabel = "Polarized (80/20)";
-  if (avgGreyPct > 22) verdictLabel = "Kebablasan di Grey Zone (Z3)";
+  if (avgGreyPct > 22) verdictLabel = "Grey Zone Trap (Kebablasan Z3)";
   else if (avgLowPct >= 85) verdictLabel = "Fondasi Aerobik Tinggi (Base)";
-  else if (!isPolarized) verdictLabel = "Piramidal";
+  else if (avgGreyPct > avgHighPct) verdictLabel = "Pyramidal (Marathon Prep)";
 
   const currentWeek = weeklyDataList.find((w) => w.isCurrentWeek) || weeklyDataList[weeklyDataList.length - 1] || null;
 

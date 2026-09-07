@@ -93,7 +93,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           </div>
           <div>
             <h3 className="text-sm font-black text-zinc-950 tracking-tight">
-              Weekly Hours in Zones (Polarized vs Grey Zone)
+              Weekly Hours in Zones (Intensity Distribution)
             </h3>
             <p className="text-[11px] font-mono text-zinc-600">
               Belum ada data aktivitas yang cukup untuk analisis zona mingguan.
@@ -150,7 +150,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
             <div className="flex items-center justify-between font-mono text-[11px]">
               <span className="flex items-center gap-1.5 text-amber-700 font-bold">
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-400 border border-zinc-950 shrink-0" />
-                Grey Zone (Z3 Tempo):
+                Zone 3 (Tempo / SS):
               </span>
               <span className="font-black text-zinc-950">
                 {formatDurationReadable(data.greyZoneHours)} • {data.greyZonePct}%
@@ -225,11 +225,11 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 Weekly Hours in Zones
               </h3>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-100 text-violet-900 border border-zinc-950">
-                Seiler 80/20 vs Grey Zone
+                Intensity Distribution (TID)
               </span>
             </div>
             <p className="text-xs font-mono text-zinc-600 mt-0.5">
-              Distribusi volume latihan per minggu • Deteksi jebakan Zone 3 (Grey Zone)
+              Distribusi volume latihan mingguan • Deteksi profil Polarized, Pyramidal & Grey Zone
             </p>
           </div>
         </div>
@@ -375,24 +375,34 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
             </p>
           </div>
 
-          {/* Grey Zone KPI */}
+          {/* Middle Zone KPI: Zone 3 Tempo / Sweet Spot */}
           <div
             className={`p-3.5 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] min-w-0 ${
-              currentWeek.greyZonePct > 20
+              currentWeek.classification === "grey_zone_trap"
                 ? "bg-rose-50 border-rose-950"
+                : currentWeek.classification === "pyramidal"
+                ? "bg-cyan-50 border-cyan-950"
                 : "bg-amber-50"
             }`}
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black font-mono text-amber-900 uppercase truncate">
-                Zone 3 (Grey / Tempo)
+                Zone 3 (Tempo / SS)
               </span>
               <span
                 className={`text-[10px] font-bold shrink-0 ${
-                  currentWeek.greyZonePct > 20 ? "text-rose-700 font-black" : "text-amber-700"
+                  currentWeek.classification === "grey_zone_trap"
+                    ? "text-rose-700 font-black"
+                    : currentWeek.classification === "pyramidal"
+                    ? "text-cyan-800 font-black"
+                    : "text-amber-700"
                 }`}
               >
-                {currentWeek.greyZonePct > 20 ? "⚠️ Waspada (>20%)" : "Optimal ≤ 15%"}
+                {currentWeek.classification === "grey_zone_trap"
+                  ? "⚠️ Kebablasan Z3"
+                  : currentWeek.classification === "pyramidal"
+                  ? "Pyramidal (Tempo/MP)"
+                  : "Terkontrol (≤15%)"}
               </span>
             </div>
             <div className="mt-1 flex items-baseline gap-2 flex-wrap">
@@ -403,10 +413,12 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 ({formatDurationReadable(currentWeek.greyZoneHours)})
               </span>
             </div>
-            <p className="text-[10px] text-zinc-600 font-medium mt-0.5">
-              {currentWeek.greyZonePct > 20
-                ? "Terlalu lelah untuk recovery, kurang keras untuk VO2Max"
-                : "Terkontrol dengan baik minggu ini"}
+            <p className="text-[10px] text-zinc-600 font-medium mt-0.5 leading-snug">
+              {currentWeek.classification === "grey_zone_trap"
+                ? "Terlalu lelah untuk recovery, risiko kelelahan kronis"
+                : currentWeek.classification === "pyramidal"
+                ? "Porsi tempo terencana, baik untuk Half/Full Marathon"
+                : "Porsi zona moderat terjaga secara seimbang"}
             </p>
           </div>
 
@@ -445,7 +457,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-3 w-3 rounded-full bg-amber-400 border border-zinc-950" />
-                  <span className="font-black text-zinc-900">Grey Zone (Z3 Tempo)</span>
+                  <span className="font-black text-zinc-900">Zone 3 (Tempo / Sweet Spot)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-3 w-3 rounded-full bg-rose-500 border border-zinc-950" />
@@ -581,7 +593,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                         ? "greyZoneMinutes"
                         : "greyZoneHours"
                     }
-                    name="Grey Zone (Z3)"
+                    name="Zone 3 (Tempo / SS)"
                     stackId="a"
                     fill="#fbbf24"
                     stroke="#09090b"
@@ -684,7 +696,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
         </div>
       </div>
 
-      {/* Educational Collapsible: "Kenapa Menghindari Grey Zone?" */}
+      {/* Educational Collapsible: "Kapan Zone 3 Bermanfaat vs Menjadi Jebakan?" */}
       <div className="border-2 border-zinc-950 rounded-xl bg-amber-50/70 p-4 space-y-3">
         <button
           onClick={() => setShowExplainer(!showExplainer)}
@@ -693,11 +705,11 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           <div className="flex items-center gap-2">
             <HelpCircle className="h-4 w-4 text-amber-900 stroke-[2.5]" />
             <span className="text-xs font-black text-zinc-950 group-hover:text-orange-600 transition-colors">
-              Mengapa Jebakan Zone 3 (&ldquo;Grey Zone&rdquo;) Merugikan Pelari?
+              Memahami Zone 3: Kapan Bermanfaat (Pyramidal / Sweet Spot) vs Kapan Menjadi Jebakan (Grey Zone)?
             </span>
           </div>
           <div className="flex items-center gap-1 text-[11px] font-bold text-zinc-600">
-            <span>{showExplainer ? "Sembunyikan" : "Pelajari Sains 80/20"}</span>
+            <span>{showExplainer ? "Sembunyikan" : "Pelajari Sains Distribusi"}</span>
             {showExplainer ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
@@ -712,7 +724,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               <div className="p-3 rounded-lg bg-white border border-zinc-950/20 space-y-1">
                 <div className="flex items-center gap-1.5 font-black text-emerald-800">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  <span>Zone 1 & 2 (80% Volume)</span>
+                  <span>Zone 1 & 2 (≥75% Volume)</span>
                 </div>
                 <p className="text-[11px] text-zinc-600">
                   Intensitas aerobik murni. Membangun densitas kapiler, mitokondria, dan efisiensi
@@ -723,19 +735,17 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               <div className="p-3 rounded-lg bg-white border border-zinc-950/20 space-y-1">
                 <div className="flex items-center gap-1.5 font-black text-amber-800">
                   <AlertTriangle className="h-3.5 w-3.5" />
-                  <span>Zone 3 &ldquo;Grey Zone&rdquo; (&le;15%)</span>
+                  <span>Zone 3 (Tempo / Sweet Spot)</span>
                 </div>
                 <p className="text-[11px] text-zinc-600">
-                  Terlalu keras untuk pemulihan, namun terlalu lambat untuk memicu adaptasi
-                  enzimatis VO2Max. Sering disebut <em>&ldquo;Junk Miles&rdquo;</em> yang menyebabkan
-                  kelelahan kronis.
+                  Zona moderat di antara LT1 dan LT2. <strong>Sangat bermanfaat</strong> jika terencana untuk Marathon Pace / Sweet Spot (Model Pyramidal). Namun menjadi <em>&ldquo;Junk Miles / Grey Zone&rdquo;</em> jika lari santai (Easy Run) sering kebablasan ke sini tanpa sengaja, memicu kelelahan tanpa adaptasi optimal.
                 </p>
               </div>
 
               <div className="p-3 rounded-lg bg-white border border-zinc-950/20 space-y-1">
                 <div className="flex items-center gap-1.5 font-black text-rose-800">
                   <Flame className="h-3.5 w-3.5" />
-                  <span>Zone 4 & 5 (20% Volume)</span>
+                  <span>Zone 4 & 5 (5-20% Volume)</span>
                 </div>
                 <p className="text-[11px] text-zinc-600">
                   Interval di ambang laktat dan VO2Max. Menstimulasi cardiac output maksimal,
@@ -744,10 +754,8 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               </div>
             </div>
 
-            <p className="text-[11px] font-mono text-zinc-600 italic bg-amber-100/50 p-2.5 rounded-lg border border-amber-300">
-              💡 <strong>Rekomendasi Coach:</strong> Jaga lari santai tetap santai (di Z1/Z2, Anda
-              bisa berbicara dalam kalimat lengkap), sehingga saat hari latihan interval keras (Z4/Z5),
-              tubuh Anda segar dan mampu mengerahkan performa 100%.
+            <p className="text-[11px] font-mono text-zinc-700 italic bg-amber-100/60 p-2.5 rounded-lg border border-amber-300">
+              💡 <strong>Rekomendasi Coach:</strong> Zone 3 tidak jelek jika terprogram (misal latihan Marathon Pace atau Sweet Spot). Kuncinya adalah niat: saat jadwalnya lari santai (Easy Run), jaga agar tetap di Z1/Z2 (bisa berbicara kalimat lengkap). Simpan tenaga Anda agar sesi interval keras (Z4/Z5) dapat dieksekusi dengan performa 100%!
             </p>
           </div>
         )}
