@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     // Initial sync trigger in background for this specific athlete
     syncCorosData(athleteId).catch((err) => console.warn("Background initial sync notice:", err));
 
-    const response = NextResponse.redirect(`${url.origin}/?connected=true`);
+    const response = NextResponse.redirect(`${url.origin}/?connected=true&sid=${encodeURIComponent(sessionId)}`);
     response.cookies.set(SESSION_COOKIE_NAME, sessionId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

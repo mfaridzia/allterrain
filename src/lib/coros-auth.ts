@@ -136,7 +136,12 @@ export async function refreshCorosToken(athleteId: string = "athlete_primary"): 
     throw new Error("No refresh token available. Please reconnect COROS.");
   }
 
-  const redirectUri = await getSetting("coros_last_redirect_uri", "http://localhost:3000/api/auth/coros/callback");
+  let redirectUri = await getSetting("coros_last_redirect_uri", "");
+  if (!redirectUri || (process.env.NODE_ENV === "production" && redirectUri.includes("localhost"))) {
+    redirectUri = process.env.NEXT_PUBLIC_APP_URL
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/coros/callback`
+      : "https://allterrain.muhfaridzia.live/api/auth/coros/callback";
+  }
   const clientId = await getOrRegisterClientId(redirectUri);
 
   const bodyParams = new URLSearchParams({

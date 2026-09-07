@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCorosToken, deleteCorosToken } from "@/lib/db";
+import { refreshCorosToken } from "@/lib/coros-auth";
 import { getCurrentAthleteId, deleteSession, SESSION_COOKIE_NAME } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
@@ -10,14 +11,29 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const tokenRecord = await getCorosToken(athleteId);
+  let tokenRecord = await getCorosToken(athleteId);
   if (!tokenRecord) {
     return NextResponse.json({
       connected: false,
     });
   }
 
-  const isExpired = tokenRecord.expires_at ? Date.now() > tokenRecord.expires_at : false;
+  let isExpired = tokenRecord.expires_at ? Date.now() > tokenRecord.expires_at : false;
+  if (isExpired && tokenRecord.refresh_token) {
+    try {
+      await refreshCorosToken(athleteId);
+      tokenRecord = await getCorosToken(athleteId);
+      isExpired = false;
+    } catch {
+      isExpired = true;
+    }
+  }
+
+  if (!tokenRecord) {
+    return NextResponse.json({
+      connected: false,
+    });
+  }
   let athleteInfo = null;
   try {
     if (tokenRecord.athlete_info) {

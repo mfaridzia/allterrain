@@ -37,6 +37,21 @@ export default function DashboardPage() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [scaleMode, setScaleMode] = useState<"coros" | "intervals">("coros");
 
+  // Save session ID to localStorage if passed in redirect (vital for in-app mobile browsers like Threads/IG)
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const url = new URL(window.location.href);
+        const sid = url.searchParams.get("sid");
+        if (sid) {
+          localStorage.setItem("allterrain_session", sid);
+          url.searchParams.delete("sid");
+          window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+        }
+      } catch {}
+    }
+  }, []);
+
   const handleSync = async () => {
     setSyncMessage(null);
     try {

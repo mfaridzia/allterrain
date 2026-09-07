@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, getCorosToken, getSetting } from "@/lib/db";
+import { refreshCorosToken } from "@/lib/coros-auth";
 import { getCurrentAthleteId } from "@/lib/session";
 import {
   classifyFormZone,
@@ -13,8 +14,24 @@ import {
 
 export async function GET(req: NextRequest) {
   const athleteId = await getCurrentAthleteId(req);
-  const token = athleteId ? await getCorosToken(athleteId) : null;
-  const isConnected = !!token && (!token.expires_at || Date.now() < token.expires_at);
+  let token = athleteId ? await getCorosToken(athleteId) : null;
+  let isConnected = false;
+
+  if (token && athleteId) {
+    if (!token.expires_at || Date.now() < token.expires_at) {
+      isConnected = true;
+    } else if (token.refresh_token) {
+      // Access token expired - auto refresh seamlessly using refresh_token
+      try {
+        await refreshCorosToken(athleteId);
+        token = await getCorosToken(athleteId);
+        isConnected = !!token;
+      } catch (err) {
+        console.warn(`Dashboard token refresh failed for ${athleteId}:`, err);
+        isConnected = false;
+      }
+    }
+  }
 
   if (!isConnected || !athleteId) {
     return NextResponse.json({

@@ -83,14 +83,22 @@ export async function getAthleteIdFromSession(sessionId: string): Promise<string
 export async function getCurrentAthleteId(req?: NextRequest | Request): Promise<string | null> {
   let sessionId: string | null = null;
 
-  if (req && "cookies" in req && typeof (req as NextRequest).cookies.get === "function") {
-    sessionId = (req as NextRequest).cookies.get(SESSION_COOKIE_NAME)?.value || null;
-  } else {
-    try {
-      const cookieStore = await cookies();
-      sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value || null;
-    } catch {
-      sessionId = null;
+  // 1. Check custom header (useful for mobile webview / localStorage fallback)
+  if (req && "headers" in req && typeof req.headers.get === "function") {
+    sessionId = req.headers.get("x-allterrain-session") || req.headers.get("x-session-id") || null;
+  }
+
+  // 2. Check cookies
+  if (!sessionId) {
+    if (req && "cookies" in req && typeof (req as NextRequest).cookies.get === "function") {
+      sessionId = (req as NextRequest).cookies.get(SESSION_COOKIE_NAME)?.value || null;
+    } else {
+      try {
+        const cookieStore = await cookies();
+        sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value || null;
+      } catch {
+        sessionId = null;
+      }
     }
   }
 
@@ -99,18 +107,20 @@ export async function getCurrentAthleteId(req?: NextRequest | Request): Promise<
     if (athleteId) return athleteId;
   }
 
-  // Graceful fallback for single-user / local database:
-  // If there's an active token stored in auth_tokens, resolve to that athlete_id
-  try {
-    const db = getDb();
-    const tokenRes = await db.execute({
-      sql: `SELECT athlete_id FROM auth_tokens WHERE provider = 'coros' ORDER BY updated_at DESC LIMIT 1`,
-      args: [],
-    });
-    if (tokenRes.rows.length > 0 && tokenRes.rows[0].athlete_id) {
-      return String(tokenRes.rows[0].athlete_id);
-    }
-  } catch {}
+  // Graceful fallback ONLY for local development with single user:
+  // In production, NEVER guess or fall back to another user's token!
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const db = getDb();
+      const tokenRes = await db.execute({
+        sql: `SELECT athlete_id FROM auth_tokens WHERE provider = 'coros' ORDER BY updated_at DESC LIMIT 1`,
+        args: [],
+      });
+      if (tokenRes.rows.length > 0 && tokenRes.rows[0].athlete_id) {
+        return String(tokenRes.rows[0].athlete_id);
+      }
+    } catch {}
+  }
 
   return null;
 }
