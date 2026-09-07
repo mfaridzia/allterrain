@@ -186,6 +186,7 @@ export async function syncCorosData(
   const dailySleepMap = new Map<string, number>();
   const dailyRhrMap = new Map<string, number>();
   const dailyHrvMap = new Map<string, number>();
+  const dailyHrvStatusMap = new Map<string, string>();
 
   try {
     const healthText = await callCorosMcpTool("queryDailyHealthData", {}, athleteId);
@@ -239,11 +240,32 @@ export async function syncCorosData(
         else if (offsetHours === 9) watchTimezone = "Asia/Jayapura"; // WIT (UTC+9)
       }
 
-      const dateBlocks = hrvText.split(/(?=\d{4}-\d{2}-\d{2}:)/);
+      // 1. Parse official COROS Assessment section first (official average and evaluation from COROS)
+      const assessSection = hrvText.split(/Sleep HRV Time Series/i)[0] || hrvText;
+      const assessBlocks = assessSection.split(/(?=\d{4}-\d{2}-\d{2}:)/);
+      for (const block of assessBlocks) {
+        const dateMatch = block.match(/^(\d{4}-\d{2}-\d{2}):/);
+        const avgMatch = block.match(/HRV Avg:\s*(\d+)\s*ms(?:\s*—\s*([A-Za-z]+))?/i);
+        if (dateMatch && avgMatch) {
+          const dStr = dateMatch[1];
+          const avgHrv = parseInt(avgMatch[1], 10);
+          const status = avgMatch[2]?.toUpperCase() || (avgHrv >= 60 ? "NORMAL" : avgHrv >= 45 ? "MODERATE" : "TIRED");
+          dailyHrvMap.set(dStr, avgHrv);
+          dailyHrvStatusMap.set(dStr, status);
+        }
+      }
+
+      // 2. Fallback to time series points only for days without an official summary
+      const timeSeriesSection = hrvText.includes("Sleep HRV Time Series")
+        ? hrvText.split(/Sleep HRV Time Series/i)[1]
+        : hrvText;
+      const dateBlocks = timeSeriesSection.split(/(?=\d{4}-\d{2}-\d{2}:)/);
       for (const block of dateBlocks) {
         const dateMatch = block.match(/^(\d{4}-\d{2}-\d{2}):/);
         if (!dateMatch) continue;
         const dStr = dateMatch[1];
+        if (dailyHrvMap.has(dStr)) continue; // Already set from official assessment
+
         const hrvMatches = [...block.matchAll(/hrv=(\d+)\s*ms/g)];
         if (hrvMatches.length > 0) {
           const sum = hrvMatches.reduce((acc, match) => acc + parseInt(match[1], 10), 0);
@@ -512,7 +534,7 @@ export async function syncCorosData(
     const sleepSec = dailySleepMap.get(p.date) ?? lastKnownSleep;
     const rhr = dailyRhrMap.get(p.date) ?? lastKnownRhr;
     const hrv = dailyHrvMap.get(p.date) ?? lastKnownHrv;
-    const hrvStatus = hrv >= 60 ? "NORMAL" : hrv >= 45 ? "MODERATE" : "TIRED";
+    const hrvStatus = dailyHrvStatusMap.get(p.date) || (hrv >= 60 ? "NORMAL" : hrv >= 45 ? "MODERATE" : "TIRED");
 
     await db.execute({
       sql: `
