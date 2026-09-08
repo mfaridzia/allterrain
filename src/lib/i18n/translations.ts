@@ -236,11 +236,11 @@ export const translations = {
     },
     landing: {
       badge: "Integrasi Resmi COROS MCP",
-      heroTitlePrefix: "Buka Potensi Penuh",
-      heroTitlePerformance: "Performance Science",
-      heroTitleAnd: "&",
-      heroTitleAthletic: "Athletic",
-      heroTitleSuffix: "Analytics",
+      heroTitlePrefix: "Pantau",
+      heroTitlePerformance: "Data Latihan",
+      heroTitleAnd: "& Performa Lari Berbasis",
+      heroTitleAthletic: "Sports Science",
+      heroTitleSuffix: "",
       heroDescription:
         "Hubungkan akun COROS Anda untuk menarik beban latihan, menghitung kurva Banister PMC presisi (CTL/ATL/TSB), evaluasi kesiapan & pemulihan harian, serta panduan pintar dari AI Coach.",
       connectButton: "Hubungkan Akun COROS",
