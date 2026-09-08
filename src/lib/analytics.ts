@@ -811,7 +811,8 @@ export function classifyClimbDensity(densityMPerKm: number): {
 export function calculateRacePreparationVolume(
   distanceKm: number,
   elevationGainMeters: number,
-  tier: "finisher" | "elite" = "finisher"
+  tier: "finisher" | "elite" = "finisher",
+  language: "en" | "id" = "id"
 ): {
   peakWeeklyKmRange: string;
   peakWeeklyVertRange: string;
@@ -826,6 +827,10 @@ export function calculateRacePreparationVolume(
   maxWeeklyVertTarget: number;
   methodologyTip: string;
 } {
+  const unitWk = language === "en" ? "km/wk" : "km/minggu";
+  const unitDPlusWk = language === "en" ? "D+/wk" : "D+/minggu";
+  const unitDPlusMo = language === "en" ? "D+/mo" : "D+/bulan";
+
   if (tier === "elite") {
     const peakWeeklyKmMin = Math.round(distanceKm * 1.2);
     const peakWeeklyKmMax = Math.round(distanceKm * 1.6);
@@ -837,9 +842,9 @@ export function calculateRacePreparationVolume(
     const keyLongRunVertM = Math.round(elevationGainMeters * 0.65);
 
     return {
-      peakWeeklyKmRange: `${peakWeeklyKmMin} - ${peakWeeklyKmMax} km/minggu`,
-      peakWeeklyVertRange: `+${minWeeklyVertTarget.toLocaleString()}m - +${maxWeeklyVertTarget.toLocaleString()}m D+/minggu`,
-      monthlyVertRange: `+${monthlyVertMin.toLocaleString()}m - +${monthlyVertMax.toLocaleString()}m D+/bulan`,
+      peakWeeklyKmRange: `${peakWeeklyKmMin} - ${peakWeeklyKmMax} ${unitWk}`,
+      peakWeeklyVertRange: `+${minWeeklyVertTarget.toLocaleString()}m - +${maxWeeklyVertTarget.toLocaleString()}m ${unitDPlusWk}`,
+      monthlyVertRange: `+${monthlyVertMin.toLocaleString()}m - +${monthlyVertMax.toLocaleString()}m ${unitDPlusMo}`,
       peakWeeklyKmMin,
       peakWeeklyKmMax,
       monthlyVertMin,
@@ -848,7 +853,9 @@ export function calculateRacePreparationVolume(
       keyLongRunVertM,
       minWeeklyVertTarget,
       maxWeeklyVertTarget,
-      methodologyTip: "Standar Pro: Dedikasi latihan penuh seperti atlet Alpen (Kílian Jornet / François D'Haene) dengan adaptasi volume vertikal tanpa batas.",
+      methodologyTip: language === "en"
+        ? "Pro Benchmark: Full-time endurance athlete regimen (like Alpine pros Kílian Jornet / François D'Haene) with unrestricted vertical volume adaptation."
+        : "Standar Pro: Dedikasi latihan penuh seperti atlet Alpen (Kílian Jornet / François D'Haene) dengan adaptasi volume vertikal tanpa batas.",
     };
   }
 
@@ -889,9 +896,9 @@ export function calculateRacePreparationVolume(
   const keyLongRunVertM = Math.min(2200, Math.max(800, Math.round(elevationGainMeters * 0.42)));
 
   return {
-    peakWeeklyKmRange: `${peakWeeklyKmMin} - ${peakWeeklyKmMax} km/minggu`,
-    peakWeeklyVertRange: `+${minWeeklyVertTarget.toLocaleString()}m - +${maxWeeklyVertTarget.toLocaleString()}m D+/minggu`,
-    monthlyVertRange: `+${monthlyVertMin.toLocaleString()}m - +${monthlyVertMax.toLocaleString()}m D+/bulan`,
+    peakWeeklyKmRange: `${peakWeeklyKmMin} - ${peakWeeklyKmMax} ${unitWk}`,
+    peakWeeklyVertRange: `+${minWeeklyVertTarget.toLocaleString()}m - +${maxWeeklyVertTarget.toLocaleString()}m ${unitDPlusWk}`,
+    monthlyVertRange: `+${monthlyVertMin.toLocaleString()}m - +${monthlyVertMax.toLocaleString()}m ${unitDPlusMo}`,
     peakWeeklyKmMin,
     peakWeeklyKmMax,
     monthlyVertMin,
@@ -900,7 +907,9 @@ export function calculateRacePreparationVolume(
     keyLongRunVertM,
     minWeeklyVertTarget,
     maxWeeklyVertTarget,
-    methodologyTip: "Standar Finisher Realistis: Mengutamakan metode Back-to-Back Weekend (Sabtu nanjak + Minggu nanjak saat kaki lelah) dan latihan kekuatan paha (ME) agar aman dari cedera.",
+    methodologyTip: language === "en"
+      ? "Realistic Finisher Standard: Prioritizes Weekend Back-to-Back long runs (climb Saturday + climb Sunday on fatigued legs) and muscular endurance (ME) to stay injury-free."
+      : "Standar Finisher Realistis: Mengutamakan metode Back-to-Back Weekend (Sabtu nanjak + Minggu nanjak saat kaki lelah) dan latihan kekuatan paha (ME) agar aman dari cedera.",
   };
 }
 
@@ -946,7 +955,9 @@ export interface GradientEfficiencyAnalysis {
 export function calculateGradientEfficiencyCurve(params: {
   athleteVam?: number;
   athleteFlatPaceSec?: number;
+  language?: "en" | "id";
 }): GradientEfficiencyAnalysis {
+  const language = params.language || "id";
   const athleteVam = Math.max(300, params.athleteVam || 550);
   const athleteFlatPaceSec = Math.max(240, params.athleteFlatPaceSec || 318); // Default 5:18 min/km
 
@@ -972,8 +983,8 @@ export function calculateGradientEfficiencyCurve(params: {
         gapPaceStr: `${paceStr}/km`,
         glycogenSavingsPct: 0,
         optimalStrategy: "flat",
-        strategyLabel: "Lari Datar Aerobik",
-        tacticalTip: "Pertahankan ritme stabil pada Zona 2 untuk efisiensi metabolik.",
+        strategyLabel: language === "en" ? "Flat Aerobic Running" : "Lari Datar Aerobik",
+        tacticalTip: language === "en" ? "Maintain steady Zone 2 rhythm for metabolic efficiency." : "Pertahankan ritme stabil pada Zona 2 untuk efisiensi metabolik.",
       };
     }
 
@@ -984,27 +995,27 @@ export function calculateGradientEfficiencyCurve(params: {
       let speedFactor = 1.0;
       let descentVam = 0;
       let optimalStrategy: GradientEfficiencyPoint["optimalStrategy"] = "fast_descent";
-      let strategyLabel = "Turunan Mengalir (Fast Flow)";
-      let tacticalTip = "Gunakan gravitasi dengan langkah ringan (cadence tinggi) untuk meminimalkan hentakan.";
+      let strategyLabel = language === "en" ? "Fast Flow Descent" : "Turunan Mengalir (Fast Flow)";
+      let tacticalTip = language === "en" ? "Harness gravity with light foot turnover (high cadence) to minimize impact." : "Gunakan gravitasi dengan langkah ringan (cadence tinggi) untuk meminimalkan hentakan.";
 
       if (grad >= -8) {
         speedFactor = 1.28;
-        strategyLabel = "Turunan Cepat Aerobik";
-        tacticalTip = "Pace cepat dengan langkah pendek. Quad bekerja ringan.";
+        strategyLabel = language === "en" ? "Fast Aerobic Descent" : "Turunan Cepat Aerobik";
+        tacticalTip = language === "en" ? "Fast pace with short strides. Light quadriceps strain." : "Pace cepat dengan langkah pendek. Quad bekerja ringan.";
       } else if (grad >= -14) {
         speedFactor = 1.35;
-        strategyLabel = "Kecepatan Maksimum Turunan";
-        tacticalTip = "Lari lancar dan condongkan badan sedikit ke depan. Waspadai pijakan.";
+        strategyLabel = language === "en" ? "Peak Descent Velocity" : "Kecepatan Maksimum Turunan";
+        tacticalTip = language === "en" ? "Smooth stride and slight forward lean. Stay alert for loose rocks." : "Lari lancar dan condongkan badan sedikit ke depan. Waspadai pijakan.";
       } else if (grad >= -20) {
         speedFactor = 0.95; // Slowing down to brake
         optimalStrategy = "quad_brake";
-        strategyLabel = "Zona Rem Paha (Quad Braking)";
-        tacticalTip = "Turunan terjal! Beban eksentrik paha tinggi. Persingkat langkah dan aktifkan pole bila perlu.";
+        strategyLabel = language === "en" ? "Quad Braking Zone" : "Zona Rem Paha (Quad Braking)";
+        tacticalTip = language === "en" ? "Steep downhill! High eccentric quadriceps strain. Shorten stride and engage poles if needed." : "Turunan terjal! Beban eksentrik paha tinggi. Persingkat langkah dan aktifkan pole bila perlu.";
       } else {
         speedFactor = 0.65; // Technical scramble
         optimalStrategy = "quad_brake";
-        strategyLabel = "Turunan Ekstrem / Batuan Licin";
-        tacticalTip = "Sangat curam! Perlambat tempo drastis, gunakan trekking pole untuk rem & cegah cedera lutut.";
+        strategyLabel = language === "en" ? "Extreme Descent / Technical Scramble" : "Turunan Ekstrem / Batuan Licin";
+        tacticalTip = language === "en" ? "Very steep! Slow down drastically, use trekking poles for braking & protect knee joints." : "Sangat curam! Perlambat tempo drastis, gunakan trekking pole untuk rem & cegah cedera lutut.";
       }
 
       const descentSpeedKmh = Math.round(flatSpeedKmh * speedFactor * 10) / 10;
@@ -1064,21 +1075,21 @@ export function calculateGradientEfficiencyCurve(params: {
     }
 
     let optimalStrategy: GradientEfficiencyPoint["optimalStrategy"] = "run";
-    let strategyLabel = "Lari Tanjakan (Running Stride)";
-    let tacticalTip = "Cadence tinggi, ayunkan tangan aktif. Manfaatkan elastisitas tendon achilles.";
+    let strategyLabel = language === "en" ? "Climbing Stride (Run)" : "Lari Tanjakan (Running Stride)";
+    let tacticalTip = language === "en" ? "High cadence, active arm swing. Exploit Achilles tendon elastic recoil." : "Cadence tinggi, ayunkan tangan aktif. Manfaatkan elastisitas tendon achilles.";
 
     if (grad >= 10 && grad <= 14) {
       optimalStrategy = "transition";
-      strategyLabel = "Zona Transisi (Walk-Run Breakeven)";
-      tacticalTip = "Pilihan Kritis! Lari & jalan menghasilkan VAM hampir serupa, tapi Power Hike menghemat ~18% glikogen & menurunkan HR 8-12 bpm.";
+      strategyLabel = language === "en" ? "Transition Zone (Walk-Run Breakeven)" : "Zona Transisi (Walk-Run Breakeven)";
+      tacticalTip = language === "en" ? "Critical Choice! Running & hiking yield similar VAM, but power hiking saves ~18% glycogen & drops HR 8-12 bpm." : "Pilihan Kritis! Lari & jalan menghasilkan VAM hampir serupa, tapi Power Hike menghemat ~18% glikogen & menurunkan HR 8-12 bpm.";
     } else if (grad > 14 && grad <= 22) {
       optimalStrategy = "power_hike";
-      strategyLabel = "Power Hike (Hands-on-Knees / Poles)";
-      tacticalTip = "Power Hike lebih cepat dan jauh lebih hemat glikogen daripada memaksakan lari! Dorong lutut atau gunakan trekking pole.";
+      strategyLabel = language === "en" ? "Power Hike (Hands-on-Knees / Poles)" : "Power Hike (Hands-on-Knees / Poles)";
+      tacticalTip = language === "en" ? "Power hike is faster and burns far less glycogen than forcing a run! Drive through knees or use poles." : "Power Hike lebih cepat dan jauh lebih hemat glikogen daripada memaksakan lari! Dorong lutut atau gunakan trekking pole.";
     } else if (grad > 22) {
       optimalStrategy = "poles_mandatory";
-      strategyLabel = "Trekking Pole Wajib (Extreme Climb)";
-      tacticalTip = "Kemiringan ekstrem. Gunakan pole double-pole plant untuk mendistribusikan beban ke otot punggung dan bahu.";
+      strategyLabel = language === "en" ? "Poles Mandatory (Extreme Climb)" : "Trekking Pole Wajib (Extreme Climb)";
+      tacticalTip = language === "en" ? "Extreme gradient. Use double-pole plants to distribute load onto back and shoulder muscles." : "Kemiringan ekstrem. Gunakan pole double-pole plant untuk mendistribusikan beban ke otot punggung dan bahu.";
     }
 
     const gapSec = calculateGapPace(runPaceSec, 1000, 1000 * g);
@@ -1115,7 +1126,9 @@ export function calculateGradientEfficiencyCurve(params: {
     curve,
     uphillPoints,
     downhillPoints,
-    executiveSummary: `Berdasarkan data VAM (${athleteVam} m/h), titik peralihan optimal Anda berada di kemiringan ${breakevenGradientPct}%. Di bawah 9% Anda disarankan lari, di antara 9–14% power hike menghemat ~18% glikogen dengan kecepatan sama, dan di atas 15% power hike terbukti lebih cepat daripada lari.`,
+    executiveSummary: language === "en"
+      ? `Based on your VAM (${athleteVam} m/h), your optimal transition point sits at ${breakevenGradientPct}% gradient. Below 9% running is most efficient, between 9–14% power hiking saves ~18% glycogen at equal vertical speed, and above 15% power hiking is definitively faster than running.`
+      : `Berdasarkan data VAM (${athleteVam} m/h), titik peralihan optimal Anda berada di kemiringan ${breakevenGradientPct}%. Di bawah 9% Anda disarankan lari, di antara 9–14% power hike menghemat ~18% glikogen dengan kecepatan sama, dan di atas 15% power hike terbukti lebih cepat daripada lari.`,
   };
 }
 
@@ -1135,6 +1148,7 @@ export interface SegmentLogisticsInput {
   targetWaterPerHourMl: number; // e.g. 300 - 800ml (default 500ml)
   carbPerGelGrams?: number; // default 25g
   flaskCapacityMl?: number; // default 1000ml (2 x 500ml softflasks)
+  language?: "en" | "id";
 }
 
 export interface SegmentLogisticsResult {
@@ -1163,12 +1177,15 @@ export function calculateSegmentLogistics(input: SegmentLogisticsInput): Segment
     targetWaterPerHourMl = 500,
     carbPerGelGrams = 25,
     flaskCapacityMl = 1000,
+    language = "en",
   } = input;
 
   const durationHours = Math.max(0.1, Math.round((segmentDurationSeconds / 3600) * 100) / 100);
   const hours = Math.floor(segmentDurationSeconds / 3600);
   const mins = Math.floor((segmentDurationSeconds % 3600) / 60);
-  const durationFormatted = `${hours}j ${mins.toString().padStart(2, "0")}m`;
+  const durationFormatted = language === "en"
+    ? `${hours}h ${mins.toString().padStart(2, "0")}m`
+    : `${hours}j ${mins.toString().padStart(2, "0")}m`;
 
   // Carbs required
   const carbsNeededGrams = Math.round(durationHours * targetCarbsPerHourGrams);
@@ -1194,14 +1211,26 @@ export function calculateSegmentLogistics(input: SegmentLogisticsInput): Segment
 
   // Smart tactical advice
   let advice = "";
-  if (waterExceedsCapacity) {
-    advice = `PERINGATAN AIR: Durasi segmen panjang (${durationFormatted}) membutuhkan ~${waterNeededMl}ml air (melebihi 2 softflask ${flaskCapacityMl}ml). Wajib bawa bladder 1.5L atau hemat minum!`;
-  } else if (segmentGainM >= 600) {
-    advice = `Tanjakan berat (+${segmentGainM}m). Minum elektrolit teratur tiap 15 menit & konsumsi 1 gel (${carbPerGelGrams}g) tiap 30-40 menit.`;
-  } else if (durationHours >= 2.0) {
-    advice = `Segmen jauh (${segmentDistanceKm.toFixed(1)}km, ${durationFormatted}). Bawa minimal ${gelsNeeded} gel dan isi penuh 2 botol (${recommendedWaterRefillMl}ml).`;
+  if (language === "en") {
+    if (waterExceedsCapacity) {
+      advice = `WATER ALERT: Long segment duration (${durationFormatted}) requires ~${waterNeededMl}ml water (exceeds 2 softflasks of ${flaskCapacityMl}ml). Bring a 1.5L bladder or conserve fluids!`;
+    } else if (segmentGainM >= 600) {
+      advice = `Heavy climb (+${segmentGainM}m). Sip electrolytes regularly every 15 min & take 1 gel (${carbPerGelGrams}g) every 30-40 min.`;
+    } else if (durationHours >= 2.0) {
+      advice = `Long stretch (${segmentDistanceKm.toFixed(1)}km, ${durationFormatted}). Carry at least ${gelsNeeded} gels and fill 2 flasks (${recommendedWaterRefillMl}ml).`;
+    } else {
+      advice = `Fast segment (~${durationFormatted}). Carry ${gelsNeeded} gels & ${recommendedWaterRefillMl}ml water/isotonic.`;
+    }
   } else {
-    advice = `Segmen cepat (~${durationFormatted}). Bawa ${gelsNeeded} gel & ${recommendedWaterRefillMl}ml air/isotonic.`;
+    if (waterExceedsCapacity) {
+      advice = `PERINGATAN AIR: Durasi segmen panjang (${durationFormatted}) membutuhkan ~${waterNeededMl}ml air (melebihi 2 softflask ${flaskCapacityMl}ml). Wajib bawa bladder 1.5L atau hemat minum!`;
+    } else if (segmentGainM >= 600) {
+      advice = `Tanjakan berat (+${segmentGainM}m). Minum elektrolit teratur tiap 15 menit & konsumsi 1 gel (${carbPerGelGrams}g) tiap 30-40 menit.`;
+    } else if (durationHours >= 2.0) {
+      advice = `Segmen jauh (${segmentDistanceKm.toFixed(1)}km, ${durationFormatted}). Bawa minimal ${gelsNeeded} gel dan isi penuh 2 botol (${recommendedWaterRefillMl}ml).`;
+    } else {
+      advice = `Segmen cepat (~${durationFormatted}). Bawa ${gelsNeeded} gel & ${recommendedWaterRefillMl}ml air/isotonic.`;
+    }
   }
 
   return {

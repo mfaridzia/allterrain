@@ -62,6 +62,7 @@ import {
 } from "@/lib/analytics";
 import { MapPoint, MapCheckpoint } from "@/components/TrailMap";
 import { Header } from "@/components/Header";
+import { useTranslation } from "@/lib/i18n/context";
 
 // Dynamically import Leaflet Map to prevent Next.js SSR window errors
 const TrailMap = dynamic(() => import("@/components/TrailMap"), {
@@ -148,6 +149,7 @@ const getGradeColor = (grade?: number) => {
 };
 
 export default function TrailPlannerPage() {
+  const { language } = useTranslation();
   const [customRace, setCustomRace] = useState<RaceProfile | null>(null);
 
   // Athlete Calibration inputs
@@ -384,7 +386,7 @@ export default function TrailPlannerPage() {
 
             climbs.push({
               id: `climb-${climbs.length + 1}`,
-              name: `Tanjakan Utama ${climbs.length + 1}`,
+              name: `${language === "en" ? "Major Climb" : "Tanjakan Utama"} ${climbs.length + 1}`,
               startKm: pts[climbStartIdx].distanceKm,
               endKm: pts[i - 1].distanceKm,
               distanceKm: Math.round(dist * 10) / 10,
@@ -412,7 +414,7 @@ export default function TrailPlannerPage() {
 
         climbs.push({
           id: `climb-${climbs.length + 1}`,
-          name: `Tanjakan Utama ${climbs.length + 1}`,
+          name: `${language === "en" ? "Major Climb" : "Tanjakan Utama"} ${climbs.length + 1}`,
           startKm: pts[climbStartIdx].distanceKm,
           endKm: pts[pts.length - 1].distanceKm,
           distanceKm: Math.round(dist * 10) / 10,
@@ -426,7 +428,7 @@ export default function TrailPlannerPage() {
     }
 
     return climbs;
-  }, [activeRace, athleteVam]);
+  }, [activeRace, athleteVam, language]);
 
   // Realistic Terrain & Gradient Distribution Breakdown (7 Professional Categories)
   const gradientBreakdown = useMemo(() => {
@@ -613,7 +615,7 @@ export default function TrailPlannerPage() {
       // Elapsed Time format
       const predHours = Math.floor(cumSeconds / 3600);
       const predMins = Math.floor((cumSeconds % 3600) / 60);
-      const predictedTimeStr = `${predHours.toString().padStart(2, "0")}j ${predMins.toString().padStart(2, "0")}m`;
+      const predictedTimeStr = `${predHours.toString().padStart(2, "0")}${language === "en" ? "h" : "j"} ${predMins.toString().padStart(2, "0")}m`;
 
       // Actual Clock Time of Day
       const clockHour = Math.floor((startHourOfDay + cumSeconds / 3600) % 24);
@@ -648,10 +650,10 @@ export default function TrailPlannerPage() {
       const cotM = Math.round((cpCotHours - cotH) * 60);
       const officialCotTime =
         idx === 0
-          ? "00j 00m"
+          ? (language === "en" ? "00h 00m" : "00j 00m")
           : isFinish
-          ? `${cotH.toString().padStart(2, "0")}j ${cotM.toString().padStart(2, "0")}m (Resmi)`
-          : `${cotH.toString().padStart(2, "0")}j ${cotM.toString().padStart(2, "0")}m`;
+          ? `${cotH.toString().padStart(2, "0")}${language === "en" ? "h" : "j"} ${cotM.toString().padStart(2, "0")}m ${language === "en" ? "(Official)" : "(Resmi)"}`
+          : `${cotH.toString().padStart(2, "0")}${language === "en" ? "h" : "j"} ${cotM.toString().padStart(2, "0")}m`;
 
       let status: "safe" | "caution" | "danger" = "safe";
       if (bufferMinutes < 0) {
@@ -664,11 +666,13 @@ export default function TrailPlannerPage() {
       let smartNotes = "";
       if (idx === 0) {
         const nextCp = activeRace.checkpoints[1];
-        smartNotes = nextCp
-          ? `Garis start. Jaga ritme awal tetap santai & konservatif menuju ${nextCp.name}.`
-          : "Garis start lomba. Jaga ritme awal tetap santai dan stabil.";
+        smartNotes = language === "en"
+          ? (nextCp ? `Start line. Keep early pace relaxed & conservative towards ${nextCp.name}.` : "Start line. Keep early pace relaxed & steady.")
+          : (nextCp ? `Garis start. Jaga ritme awal tetap santai & konservatif menuju ${nextCp.name}.` : "Garis start lomba. Jaga ritme awal tetap santai dan stabil.");
       } else if (isFinish) {
-        smartNotes = "Garis akhir finish! Selamat finish, segera lakukan rehidrasi elektrolit & nutrisi recovery.";
+        smartNotes = language === "en"
+          ? "Finish line! Congratulations, begin electrolyte rehydration & recovery nutrition promptly."
+          : "Garis akhir finish! Selamat finish, segera lakukan rehidrasi elektrolit & nutrisi recovery.";
       } else {
         const nextCp = activeRace.checkpoints[idx + 1];
         const nextDist = nextCp ? Math.max(0.1, Math.round((nextCp.distanceKm - cp.distanceKm) * 10) / 10) : 0;
@@ -687,33 +691,54 @@ export default function TrailPlannerPage() {
 
         const adviceList: string[] = [];
 
-        // 1. High altitude exposure
-        if (cp.elevationM >= 2300) {
-          adviceList.push("Punggungan dingin & angin kencang (kenakan windbreaker/buff)");
-        }
-
-        // 2. Night running condition
-        if (isNight) {
-          adviceList.push("Sesi malam (headlamp aktif & fokus navigasi)");
-        }
-
-        // 3. Upcoming Terrain profile to next aid station
-        if (nextSegGain >= 500) {
-          adviceList.push(
-            `Tanjakan berat +${Math.round(nextSegGain)}m ke ${nextCp?.name || "pos berikut"}, isi air penuh & siapkan trekking pole`
-          );
-        } else if (nextSegLoss >= 500) {
-          adviceList.push(
-            `Turunan teknis -${Math.round(nextSegLoss)}m, kendalikan rem quad & waspada batuan licin`
-          );
-        } else if (nextDist >= 7.5) {
-          adviceList.push(
-            `Jarak panjang ${nextDist}km ke pos berikutnya, wajib isi botol air penuh & stok gel`
-          );
-        } else if (nextSegGain >= 200) {
-          adviceList.push(`Tanjakan bertahap +${Math.round(nextSegGain)}m, atur cadence stabil`);
+        if (language === "en") {
+          if (cp.elevationM >= 2300) {
+            adviceList.push("Exposed cold ridge & strong gusts (put on windbreaker/buff)");
+          }
+          if (isNight) {
+            adviceList.push("Night session (headlamp active & focus on footing)");
+          }
+          if (nextSegGain >= 500) {
+            adviceList.push(
+              `Heavy climb +${Math.round(nextSegGain)}m to ${nextCp?.name || "next station"}, refill fluids & prep trekking poles`
+            );
+          } else if (nextSegLoss >= 500) {
+            adviceList.push(
+              `Technical descent -${Math.round(nextSegLoss)}m, control quad braking & watch for slippery rock`
+            );
+          } else if (nextDist >= 7.5) {
+            adviceList.push(
+              `Long span of ${nextDist}km to next station, fill softflasks & stock up on gels`
+            );
+          } else if (nextSegGain >= 200) {
+            adviceList.push(`Gradual climb +${Math.round(nextSegGain)}m, maintain cadence`);
+          } else {
+            adviceList.push("Rolling terrain, maintain efficient tempo & fuel regularly");
+          }
         } else {
-          adviceList.push("Medan rolling, pertahankan tempo efisien & konsumsi nutrisi rutin");
+          if (cp.elevationM >= 2300) {
+            adviceList.push("Punggungan dingin & angin kencang (kenakan windbreaker/buff)");
+          }
+          if (isNight) {
+            adviceList.push("Sesi malam (headlamp aktif & fokus navigasi)");
+          }
+          if (nextSegGain >= 500) {
+            adviceList.push(
+              `Tanjakan berat +${Math.round(nextSegGain)}m ke ${nextCp?.name || "pos berikut"}, isi air penuh & siapkan trekking pole`
+            );
+          } else if (nextSegLoss >= 500) {
+            adviceList.push(
+              `Turunan teknis -${Math.round(nextSegLoss)}m, kendalikan rem quad & waspada batuan licin`
+            );
+          } else if (nextDist >= 7.5) {
+            adviceList.push(
+              `Jarak panjang ${nextDist}km ke pos berikutnya, wajib isi botol air penuh & stok gel`
+            );
+          } else if (nextSegGain >= 200) {
+            adviceList.push(`Tanjakan bertahap +${Math.round(nextSegGain)}m, atur cadence stabil`);
+          } else {
+            adviceList.push("Medan rolling, pertahankan tempo efisien & konsumsi nutrisi rutin");
+          }
         }
 
         smartNotes = adviceList.join(" • ");
@@ -748,7 +773,9 @@ export default function TrailPlannerPage() {
           gelsNeeded: 0,
           sodiumNeededMg: 0,
           saltCapsulesCount: 0,
-          logisticsAdvice: "Garis Finish! Segera rehidrasi elektrolit, protein pemulihan (20-25g), dan makanan padat.",
+          logisticsAdvice: language === "en"
+            ? "Finish Line! Immediately rehydrate with electrolytes, recovery protein (20-25g), and solid food."
+            : "Garis Finish! Segera rehidrasi elektrolit, protein pemulihan (20-25g), dan makanan padat.",
           nextSegDurationFormatted: "-",
           nextSegDistanceKm: 0,
           nextSegGainM: 0,
@@ -777,6 +804,7 @@ export default function TrailPlannerPage() {
         targetCarbsPerHourGrams: targetCarbsPerHour,
         targetWaterPerHourMl: targetWaterPerHourMl,
         flaskCapacityMl: flaskCapacityMl,
+        language,
       });
 
       return {
@@ -808,6 +836,7 @@ export default function TrailPlannerPage() {
     targetCarbsPerHour,
     targetWaterPerHourMl,
     flaskCapacityMl,
+    language,
   ]);
 
   // Overall finish prediction details
@@ -822,21 +851,30 @@ export default function TrailPlannerPage() {
   const avgOverallPaceSec =
     activeRace && activeRace.distanceKm > 0 ? Math.round(finishSeconds / activeRace.distanceKm) : 0;
 
-  // Format Buffer Minutes into clean Indonesian text (+2j 30m Aman)
+  // Format Buffer Minutes into clean text
   const formatBufferText = (mins: number, compact: boolean = false) => {
     const absM = Math.abs(mins);
     const h = Math.floor(absM / 60);
     const m = absM % 60;
+    const hourUnit = language === "en" ? "h" : "j";
     if (mins >= 0) {
       if (compact) {
-        return h > 0 ? `+${h}j ${m}m Aman` : `+${m}m Aman`;
+        const timeStr = h > 0 ? `+${h}${hourUnit} ${m}m` : `+${m}m`;
+        return `${timeStr} ${language === "en" ? "Buffer" : "Aman"}`;
       }
-      return h > 0 ? `+${h}j ${m}m Aman dari COT (${raceOfficialCotHours}j)` : `+${m}m Aman dari COT`;
+      const timeStr = h > 0 ? `+${h}${hourUnit} ${m}m` : `+${m}m`;
+      return language === "en"
+        ? `${timeStr} Safe from COT (${raceOfficialCotHours}h)`
+        : `${timeStr} Aman dari COT (${raceOfficialCotHours}j)`;
     }
     if (compact) {
-      return h > 0 ? `-${h}j ${m}m Terkena COT` : `-${m}m Terkena COT`;
+      const timeStr = h > 0 ? `-${h}${hourUnit} ${m}m` : `-${m}m`;
+      return `${timeStr} ${language === "en" ? "Past COT" : "Terkena COT"}`;
     }
-    return h > 0 ? `-${h}j ${m}m Terkena COT (${raceOfficialCotHours}j)` : `-${m}m Terkena COT`;
+    const timeStr = h > 0 ? `-${h}${hourUnit} ${m}m` : `-${m}m`;
+    return language === "en"
+      ? `${timeStr} Exceeds COT (${raceOfficialCotHours}h)`
+      : `${timeStr} Terkena COT (${raceOfficialCotHours}j)`;
   };
 
   // Feature C: Total Race Nutrition & Hydration Plan Summary
@@ -946,7 +984,7 @@ export default function TrailPlannerPage() {
       const segSecs = Math.max(0, to.predictedSeconds - from.predictedSeconds);
       const segH = Math.floor(segSecs / 3600);
       const segM = Math.floor((segSecs % 3600) / 60);
-      const durationStr = segH > 0 ? `${segH}j ${segM}m` : `${segM}m`;
+      const durationStr = segH > 0 ? `${segH}${language === "en" ? "h" : "j"} ${segM}m` : `${segM}m`;
       const segPaceSec = distKm > 0 ? Math.round(segSecs / distKm) : 0;
       const avgGradePct = distKm > 0 ? Math.round(((gainM - lossM) / (distKm * 1000)) * 1000) / 10 : 0;
 
@@ -973,7 +1011,7 @@ export default function TrailPlannerPage() {
       });
     }
     return segments;
-  }, [evaluatedCheckpoints, activeRace]);
+  }, [evaluatedCheckpoints, activeRace, language]);
 
   // Segment Breakdown based on Terrain Gradient
   const gradientSegments = useMemo(() => {
@@ -1109,7 +1147,7 @@ export default function TrailPlannerPage() {
 
       const h = Math.floor(estSecs / 3600);
       const m = Math.floor((estSecs % 3600) / 60);
-      const durationStr = h > 0 ? `${h}j ${m}m` : `${m}m`;
+      const durationStr = h > 0 ? `${h}${language === "en" ? "h" : "j"} ${m}m` : `${m}m`;
 
       return {
         id: `grad-seg-${idx}`,
@@ -1124,7 +1162,7 @@ export default function TrailPlannerPage() {
         durationStr,
       };
     });
-  }, [activeRace, activeStrategyStats]);
+  }, [activeRace, activeStrategyStats, language]);
 
   // Haversine distance calculator
   const haversineDistKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -1461,7 +1499,9 @@ export default function TrailPlannerPage() {
                 title="Print Wristband Pace Card"
               >
                 <Printer className="h-3.5 w-3.5 text-zinc-950" />
-                <span className="hidden sm:inline">Cetak Cheat-Sheet</span>
+                <span className="hidden sm:inline">
+                  {language === "en" ? "Print Cheat-Sheet" : "Cetak Cheat-Sheet"}
+                </span>
               </button>
             )}
           </div>
@@ -1479,7 +1519,9 @@ export default function TrailPlannerPage() {
               </span>
             </h1>
             <p className="text-xs text-zinc-600 mt-1 font-medium">
-              Peta spasial topografi interaktif, spektrum gradien lintasan, deteksi tanjakan HC, dan simulasi strategi tiba pos WS.
+              {language === "en"
+                ? "Interactive topographic spatial map, terrain gradient spectrum, categorized climb detection, and aid station strategy simulation."
+                : "Peta spasial topografi interaktif, spektrum gradien lintasan, deteksi tanjakan HC, dan simulasi strategi tiba pos WS."}
             </p>
           </div>
         </div>
@@ -1494,10 +1536,14 @@ export default function TrailPlannerPage() {
 
               <div className="space-y-2">
                 <h2 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight">
-                  Unggah File GPX Rute Lomba Anda
+                  {language === "en" ? "Upload Your Trail Race GPX Route" : "Unggah File GPX Rute Lomba Anda"}
                 </h2>
                 <p className="text-xs sm:text-sm text-zinc-600 max-w-lg mx-auto leading-relaxed">
-                  Aplikasi ini menganalisis file rute trail running (<code className="text-zinc-950 font-black font-mono bg-zinc-100 px-1 py-0.5 rounded border border-zinc-300">.gpx</code>) secara instan dan lokal di browser Anda. Unggah rute lomba Anda atau coba langsung menggunakan data rute resmi ultra marathon demo.
+                  {language === "en" ? (
+                    <>This app analyzes trail running route files (<code className="text-zinc-950 font-black font-mono bg-zinc-100 px-1 py-0.5 rounded border border-zinc-300">.gpx</code>) instantly and locally in your browser. Upload your race GPX or test directly with official ultra marathon demo data.</>
+                  ) : (
+                    <>Aplikasi ini menganalisis file rute trail running (<code className="text-zinc-950 font-black font-mono bg-zinc-100 px-1 py-0.5 rounded border border-zinc-300">.gpx</code>) secara instan dan lokal di browser Anda. Unggah rute lomba Anda atau coba langsung menggunakan data rute resmi ultra marathon demo.</>
+                  )}
                 </p>
               </div>
 
@@ -1505,7 +1551,11 @@ export default function TrailPlannerPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 <label className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 text-sm font-black cursor-pointer border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">
                   <Upload className="h-4 w-4" />
-                  <span>{isUploading ? "Memproses File GPX..." : "Pilih File .GPX Rute Anda"}</span>
+                  <span>
+                    {isUploading
+                      ? (language === "en" ? "Processing GPX File..." : "Memproses File GPX...")
+                      : (language === "en" ? "Select .GPX Route File" : "Pilih File .GPX Rute Anda")}
+                  </span>
                   <input
                     type="file"
                     accept=".gpx"
@@ -1520,12 +1570,16 @@ export default function TrailPlannerPage() {
                   className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 text-sm font-black border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50"
                 >
                   <Sparkles className="h-4 w-4 text-amber-500" />
-                  <span>Coba Demo: Rinjani 100 — 60K</span>
+                  <span>{language === "en" ? "Try Demo: Rinjani 100 — 60K" : "Coba Demo: Rinjani 100 — 60K"}</span>
                 </button>
               </div>
 
               <div className="flex items-center justify-center gap-2 text-[11px] text-zinc-600 font-mono font-medium">
-                <span>Mendukung koordinat GPS resmi (<code className="text-zinc-900 font-bold">&lt;trkpt&gt;</code>) dan pos Water Station (<code className="text-zinc-900 font-bold">&lt;wpt&gt;</code>)</span>
+                {language === "en" ? (
+                  <span>Supports official GPS trackpoints (<code className="text-zinc-900 font-bold">&lt;trkpt&gt;</code>) and Water Station waypoints (<code className="text-zinc-900 font-bold">&lt;wpt&gt;</code>)</span>
+                ) : (
+                  <span>Mendukung koordinat GPS resmi (<code className="text-zinc-900 font-bold">&lt;trkpt&gt;</code>) dan pos Water Station (<code className="text-zinc-900 font-bold">&lt;wpt&gt;</code>)</span>
+                )}
               </div>
 
               {uploadError && (
@@ -1542,9 +1596,13 @@ export default function TrailPlannerPage() {
                 <div className="h-9 w-9 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                   <Compass className="h-5 w-5" />
                 </div>
-                <h3 className="text-sm font-black text-zinc-950">Peta Topografi &amp; Radar Interaktif</h3>
+                <h3 className="text-sm font-black text-zinc-950">
+                  {language === "en" ? "Topographic Map & Radar" : "Peta Topografi & Radar Interaktif"}
+                </h3>
                 <p className="text-xs text-zinc-600 leading-relaxed">
-                  Peta spasial OpenTopoMap &amp; Satelit yang sinkron secara dua arah dengan cross-section elevasi. Arahkan kursor di grafik untuk melacak posisi di peta.
+                  {language === "en"
+                    ? "Dual-synchronized OpenTopoMap & Satellite spatial view. Hover over the elevation graph to track your exact position on the map."
+                    : "Peta spasial OpenTopoMap & Satelit yang sinkron secara dua arah dengan cross-section elevasi. Arahkan kursor di grafik untuk melacak posisi di peta."}
                 </p>
               </div>
 
@@ -1552,9 +1610,13 @@ export default function TrailPlannerPage() {
                 <div className="h-9 w-9 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                   <Layers className="h-5 w-5" />
                 </div>
-                <h3 className="text-sm font-black text-zinc-950">Spektrum Gradien 7 Kategori</h3>
+                <h3 className="text-sm font-black text-zinc-950">
+                  {language === "en" ? "7-Category Gradient Spectrum" : "Spektrum Gradien 7 Kategori"}
+                </h3>
                 <p className="text-xs text-zinc-600 leading-relaxed">
-                  Deteksi otomatis persentase rute datar, tanjakan landai, power hike, hingga tanjakan dinding ekstrem &gt;25% dengan pewarnaan standar industri.
+                  {language === "en"
+                    ? "Automated breakdown of flats, gentle ascents, power hiking, up to extreme >25% climbs with industry-standard terrain color coding."
+                    : "Deteksi otomatis persentase rute datar, tanjakan landai, power hike, hingga tanjakan dinding ekstrem >25% dengan pewarnaan standar industri."}
                 </p>
               </div>
 
@@ -1562,9 +1624,13 @@ export default function TrailPlannerPage() {
                 <div className="h-9 w-9 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                   <Clock className="h-5 w-5" />
                 </div>
-                <h3 className="text-sm font-black text-zinc-950">Simulasi COT &amp; Fisiologi Gunung</h3>
+                <h3 className="text-sm font-black text-zinc-950">
+                  {language === "en" ? "COT & Mountain Physiology Sim" : "Simulasi COT & Fisiologi Gunung"}
+                </h3>
                 <p className="text-xs text-zinc-600 leading-relaxed">
-                  Perhitungan waktu tiba pos WS berbasis VAM atlet, penalti lari malam, kelelahan paruh kedua, dan waktu istirahat di pos aid station.
+                  {language === "en"
+                    ? "Calculates checkpoint arrival times based on runner VAM, night running visibility penalties, second-half fatigue, and aid station stops."
+                    : "Perhitungan waktu tiba pos WS berbasis VAM atlet, penalti lari malam, kelelahan paruh kedua, dan waktu istirahat di pos aid station."}
                 </p>
               </div>
             </div>
@@ -1583,7 +1649,7 @@ export default function TrailPlannerPage() {
                       {activeRace.name}
                     </h2>
                     <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-[#FAF9F5] text-zinc-950 border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] whitespace-nowrap shrink-0">
-                      GPX Aktif
+                      {language === "en" ? "Active GPX" : "GPX Aktif"}
                     </span>
                   </div>
                   <div className="text-[11px] sm:text-xs text-zinc-600 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 font-mono font-bold">
@@ -1593,7 +1659,9 @@ export default function TrailPlannerPage() {
                     <span className="text-zinc-400">•</span>
                     <span className="text-rose-700 font-black">-{trackStats.lossM}m D-</span>
                     <span className="text-zinc-400">•</span>
-                    <span className="text-zinc-800">{activeRace.checkpoints.length} Pos/WS</span>
+                    <span className="text-zinc-800">
+                      {activeRace.checkpoints.length} {language === "en" ? "Stations" : "Pos/WS"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1601,7 +1669,11 @@ export default function TrailPlannerPage() {
               <div className="flex items-center gap-2.5 self-start md:self-auto w-full md:w-auto">
                 <label className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border-2 border-zinc-950 hover:bg-zinc-100 text-zinc-950 text-xs font-black cursor-pointer shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">
                   <Upload className="h-3.5 w-3.5 text-zinc-950" />
-                  <span>{isUploading ? "Memproses..." : "Ganti File GPX"}</span>
+                  <span>
+                    {isUploading
+                      ? (language === "en" ? "Processing..." : "Memproses...")
+                      : (language === "en" ? "Change GPX File" : "Ganti File GPX")}
+                  </span>
                   <input
                     type="file"
                     accept=".gpx"
@@ -1613,10 +1685,10 @@ export default function TrailPlannerPage() {
                 <button
                   onClick={() => setCustomRace(null)}
                   className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 hover:bg-rose-50 text-rose-700 text-xs font-black shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all shrink-0"
-                  title="Tutup rute GPX ini dan kembali ke menu upload"
+                  title={language === "en" ? "Close this GPX route and return to upload" : "Tutup rute GPX ini dan kembali ke menu upload"}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  <span>Tutup Rute</span>
+                  <span>{language === "en" ? "Close Route" : "Tutup Rute"}</span>
                 </button>
               </div>
             </div>
@@ -1640,7 +1712,9 @@ export default function TrailPlannerPage() {
                   Track Overview & Altimetry Stats ({activeRace.name})
                 </h3>
                 <p className="text-[11px] text-zinc-600 font-medium">
-                  Karakteristik medan, elevasi vertikal, densitas tanjakan, dan beban fisiologis ITRA
+                  {language === "en"
+                    ? "Terrain characteristics, vertical profile, climb density, and ITRA physiological demand"
+                    : "Karakteristik medan, elevasi vertikal, densitas tanjakan, dan beban fisiologis ITRA"}
                 </p>
               </div>
             </div>
@@ -1665,29 +1739,37 @@ export default function TrailPlannerPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-xs font-mono">
             {/* Distance */}
             <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
-              <span className="text-[10px] text-zinc-600 font-sans font-bold block">Jarak (Distance)</span>
+              <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                {language === "en" ? "Distance" : "Jarak (Distance)"}
+              </span>
               <div className="text-lg font-black text-zinc-950">{trackStats.distanceKm} <span className="text-xs text-zinc-600 font-normal">km</span></div>
-              <p className="text-[10px] text-zinc-500 font-sans">Panjang rute GPX</p>
+              <p className="text-[10px] text-zinc-500 font-sans">
+                {language === "en" ? "GPX course length" : "Panjang rute GPX"}
+              </p>
             </div>
 
             {/* D+ Gain */}
             <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
               <span className="text-[10px] text-emerald-700 font-sans font-bold flex items-center gap-1">
                 <ArrowUpRight className="h-3 w-3" />
-                Elevasi Gain (D+)
+                {language === "en" ? "Elevation Gain (D+)" : "Elevasi Gain (D+)"}
               </span>
               <div className="text-lg font-black text-emerald-700">+{trackStats.gainM} <span className="text-xs text-zinc-600 font-normal">m</span></div>
-              <p className="text-[10px] text-zinc-500 font-sans">Total tanjakan</p>
+              <p className="text-[10px] text-zinc-500 font-sans">
+                {language === "en" ? "Total ascent" : "Total tanjakan"}
+              </p>
             </div>
 
             {/* D- Loss */}
             <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
               <span className="text-[10px] text-rose-700 font-sans font-bold flex items-center gap-1">
                 <ArrowDownRight className="h-3 w-3" />
-                Elevasi Loss (D-)
+                {language === "en" ? "Elevation Loss (D-)" : "Elevasi Loss (D-)"}
               </span>
               <div className="text-lg font-black text-rose-700">-{trackStats.lossM} <span className="text-xs text-zinc-600 font-normal">m</span></div>
-              <p className="text-[10px] text-zinc-500 font-sans">Ujian otot quad</p>
+              <p className="text-[10px] text-zinc-500 font-sans">
+                {language === "en" ? "Quad muscle demand" : "Ujian otot quad"}
+              </p>
             </div>
 
             {/* Peaks (High & Low) */}
@@ -1697,7 +1779,7 @@ export default function TrailPlannerPage() {
                 ▲ {trackStats.highestM}m
               </div>
               <div className="text-xs text-zinc-500 font-bold">
-                ▼ {trackStats.lowestM} mdpl
+                ▼ {trackStats.lowestM} {language === "en" ? "m" : "mdpl"}
               </div>
             </div>
 
@@ -1712,7 +1794,9 @@ export default function TrailPlannerPage() {
             <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
               <span className="text-[10px] text-purple-800 font-sans font-bold block">ITRA Km-Effort</span>
               <div className="text-lg font-black text-purple-700">{trackStats.kmEffort} <span className="text-xs text-zinc-600 font-normal">km-eff</span></div>
-              <p className="text-[10px] text-zinc-500 font-sans">Jarak + D+/100</p>
+              <p className="text-[10px] text-zinc-500 font-sans">
+                {language === "en" ? "Distance + D+/100" : "Jarak + D+/100"}
+              </p>
             </div>
 
             {/* ITRA Points */}
@@ -1722,7 +1806,9 @@ export default function TrailPlannerPage() {
                 ITRA Points
               </span>
               <div className="text-lg font-black text-amber-700">{trackStats.itraPoints} <span className="text-xs text-zinc-600 font-normal">Pts</span></div>
-              <p className="text-[10px] text-zinc-500 font-sans">Skala 0–6 Finisher</p>
+              <p className="text-[10px] text-zinc-500 font-sans">
+                {language === "en" ? "0–6 Finisher scale" : "Skala 0–6 Finisher"}
+              </p>
             </div>
 
             {/* Mountain Level */}
@@ -1732,7 +1818,13 @@ export default function TrailPlannerPage() {
                 Mountain Level
               </span>
               <div className="text-lg font-black text-sky-700">{trackStats.itraMountainLevel} <span className="text-xs text-zinc-600 font-normal">/12</span></div>
-              <p className="text-[10px] text-zinc-500 font-sans">{trackStats.itraMountainLevel >= 11 ? "Ekstrem Alpin" : trackStats.itraMountainLevel >= 8 ? "Sangat Terjal" : "Trail Sedang"}</p>
+              <p className="text-[10px] text-zinc-500 font-sans">
+                {trackStats.itraMountainLevel >= 11
+                  ? (language === "en" ? "Extreme Alpine" : "Ekstrem Alpin")
+                  : trackStats.itraMountainLevel >= 8
+                  ? (language === "en" ? "Very Steep" : "Sangat Terjal")
+                  : (language === "en" ? "Moderate Trail" : "Trail Sedang")}
+              </p>
             </div>
           </div>
         </div>
@@ -1742,10 +1834,16 @@ export default function TrailPlannerPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-black text-zinc-950">
               <Compass className="h-4 w-4 text-zinc-950" />
-              <span>Peta Spasial Rute & Pos Water Station (OpenTopoMap & Satelit)</span>
+              <span>
+                {language === "en"
+                  ? "Spatial Course Map & Aid Stations (OpenTopoMap & Satellite)"
+                  : "Peta Spasial Rute & Pos Water Station (OpenTopoMap & Satelit)"}
+              </span>
             </div>
             <span className="text-[11px] text-zinc-600 font-mono font-bold hidden sm:inline">
-              Gerakkan kursor di grafik elevasi untuk menggerakkan radar beacon di peta 📍
+              {language === "en"
+                ? "Hover over elevation profile to move radar beacon on map 📍"
+                : "Gerakkan kursor di grafik elevasi untuk menggerakkan radar beacon di peta 📍"}
             </span>
           </div>
 
@@ -1764,10 +1862,16 @@ export default function TrailPlannerPage() {
             <div>
               <h3 className="text-sm font-black text-zinc-950 flex items-center gap-1.5">
                 <Layers className="h-4 w-4 text-zinc-950" />
-                <span>Profil Ketinggian Jalur Berwarna (Multi-Colored Elevation Cross-Section)</span>
+                <span>
+                  {language === "en"
+                    ? "Colored Elevation Cross-Section Profile"
+                    : "Profil Ketinggian Jalur Berwarna (Multi-Colored Elevation Cross-Section)"}
+                </span>
               </h3>
               <p className="text-[11px] text-zinc-600 font-medium">
-                Warna grafik merefleksikan tingkat kecuraman lereng gunung secara real-time (Merah = Tanjakan Ekstrem, Oranye = Power Hike, Hijau = Datar)
+                {language === "en"
+                  ? "Chart coloring reflects slope grade in real-time (Red = Extreme Climb, Orange = Power Hike, Green = Flat)"
+                  : "Warna grafik merefleksikan tingkat kecuraman lereng gunung secara real-time (Merah = Tanjakan Ekstrem, Oranye = Power Hike, Hijau = Datar)"}
               </p>
             </div>
 
@@ -1837,25 +1941,29 @@ export default function TrailPlannerPage() {
                         d.gradePct === undefined
                           ? "0%"
                           : d.gradePct > 25
-                          ? `${d.gradePct}% (Tanjakan Ekstrem)`
+                          ? `${d.gradePct}% (${language === "en" ? "Extreme Climb" : "Tanjakan Ekstrem"})`
                           : d.gradePct > 15
                           ? `${d.gradePct}% (Power Hike)`
                           : d.gradePct > 8
-                          ? `${d.gradePct}% (Nanjak Sedang)`
+                          ? `${d.gradePct}% (${language === "en" ? "Moderate Climb" : "Nanjak Sedang"})`
                           : d.gradePct > 3
-                          ? `${d.gradePct}% (Nanjak Landai)`
+                          ? `${d.gradePct}% (${language === "en" ? "Gentle Climb" : "Nanjak Landai"})`
                           : d.gradePct < -15
-                          ? `${d.gradePct}% (Turunan Curam)`
+                          ? `${d.gradePct}% (${language === "en" ? "Steep Descent" : "Turunan Curam"})`
                           : d.gradePct < -3
-                          ? `${d.gradePct}% (Turunan Sedang)`
-                          : `${d.gradePct}% (Datar)`;
+                          ? `${d.gradePct}% (${language === "en" ? "Moderate Descent" : "Turunan Sedang"})`
+                          : `${d.gradePct}% (${language === "en" ? "Flat" : "Datar"})`;
 
                       return (
                         <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] text-xs font-mono space-y-1 text-zinc-950">
-                          <div className="font-black text-zinc-950">Jarak: {d.distanceKm} km</div>
-                          <div className="text-amber-600 font-black">Ketinggian: {d.elevationM} mdpl</div>
+                          <div className="font-black text-zinc-950">
+                            {language === "en" ? "Distance: " : "Jarak: "}{d.distanceKm} km
+                          </div>
+                          <div className="text-amber-600 font-black">
+                            {language === "en" ? "Elevation: " : "Ketinggian: "}{d.elevationM} {language === "en" ? "m" : "mdpl"}
+                          </div>
                           <div className="text-[11px] font-bold">
-                            Kemiringan: <strong style={{ color: gradeColor }}>{gradeLabel}</strong>
+                            {language === "en" ? "Gradient: " : "Kemiringan: "}<strong style={{ color: gradeColor }}>{gradeLabel}</strong>
                           </div>
                         </div>
                       );
@@ -1882,7 +1990,11 @@ export default function TrailPlannerPage() {
           {/* Synchronized Terrain Gradient Timeline Strip (7 Exact Categories) */}
           <div className="space-y-1.5 pt-2 border-t-2 border-zinc-950">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-black text-zinc-950">Pita Kontur Kemiringan Jalur (Terrain Gradient Timeline)</span>
+              <span className="font-black text-zinc-950">
+                {language === "en"
+                  ? "Terrain Gradient Timeline Strip"
+                  : "Pita Kontur Kemiringan Jalur (Terrain Gradient Timeline)"}
+              </span>
               <span className="text-[11px] text-zinc-600 font-mono font-bold">{activeRace.distanceKm} km total</span>
             </div>
 
@@ -1897,13 +2009,13 @@ export default function TrailPlannerPage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-between text-[11px] font-mono font-bold text-zinc-800 pt-1 gap-2">
-              <span className="text-emerald-700">🟢 Datar (-3 s/d +3%): {gradientBreakdown.flat}%</span>
-              <span className="text-lime-700">🌱 Nanjak Landai (3-8%): {gradientBreakdown.gentleUp}%</span>
-              <span className="text-yellow-700">🟡 Nanjak Sedang (8-15%): {gradientBreakdown.moderateUp}%</span>
+              <span className="text-emerald-700">🟢 {language === "en" ? "Flat (-3 to +3%)" : "Datar (-3 s/d +3%)"}: {gradientBreakdown.flat}%</span>
+              <span className="text-lime-700">🌱 {language === "en" ? "Gentle Climb (3-8%)" : "Nanjak Landai (3-8%)"}: {gradientBreakdown.gentleUp}%</span>
+              <span className="text-yellow-700">🟡 {language === "en" ? "Moderate Climb (8-15%)" : "Nanjak Sedang (8-15%)"}: {gradientBreakdown.moderateUp}%</span>
               <span className="text-orange-700">🟠 Power Hike (15-25%): {gradientBreakdown.steepUp}%</span>
-              <span className="text-red-700">🔴 Tanjakan Ekstrem (&gt;25%): {gradientBreakdown.extremeUp}%</span>
-              <span className="text-sky-700">🔵 Turunan (-3 s/d -15%): {gradientBreakdown.descentMod}%</span>
-              <span className="text-purple-700">🟣 Turunan Curam (&lt;-15%): {gradientBreakdown.descentTech}%</span>
+              <span className="text-red-700">🔴 {language === "en" ? "Extreme Climb (>25%)" : "Tanjakan Ekstrem (>25%)"}: {gradientBreakdown.extremeUp}%</span>
+              <span className="text-sky-700">🔵 {language === "en" ? "Descent (-3 to -15%)" : "Turunan (-3 s/d -15%)"}: {gradientBreakdown.descentMod}%</span>
+              <span className="text-purple-700">🟣 {language === "en" ? "Steep Descent (<-15%)" : "Turunan Curam (<-15%)"}: {gradientBreakdown.descentTech}%</span>
             </div>
           </div>
         </div>
@@ -1989,24 +2101,32 @@ export default function TrailPlannerPage() {
                       <div className="px-4 pb-3.5 pt-2 text-xs font-mono border-t-2 border-zinc-950 bg-[#FAF9F5]">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
                           <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
-                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Elevasi (Gain / Loss)</span>
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                              {language === "en" ? "Elevation (Gain / Loss)" : "Elevasi (Gain / Loss)"}
+                            </span>
                             <span className="text-emerald-700 font-black">+{seg.gainM}m</span> /{" "}
                             <span className="text-rose-700 font-black">-{seg.lossM}m</span>
                           </div>
 
                           <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
-                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Rata-rata Kemiringan</span>
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                              {language === "en" ? "Average Gradient" : "Rata-rata Kemiringan"}
+                            </span>
                             <span className="text-amber-700 font-black">{seg.avgGradePct}%</span>
                           </div>
 
                           <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
-                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Estimasi Waktu & Pace</span>
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                              {language === "en" ? "Estimated Time & Pace" : "Estimasi Waktu & Pace"}
+                            </span>
                             <span className="text-zinc-950 font-black">{seg.durationStr}</span>{" "}
                             <span className="text-[10px] text-zinc-600 font-bold">({seg.paceStr}/km)</span>
                           </div>
 
                           <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
-                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Target Logistik Segmen</span>
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                              {language === "en" ? "Segment Logistics Target" : "Target Logistik Segmen"}
+                            </span>
                             {seg.waterRefillMl > 0 || seg.carbsTargetGrams > 0 ? (
                               <div className="space-y-0.5">
                                 <span className="text-zinc-950 font-black text-xs block">
@@ -2014,7 +2134,7 @@ export default function TrailPlannerPage() {
                                 </span>
                                 {seg.waterExceedsCapacity && (
                                   <span className="text-[9px] font-black text-rose-700 block">
-                                    ⚠️ Butuh {seg.waterNeededMl}ml (&gt;{flaskCapacityMl}ml)
+                                    ⚠️ {language === "en" ? "Needs" : "Butuh"} {seg.waterNeededMl}ml (&gt;{flaskCapacityMl}ml)
                                   </span>
                                 )}
                               </div>
@@ -2026,7 +2146,7 @@ export default function TrailPlannerPage() {
 
                         {seg.notes && (
                           <p className="mt-2.5 text-[11px] text-zinc-600 font-sans font-medium italic">
-                            Catatan: {seg.notes}
+                            {language === "en" ? "Notes:" : "Catatan:"} {seg.notes}
                           </p>
                         )}
                       </div>
@@ -2087,18 +2207,24 @@ export default function TrailPlannerPage() {
                       <div className="px-4 pb-3.5 pt-2 text-xs font-mono border-t-2 border-zinc-950 bg-[#FAF9F5]">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
                           <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
-                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Total Elevasi</span>
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                              {language === "en" ? "Total Elevation" : "Total Elevasi"}
+                            </span>
                             <span className="text-emerald-700 font-black">+{seg.gainM}m</span> /{" "}
                             <span className="text-rose-700 font-black">-{seg.lossM}m</span>
                           </div>
 
                           <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
-                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Rata-rata Kemiringan</span>
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                              {language === "en" ? "Average Gradient" : "Rata-rata Kemiringan"}
+                            </span>
                             <span className="text-amber-700 font-black">{seg.avgGradePct}%</span>
                           </div>
 
                           <div className="p-2.5 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
-                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">Estimasi Durasi</span>
+                            <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                              {language === "en" ? "Estimated Duration" : "Estimasi Durasi"}
+                            </span>
                             <span className="text-zinc-950 font-black">~{seg.durationStr}</span>
                           </div>
                         </div>
@@ -2120,7 +2246,9 @@ export default function TrailPlannerPage() {
                 </h4>
               </div>
               <p className="text-[11px] text-zinc-600 pt-0.5 font-medium">
-                Terrain breakdown calculated from GPX track points
+                {language === "en"
+                  ? "Terrain breakdown calculated from GPX track points"
+                  : "Breakdown kontur dihitung dari titik jalur GPX"}
               </p>
             </div>
 
@@ -2197,11 +2325,13 @@ export default function TrailPlannerPage() {
               <div className="flex items-center gap-2">
                 <Mountain className="h-4 w-4 text-zinc-950" />
                 <h3 className="text-sm font-black text-zinc-950 tracking-tight">
-                  Analisis Tanjakan Utama (Major Mountain Passes & Categorized Climbs)
+                  {language === "en"
+                    ? "Major Mountain Passes & Categorized Climbs Breakdown"
+                    : "Analisis Tanjakan Utama (Major Mountain Passes & Categorized Climbs)"}
                 </h3>
               </div>
               <span className="text-xs text-zinc-600 font-mono font-bold">
-                {majorClimbs.length} Tanjakan Terdeteksi
+                {majorClimbs.length} {language === "en" ? "Climbs Detected" : "Tanjakan Terdeteksi"}
               </span>
             </div>
 
@@ -2237,7 +2367,9 @@ export default function TrailPlannerPage() {
                       <span className="text-emerald-700 font-black">+{climb.gainM}m</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-zinc-600 font-sans font-bold block">Rata-rata Slope</span>
+                      <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                        {language === "en" ? "Avg Slope" : "Rata-rata Slope"}
+                      </span>
                       <span className="text-amber-700 font-black">{climb.avgGradePct}%</span>
                     </div>
                     <div>
@@ -2245,8 +2377,12 @@ export default function TrailPlannerPage() {
                       <span className="text-rose-700 font-black">{climb.maxGradePct}%</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-zinc-600 font-sans font-bold block">Estimasi Nanjak</span>
-                      <span className="text-zinc-950 font-black">{climb.estimatedMinutes} menit</span>
+                      <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                        {language === "en" ? "Est. Climb Time" : "Estimasi Nanjak"}
+                      </span>
+                      <span className="text-zinc-950 font-black">
+                        {climb.estimatedMinutes} {language === "en" ? "min" : "menit"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -2261,15 +2397,21 @@ export default function TrailPlannerPage() {
             <div className="flex items-center gap-2">
               <Sliders className="h-4 w-4 text-zinc-950" />
               <h3 className="text-sm font-black text-zinc-950 tracking-tight">
-                Parameter Simulasi Realistis (Night Pacing, Kelelahan & Waktu Singgah)
+                {language === "en"
+                  ? "Realistic Simulation Parameters (Night Pacing, Fatigue & Aid Stops)"
+                  : "Parameter Simulasi Realistis (Night Pacing, Kelelahan & Waktu Singgah)"}
               </h3>
               <button
                 onClick={() => setShowMethodology(!showMethodology)}
                 className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-black rounded-lg bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 text-zinc-950 transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-                title="Pelajari dasar sains & formula simulasi"
+                title={language === "en" ? "Explore scientific methodology & simulation formula" : "Pelajari dasar sains & formula simulasi"}
               >
                 <BookOpen className="h-3.5 w-3.5 text-zinc-950" />
-                <span>{showMethodology ? "Tutup Metodologi" : "Metodologi Sains"}</span>
+                <span>
+                  {showMethodology
+                    ? (language === "en" ? "Close Methodology" : "Tutup Metodologi")
+                    : (language === "en" ? "Scientific Methodology" : "Metodologi Sains")}
+                </span>
               </button>
             </div>
 
@@ -2280,25 +2422,25 @@ export default function TrailPlannerPage() {
                 className={`px-3 py-1 rounded-lg font-black transition-all ${
                   strategyTier === "finisher" ? "bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]" : "text-zinc-600 hover:text-zinc-950 font-bold"
                 }`}
-                title="Pace aman & stabil untuk memastikan finish sebelum batas COT"
+                title={language === "en" ? "Safe & steady pace ensuring finish before COT" : "Pace aman & stabil untuk memastikan finish sebelum batas COT"}
               >
-                Finisher (Realistis)
+                {language === "en" ? "Finisher (Realistic)" : "Finisher (Realistis)"}
               </button>
               <button
                 onClick={() => setStrategyTier("intermediate")}
                 className={`px-3 py-1 rounded-lg font-black transition-all ${
                   strategyTier === "intermediate" ? "bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]" : "text-zinc-600 hover:text-zinc-950 font-bold"
                 }`}
-                title="Pace menengah agresif (Target Sub-17 Jam)"
+                title={language === "en" ? "Aggressive intermediate pace (Sub-17h target)" : "Pace menengah agresif (Target Sub-17 Jam)"}
               >
-                Target Menengah
+                {language === "en" ? "Intermediate Target" : "Target Menengah"}
               </button>
               <button
                 onClick={() => setStrategyTier("elite")}
                 className={`px-3 py-1 rounded-lg font-black transition-all ${
                   strategyTier === "elite" ? "bg-amber-400 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]" : "text-zinc-600 hover:text-zinc-950 font-bold"
                 }`}
-                title="Pace atlet podium / top runner"
+                title={language === "en" ? "Podium contender / top runner pace" : "Pace atlet podium / top runner"}
               >
                 Top Runner
               </button>
@@ -2312,14 +2454,16 @@ export default function TrailPlannerPage() {
                 <div className="flex items-center gap-2">
                   <Info className="h-4 w-4 text-zinc-950" />
                   <h4 className="font-black text-zinc-950 text-sm">
-                    Metodologi Sains & Dasar Formula (Hybrid Naismith + VAM COROS + ITRA Km-Effort)
+                    {language === "en"
+                      ? "Scientific Methodology & Formula Foundation (Hybrid Naismith + COROS VAM + ITRA Km-Effort)"
+                      : "Metodologi Sains & Dasar Formula (Hybrid Naismith + VAM COROS + ITRA Km-Effort)"}
                   </h4>
                 </div>
                 <button
                   onClick={() => setShowMethodology(false)}
                   className="text-zinc-600 hover:text-zinc-950 font-mono text-xs font-bold"
                 >
-                  ✕ Tutup
+                  {language === "en" ? "✕ Close" : "✕ Tutup"}
                 </button>
               </div>
 
@@ -2328,13 +2472,21 @@ export default function TrailPlannerPage() {
                 <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-1.5">
                   <div className="flex items-center gap-2 text-zinc-950 font-black">
                     <Award className="h-4 w-4 text-zinc-950" />
-                    <span>1. Hybrid Naismith Rule & VAM Personal</span>
+                    <span>
+                      {language === "en"
+                        ? "1. Hybrid Naismith Rule & Personal VAM"
+                        : "1. Hybrid Naismith Rule & VAM Personal"}
+                    </span>
                   </div>
                   <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
-                    Alih-alih menggunakan formula pejalan kaki seragam (seperti Tobler 6 km/jam atau Naismith 600m/jam statis), kalkulator memisahkan lintasan menjadi <strong>kecepatan lari datar (Flat Pace)</strong> dan <strong>kecepatan vertikal nanjak (VAM / Velocità Ascensionale Media)</strong> yang terkalibrasi dari jam COROS atlet.
+                    {language === "en"
+                      ? <>Instead of uniform pedestrian hiking formulas (like Tobler&apos;s static 6 km/h or Naismith&apos;s 600m/h), the engine breaks down the course into <strong>flat running speed (Flat Pace)</strong> and <strong>vertical climbing velocity (VAM / Velocità Ascensionale Media)</strong> calibrated from the athlete&apos;s COROS watch.</>
+                      : <>Alih-alih menggunakan formula pejalan kaki seragam (seperti Tobler 6 km/jam atau Naismith 600m/jam statis), kalkulator memisahkan lintasan menjadi <strong>kecepatan lari datar (Flat Pace)</strong> dan <strong>kecepatan vertikal nanjak (VAM / Velocità Ascensionale Media)</strong> yang terkalibrasi dari jam COROS atlet.</>}
                   </p>
                   <div className="p-2 rounded bg-[#FAF9F5] font-mono text-[10px] text-zinc-950 border border-zinc-950 font-bold">
-                    Waktu Segmen = (Jarak Datar × Flat Pace) + (D+ Vertikal / VAM)
+                    {language === "en"
+                      ? "Segment Time = (Flat Dist × Flat Pace) + (Vertical D+ / VAM)"
+                      : "Waktu Segmen = (Jarak Datar × Flat Pace) + (D+ Vertikal / VAM)"}
                   </div>
                 </div>
 
@@ -2342,13 +2494,21 @@ export default function TrailPlannerPage() {
                 <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-1.5">
                   <div className="flex items-center gap-2 text-zinc-950 font-black">
                     <TrendingUp className="h-4 w-4 text-zinc-950" />
-                    <span>2. Alokasi Batas COT Realistis (ITRA Km-Effort)</span>
+                    <span>
+                      {language === "en"
+                        ? "2. Realistic Cut-Off Allocation (ITRA Km-Effort)"
+                        : "2. Alokasi Batas COT Realistis (ITRA Km-Effort)"}
+                    </span>
                   </div>
                   <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
-                    Pembagian batas waktu linier jarak datar membuat pelari tampak gagal di pos tanjakan awal (misal KM 11 Senaru Rim +2000m D+). Sistem mengalokasikan batas waktu pos berdasarkan rasio <strong>Km-Effort (Jarak + D+/100)</strong> dengan kurva <em>front-load</em> panitia resmi ((Effort Ratio)^0.88).
+                    {language === "en"
+                      ? <>Linear flat-distance cut-offs make runners appear behind on early monster climbs (e.g. KM 11 Senaru Rim +2000m D+). The system allocates checkpoint COTs based on <strong>Km-Effort (Distance + D+/100)</strong> using a front-loaded official race curve ((Effort Ratio)^0.88).</>
+                      : <>Pembagian batas waktu linier jarak datar membuat pelari tampak gagal di pos tanjakan awal (misal KM 11 Senaru Rim +2000m D+). Sistem mengalokasikan batas waktu pos berdasarkan rasio <strong>Km-Effort (Jarak + D+/100)</strong> dengan kurva <em>front-load</em> panitia resmi ((Effort Ratio)^0.88).</>}
                   </p>
                   <div className="p-2 rounded bg-[#FAF9F5] font-mono text-[10px] text-zinc-950 border border-zinc-950 font-bold">
-                    Km-Effort = Jarak (km) + (D+ / 100) &bull; COT Pos = (Effort Ratio)^0.88 × Batas COT
+                    {language === "en"
+                      ? "Km-Effort = Dist (km) + (D+ / 100) • Checkpoint COT = (Effort Ratio)^0.88 × Race COT"
+                      : "Km-Effort = Jarak (km) + (D+ / 100) • COT Pos = (Effort Ratio)^0.88 × Batas COT"}
                   </div>
                 </div>
 
@@ -2356,13 +2516,21 @@ export default function TrailPlannerPage() {
                 <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-1.5">
                   <div className="flex items-center gap-2 text-zinc-950 font-black">
                     <Activity className="h-4 w-4 text-zinc-950" />
-                    <span>3. Minetti Eccentric Quad Braking (Turunan Terjal)</span>
+                    <span>
+                      {language === "en"
+                        ? "3. Minetti Eccentric Quad Braking (Steep Descents)"
+                        : "3. Minetti Eccentric Quad Braking (Turunan Terjal)"}
+                    </span>
                   </div>
                   <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
-                    Turunan gunung vulkanik (seperti pasir & bebatuan Rinjani) tidak dapat dituruni secepat jalan aspal. Sistem menambahkan beban pengereman eksentrik otot kuadrisep per 1.000m D- untuk mengantisipasi penurunan kecepatan akibat medan teknis bebatuan.
+                    {language === "en"
+                      ? <>Volcanic mountain descents (such as Rinjani scree & boulders) cannot be run at road speed. The system adds eccentric quad braking penalties per 1,000m D- to account for technical rock terrain.</>
+                      : <>Turunan gunung vulkanik (seperti pasir & bebatuan Rinjani) tidak dapat dituruni secepat jalan aspal. Sistem menambahkan beban pengereman eksentrik otot kuadrisep per 1.000m D- untuk mengantisipasi penurunan kecepatan akibat medan teknis bebatuan.</>}
                   </p>
                   <div className="p-2 rounded bg-[#FAF9F5] font-mono text-[10px] text-zinc-950 border border-zinc-950 font-bold">
-                    Waktu Turunan = (D- Vertikal / 1000) × Koefisien Rem Paha (180–380 detik)
+                    {language === "en"
+                      ? "Descent Time = (Vertical D- / 1000) × Quad Braking Coeff (180–380s)"
+                      : "Waktu Turunan = (D- Vertikal / 1000) × Koefisien Rem Paha (180–380 detik)"}
                   </div>
                 </div>
 
@@ -2370,13 +2538,21 @@ export default function TrailPlannerPage() {
                 <div className="p-3 rounded-lg bg-white border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] space-y-1.5">
                   <div className="flex items-center gap-2 text-zinc-950 font-black">
                     <Flame className="h-4 w-4 text-zinc-950" />
-                    <span>4. Fisiologi Ultra, Altitude & Headlamp</span>
+                    <span>
+                      {language === "en"
+                        ? "4. Ultra Physiology, Altitude & Headlamp"
+                        : "4. Fisiologi Ultra, Altitude & Headlamp"}
+                    </span>
                   </div>
                   <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
-                    Memperhitungkan deplesi kadar oksigen tipis di atas 2.200m dan 3.000m mdpl (-6% s/d -12% VAM), penalti visibilitas lari malam (18:00–06:00), serta kelelahan progresif paruh kedua balapan ultra.
+                    {language === "en"
+                      ? <>Accounts for thin oxygen depletion above 2,200m and 3,000m ASL (-6% to -12% VAM), nocturnal visibility penalty (18:00–06:00), and progressive fatigue in the race&apos;s second half.</>
+                      : <>Memperhitungkan deplesi kadar oksigen tipis di atas 2.200m dan 3.000m mdpl (-6% s/d -12% VAM), penalti visibilitas lari malam (18:00–06:00), serta kelelahan progresif paruh kedua balapan ultra.</>}
                   </p>
                   <div className="p-2 rounded bg-[#FAF9F5] font-mono text-[10px] text-zinc-950 border border-zinc-950 font-bold">
-                    Penalti: Altitude (&gt;2200m) + Malam (Headlamp) + Kelelahan Paruh Kedua
+                    {language === "en"
+                      ? "Penalties: Altitude (>2200m) + Night (Headlamp) + Second-Half Fatigue"
+                      : "Penalti: Altitude (>2200m) + Malam (Headlamp) + Kelelahan Paruh Kedua"}
                   </div>
                 </div>
               </div>
@@ -2389,7 +2565,7 @@ export default function TrailPlannerPage() {
               <div className="flex items-center justify-between">
                 <span className="text-zinc-950 font-black flex items-center gap-1.5">
                   <Award className="h-3.5 w-3.5 text-zinc-950" />
-                  Batas Resmi COT Panitia
+                  {language === "en" ? "Official Race Cut-Off (COT)" : "Batas Resmi COT Panitia"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -2402,10 +2578,12 @@ export default function TrailPlannerPage() {
                   onChange={(e) => setRaceOfficialCotHours(parseFloat(e.target.value) || 20)}
                   className="w-full bg-white border-2 border-zinc-950 text-zinc-950 font-mono font-black text-sm rounded-lg px-2.5 py-1 text-center shadow-[1px_1px_0px_0px_#09090b] focus:outline-none"
                 />
-                <span className="text-xs text-zinc-800 font-mono font-bold">Jam</span>
+                <span className="text-xs text-zinc-800 font-mono font-bold">
+                  {language === "en" ? "Hours" : "Jam"}
+                </span>
               </div>
               <p className="text-[10px] text-zinc-600 font-medium">
-                Rinjani 60K = 20 Jam &bull; 36K = 15 Jam.
+                {language === "en" ? "e.g. Rinjani 60K = 20 Hours • 36K = 15 Hours" : "Rinjani 60K = 20 Jam • 36K = 15 Jam."}
               </p>
             </div>
 
@@ -2414,7 +2592,7 @@ export default function TrailPlannerPage() {
               <div className="flex items-center justify-between">
                 <span className="text-zinc-950 font-bold flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5 text-zinc-950" />
-                  Jam Mulai Lomba
+                  {language === "en" ? "Race Start Time" : "Jam Mulai Lomba"}
                 </span>
                 <span className="font-mono text-zinc-950 font-black">{raceStartTime}</span>
               </div>
@@ -2423,14 +2601,14 @@ export default function TrailPlannerPage() {
                 onChange={(e) => setRaceStartTime(e.target.value)}
                 className="w-full bg-white border-2 border-zinc-950 text-zinc-950 rounded-lg p-1.5 text-xs focus:outline-none font-mono font-bold shadow-[1px_1px_0px_0px_#09090b]"
               >
-                <option value="00:00">00:00 (Tengah Malam / Ultra Start)</option>
-                <option value="02:00">02:00 (Subuh Dini Hari)</option>
-                <option value="05:00">05:00 (Fajar / Sunrise)</option>
-                <option value="06:00">06:00 (Pagi Hari)</option>
-                <option value="20:00">20:00 (Malam Hari)</option>
+                <option value="00:00">{language === "en" ? "00:00 (Midnight / Ultra Start)" : "00:00 (Tengah Malam / Ultra Start)"}</option>
+                <option value="02:00">{language === "en" ? "02:00 (Early Dawn)" : "02:00 (Subuh Dini Hari)"}</option>
+                <option value="05:00">{language === "en" ? "05:00 (Dawn / Sunrise)" : "05:00 (Fajar / Sunrise)"}</option>
+                <option value="06:00">{language === "en" ? "06:00 (Morning)" : "06:00 (Pagi Hari)"}</option>
+                <option value="20:00">{language === "en" ? "20:00 (Night Start)" : "20:00 (Malam Hari)"}</option>
               </select>
               <p className="text-[10px] text-zinc-600 font-medium">
-                Menghitung transisi gelap vs terang.
+                {language === "en" ? "Calculates daylight vs dark transitions." : "Menghitung transisi gelap vs terang."}
               </p>
             </div>
 
@@ -2439,7 +2617,7 @@ export default function TrailPlannerPage() {
               <div className="flex items-center justify-between">
                 <span className="text-zinc-950 font-bold flex items-center gap-1.5">
                   <Flame className="h-3.5 w-3.5 text-orange-600" />
-                  Kelelahan Paruh Kedua
+                  {language === "en" ? "Second-Half Fatigue" : "Kelelahan Paruh Kedua"}
                 </span>
                 <span className="font-mono text-orange-700 font-black">+{fatigueDegradationPct}%</span>
               </div>
@@ -2453,7 +2631,7 @@ export default function TrailPlannerPage() {
                 className="w-full accent-zinc-950 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
               />
               <p className="text-[10px] text-zinc-600 font-medium">
-                Pace melambat setelah 30% jarak tempuh.
+                {language === "en" ? "Pace decay after 30% of total course." : "Pace melambat setelah 30% jarak tempuh."}
               </p>
             </div>
 
@@ -2462,7 +2640,7 @@ export default function TrailPlannerPage() {
               <div className="flex items-center justify-between">
                 <span className="text-zinc-950 font-bold flex items-center gap-1.5">
                   <Moon className="h-3.5 w-3.5 text-purple-600" />
-                  Penalti Lari Malam
+                  {language === "en" ? "Night Running Penalty" : "Penalti Lari Malam"}
                 </span>
                 <span className="font-mono text-purple-700 font-black">+{nightPenaltyPct}%</span>
               </div>
@@ -2476,7 +2654,7 @@ export default function TrailPlannerPage() {
                 className="w-full accent-zinc-950 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
               />
               <p className="text-[10px] text-zinc-600 font-medium">
-                Perlambatan di trek gelap (18:00 - 06:00).
+                {language === "en" ? "Slowdown in dark terrain (18:00 - 06:00)." : "Perlambatan di trek gelap (18:00 - 06:00)."}
               </p>
             </div>
           </div>
@@ -2489,14 +2667,18 @@ export default function TrailPlannerPage() {
               <div className="flex items-center gap-2">
                 <Apple className="h-4 w-4 text-orange-600 stroke-[2.5]" />
                 <h3 className="text-sm font-black text-zinc-950 tracking-tight">
-                  Aid Station Nutrition & Hydration Planner (Strategi Logistik WS)
+                  {language === "en"
+                    ? "Aid Station Nutrition & Hydration Planner"
+                    : "Aid Station Nutrition & Hydration Planner (Strategi Logistik WS)"}
                 </h3>
                 <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-cyan-200 text-cyan-950 border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
                   Jeukendrup & Costa
                 </span>
               </div>
               <p className="text-xs text-zinc-600 font-medium mt-0.5">
-                Kalkulasi kebutuhan restock air dan karbohidrat otomatis antar pos berdasarkan prediksi durasi tempuh & gradien vertikal
+                {language === "en"
+                  ? "Automatic water and carb restock calculation between stations based on predicted splits & vertical gradient"
+                  : "Kalkulasi kebutuhan restock air dan karbohidrat otomatis antar pos berdasarkan prediksi durasi tempuh & gradien vertikal"}
               </p>
             </div>
 
@@ -2507,12 +2689,12 @@ export default function TrailPlannerPage() {
               {showNutritionPlan ? (
                 <>
                   <EyeOff className="h-3.5 w-3.5 text-zinc-950" />
-                  <span>Sembunyikan Strategi</span>
+                  <span>{language === "en" ? "Hide Strategy" : "Sembunyikan Strategi"}</span>
                 </>
               ) : (
                 <>
                   <Eye className="h-3.5 w-3.5 text-zinc-950" />
-                  <span>Buka Strategi Nutrisi</span>
+                  <span>{language === "en" ? "Open Nutrition Strategy" : "Buka Strategi Nutrisi"}</span>
                 </>
               )}
             </button>
@@ -2525,10 +2707,14 @@ export default function TrailPlannerPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
                     <Sliders className="h-3.5 w-3.5 text-zinc-950" />
-                    Kustomisasi Target Asupan & Kapasitas Vest
+                    {language === "en"
+                      ? "Customize Intake & Vest Capacity"
+                      : "Kustomisasi Target Asupan & Kapasitas Vest"}
                   </span>
                   <span className="text-[10px] font-mono text-zinc-500 font-bold">
-                    Disesuaikan dengan daya serap lambung (gut training) Anda
+                    {language === "en"
+                      ? "Tailored to your gut training & digestive tolerance"
+                      : "Disesuaikan dengan daya serap lambung (gut training) Anda"}
                   </span>
                 </div>
 
@@ -2538,10 +2724,10 @@ export default function TrailPlannerPage() {
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-zinc-800 flex items-center gap-1">
                         <Zap className="h-3.5 w-3.5 text-amber-600" />
-                        Target Karbohidrat
+                        {language === "en" ? "Target Carbs" : "Target Karbohidrat"}
                       </span>
                       <span className="font-mono font-black text-amber-700 text-sm">
-                        {targetCarbsPerHour}g / jam
+                        {targetCarbsPerHour}g / {language === "en" ? "hr" : "jam"}
                       </span>
                     </div>
                     <input
@@ -2554,8 +2740,8 @@ export default function TrailPlannerPage() {
                       className="w-full accent-amber-600 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
                     />
                     <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
-                      <span>30g (Ringan)</span>
-                      <span>~{Math.round((targetCarbsPerHour / 25) * 10) / 10} gel/jam</span>
+                      <span>30g ({language === "en" ? "Light" : "Ringan"})</span>
+                      <span>~{Math.round((targetCarbsPerHour / 25) * 10) / 10} gel/{language === "en" ? "hr" : "jam"}</span>
                       <span>90g (Gut Trained)</span>
                     </div>
                   </div>
@@ -2565,10 +2751,10 @@ export default function TrailPlannerPage() {
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-zinc-800 flex items-center gap-1">
                         <Droplets className="h-3.5 w-3.5 text-cyan-600" />
-                        Target Hidrasi Cairan
+                        {language === "en" ? "Target Fluid Hydration" : "Target Hidrasi Cairan"}
                       </span>
                       <span className="font-mono font-black text-cyan-700 text-sm">
-                        {targetWaterPerHourMl}ml / jam
+                        {targetWaterPerHourMl}ml / {language === "en" ? "hr" : "jam"}
                       </span>
                     </div>
                     <input
@@ -2581,9 +2767,9 @@ export default function TrailPlannerPage() {
                       className="w-full accent-cyan-600 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
                     />
                     <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
-                      <span>300ml (Sejuk)</span>
-                      <span>500ml (Standar)</span>
-                      <span>800ml (Panas)</span>
+                      <span>300ml ({language === "en" ? "Cool" : "Sejuk"})</span>
+                      <span>500ml ({language === "en" ? "Standard" : "Standar"})</span>
+                      <span>800ml ({language === "en" ? "Hot" : "Panas"})</span>
                     </div>
                   </div>
 
@@ -2592,7 +2778,7 @@ export default function TrailPlannerPage() {
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-zinc-800 flex items-center gap-1">
                         <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                        Kapasitas Botol Vest
+                        {language === "en" ? "Vest Softflask Capacity" : "Kapasitas Botol Vest"}
                       </span>
                       <span className="font-mono font-black text-emerald-700 text-sm">
                         {flaskCapacityMl}ml
@@ -2603,13 +2789,15 @@ export default function TrailPlannerPage() {
                       onChange={(e) => setFlaskCapacityMl(Number(e.target.value))}
                       className="w-full bg-white border-2 border-zinc-950 text-zinc-950 rounded-lg p-1.5 text-xs font-mono font-bold shadow-[1px_1px_0px_0px_#09090b] focus:outline-none"
                     >
-                      <option value={500}>500ml (1 Softflask Ringan)</option>
-                      <option value={1000}>1,000ml (2 x 500ml Standar Trail)</option>
-                      <option value={1500}>1,500ml (2 Flasks + 500ml Bladder)</option>
-                      <option value={2000}>2,000ml (2 Flasks + 1L Bladder)</option>
+                      <option value={500}>{language === "en" ? "500ml (1 Lightweight Softflask)" : "500ml (1 Softflask Ringan)"}</option>
+                      <option value={1000}>{language === "en" ? "1,000ml (2 x 500ml Trail Standard)" : "1,000ml (2 x 500ml Standar Trail)"}</option>
+                      <option value={1500}>{language === "en" ? "1,500ml (2 Flasks + 500ml Bladder)" : "1,500ml (2 Flasks + 500ml Bladder)"}</option>
+                      <option value={2000}>{language === "en" ? "2,000ml (2 Flasks + 1L Bladder)" : "2,000ml (2 Flasks + 1L Bladder)"}</option>
                     </select>
                     <p className="text-[10px] text-zinc-500">
-                      Sistem memberi peringatan jika segmen butuh air &gt; kapasitas ini.
+                      {language === "en"
+                        ? "System warns if segment requires water > capacity."
+                        : "Sistem memberi peringatan jika segmen butuh air > kapasitas ini."}
                     </p>
                   </div>
                 </div>
@@ -2618,54 +2806,62 @@ export default function TrailPlannerPage() {
               {/* Race Total Fuel & Hydration Scorecard */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[10px] text-zinc-600 font-bold block">Total Karbohidrat Balapan</span>
+                  <span className="text-[10px] text-zinc-600 font-bold block">
+                    {language === "en" ? "Total Race Carbs" : "Total Karbohidrat Balapan"}
+                  </span>
                   <div className="text-xl font-black text-amber-700 font-mono">
                     {raceNutritionSummary.totalCarbs}g
                   </div>
                   <p className="text-[10px] text-zinc-600 font-medium font-mono">
-                    ~{raceNutritionSummary.totalGels} Bungkus Energy Gel (@25g)
+                    ~{raceNutritionSummary.totalGels} {language === "en" ? "Energy Gels (@25g)" : "Bungkus Energy Gel (@25g)"}
                   </p>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[10px] text-zinc-600 font-bold block">Total Hidrasi Cairan</span>
+                  <span className="text-[10px] text-zinc-600 font-bold block">
+                    {language === "en" ? "Total Fluid Hydration" : "Total Hidrasi Cairan"}
+                  </span>
                   <div className="text-xl font-black text-cyan-700 font-mono">
-                    {raceNutritionSummary.totalWaterLiters} Liter
+                    {raceNutritionSummary.totalWaterLiters} {language === "en" ? "Liters" : "Liter"}
                   </div>
                   <p className="text-[10px] text-zinc-600 font-medium font-mono">
-                    ~{Math.ceil(raceNutritionSummary.totalWaterMl / 500)} kali refill botol 500ml
+                    ~{Math.ceil(raceNutritionSummary.totalWaterMl / 500)} {language === "en" ? "x 500ml flask refills" : "kali refill botol 500ml"}
                   </p>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[10px] text-zinc-600 font-bold block">Penggantian Garam (Sodium)</span>
+                  <span className="text-[10px] text-zinc-600 font-bold block">
+                    {language === "en" ? "Sodium Replacement" : "Penggantian Garam (Sodium)"}
+                  </span>
                   <div className="text-xl font-black text-emerald-700 font-mono">
                     {raceNutritionSummary.totalSodiumMg.toLocaleString()} mg
                   </div>
                   <p className="text-[10px] text-zinc-600 font-medium font-mono">
-                    ~{raceNutritionSummary.totalSaltCaps} Kapsul Garam (Cegah kram)
+                    ~{raceNutritionSummary.totalSaltCaps} {language === "en" ? "Salt Capsules (Anti-cramp)" : "Kapsul Garam (Cegah kram)"}
                   </p>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-1 shadow-[2px_2px_0px_0px_#09090b]">
-                  <span className="text-[10px] text-zinc-600 font-bold block">Status Kapasitas Vest</span>
+                  <span className="text-[10px] text-zinc-600 font-bold block">
+                    {language === "en" ? "Vest Capacity Status" : "Status Kapasitas Vest"}
+                  </span>
                   <div className="text-base font-black text-zinc-950 font-mono">
                     {raceNutritionSummary.highWaterAlertsCount > 0 ? (
                       <span className="text-rose-700 flex items-center gap-1">
                         <AlertTriangle className="h-4 w-4 shrink-0" />
-                        {raceNutritionSummary.highWaterAlertsCount} Pos Defisit
+                        {raceNutritionSummary.highWaterAlertsCount} {language === "en" ? "Stations in Deficit" : "Pos Defisit"}
                       </span>
                     ) : (
                       <span className="text-emerald-700 flex items-center gap-1">
                         <CheckCircle2 className="h-4 w-4 shrink-0" />
-                        Aman Terpenuhi
+                        {language === "en" ? "Fully Covered" : "Aman Terpenuhi"}
                       </span>
                     )}
                   </div>
                   <p className="text-[10px] text-zinc-600 font-medium">
                     {raceNutritionSummary.highWaterAlertsCount > 0
-                      ? "Butuh extra softflask di tanjakan terjal"
-                      : "2 botol 500ml cukup di semua pos"}
+                      ? (language === "en" ? "Extra softflask recommended for steep climbs" : "Butuh extra softflask di tanjakan terjal")
+                      : (language === "en" ? "2 x 500ml flasks sufficient for all legs" : "2 botol 500ml cukup di semua pos")}
                   </p>
                 </div>
               </div>
@@ -2675,10 +2871,12 @@ export default function TrailPlannerPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
                     <Compass className="h-3.5 w-3.5 text-zinc-950" />
-                    Panduan Aksi Restock di Setiap Pos / Water Station (WS)
+                    {language === "en"
+                      ? "Action Guide: Restocking at Every Aid Station / Checkpoint"
+                      : "Panduan Aksi Restock di Setiap Pos / Water Station (WS)"}
                   </span>
                   <span className="text-[10px] font-mono text-zinc-500 font-bold">
-                    Siapkan sebelum checkout dari pos
+                    {language === "en" ? "Prepare before checkout from station" : "Siapkan sebelum checkout dari pos"}
                   </span>
                 </div>
 
@@ -2706,18 +2904,20 @@ export default function TrailPlannerPage() {
                           <div>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-zinc-200 text-zinc-950 border border-zinc-950">
-                                {isStart ? "START" : isFinish ? "FINISH" : `POS ${idx}`}
+                                {isStart ? "START" : isFinish ? "FINISH" : `${language === "en" ? "STATION" : "POS"} ${idx}`}
                               </span>
                               <span className="text-xs font-black text-zinc-950">{cp.name}</span>
                             </div>
                             <span className="text-[10px] font-mono text-zinc-500 font-bold block mt-0.5">
-                              KM {cp.distanceKm.toFixed(1)} &bull; {cp.elevationM} mdpl &bull; Tiba: {cp.predictedTimeStr} ({cp.clockTimeStr})
+                              KM {cp.distanceKm.toFixed(1)} &bull; {cp.elevationM} {language === "en" ? "m ASL" : "mdpl"} &bull; {language === "en" ? "ETA" : "Tiba"}: {cp.predictedTimeStr} ({cp.clockTimeStr})
                             </span>
                           </div>
 
                           {!isFinish && nextCp && (
                             <div className="text-left sm:text-right shrink-0">
-                              <span className="text-[9px] font-mono text-zinc-500 block">Menuju {nextCp.name}</span>
+                              <span className="text-[9px] font-mono text-zinc-500 block">
+                                {language === "en" ? "Towards" : "Menuju"} {nextCp.name}
+                              </span>
                               <span className="text-[11px] font-mono font-black text-zinc-950">
                                 {cp.nextSegDistanceKm}km &bull; ~{cp.nextSegDurationFormatted}
                               </span>
@@ -2731,7 +2931,9 @@ export default function TrailPlannerPage() {
                             <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-[11px]">
                               {/* Water */}
                               <div className="p-2 rounded-lg bg-cyan-50 border border-cyan-300 min-w-0">
-                                <span className="text-[9px] text-cyan-900 font-bold block truncate">💧 Refill Air</span>
+                                <span className="text-[9px] text-cyan-900 font-bold block truncate">
+                                  💧 {language === "en" ? "Water Refill" : "Refill Air"}
+                                </span>
                                 <span className="font-mono font-black text-cyan-950 text-xs block truncate">
                                   {cp.waterRefillMl} ml
                                 </span>
@@ -2739,7 +2941,9 @@ export default function TrailPlannerPage() {
 
                               {/* Carbs */}
                               <div className="p-2 rounded-lg bg-amber-50 border border-amber-300 min-w-0">
-                                <span className="text-[9px] text-amber-900 font-bold block truncate">⚡ Ambil Karbo</span>
+                                <span className="text-[9px] text-amber-900 font-bold block truncate">
+                                  ⚡ {language === "en" ? "Take Carbs" : "Ambil Karbo"}
+                                </span>
                                 <span className="font-mono font-black text-amber-950 text-xs block truncate">
                                   {cp.carbsTargetGrams}g <span className="text-[9px] font-normal hidden sm:inline">({cp.gelsNeeded} gel)</span>
                                 </span>
@@ -2747,9 +2951,11 @@ export default function TrailPlannerPage() {
 
                               {/* Salt */}
                               <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-300 min-w-0">
-                                <span className="text-[9px] text-emerald-900 font-bold block truncate">🧂 Elektrolit</span>
+                                <span className="text-[9px] text-emerald-900 font-bold block truncate">
+                                  🧂 {language === "en" ? "Electrolytes" : "Elektrolit"}
+                                </span>
                                 <span className="font-mono font-black text-emerald-950 text-xs block truncate">
-                                  {cp.saltCapsulesCount} kap
+                                  {cp.saltCapsulesCount} {language === "en" ? "caps" : "kap"}
                                 </span>
                               </div>
                             </div>
@@ -2759,8 +2965,10 @@ export default function TrailPlannerPage() {
                               <div className="p-2.5 rounded-lg bg-rose-100 border border-rose-400 text-rose-950 text-[11px] font-bold flex items-start gap-1.5">
                                 <AlertTriangle className="h-3.5 w-3.5 text-rose-700 shrink-0 mt-0.5" />
                                 <div>
-                                  <strong>Defisit Cairan (+{cp.waterDeficitMl}ml): </strong>
-                                  Durasi tanjakan ke {nextCp?.name} (~{cp.nextSegDurationFormatted}) membutuhkan {cp.waterNeededMl}ml air. Bawa botol extra atau minum 300ml sebelum checkout!
+                                  <strong>{language === "en" ? "Fluid Deficit" : "Defisit Cairan"} (+{cp.waterDeficitMl}ml): </strong>
+                                  {language === "en"
+                                    ? `Climb duration to ${nextCp?.name} (~${cp.nextSegDurationFormatted}) requires ${cp.waterNeededMl}ml water. Pack an extra flask or drink 300ml before checkout!`
+                                    : `Durasi tanjakan ke ${nextCp?.name} (~${cp.nextSegDurationFormatted}) membutuhkan ${cp.waterNeededMl}ml air. Bawa botol extra atau minum 300ml sebelum checkout!`}
                                 </div>
                               </div>
                             )}
@@ -2772,9 +2980,13 @@ export default function TrailPlannerPage() {
                           </div>
                         ) : (
                           <div className="text-xs text-emerald-900 font-medium space-y-1">
-                            <div className="font-black text-emerald-950">🏆 Target Selesai & Pemulihan Segera:</div>
+                            <div className="font-black text-emerald-950">
+                              {language === "en" ? "🏆 Finish & Immediate Recovery Target:" : "🏆 Target Selesai & Pemulihan Segera:"}
+                            </div>
                             <p className="text-[11px]">
-                              Segera minum 500ml elektrolit dingin, 20–25g protein recovery, dan karbohidrat padat untuk mempercepat sintesis glikogen otot.
+                              {language === "en"
+                                ? "Immediately consume 500ml chilled electrolytes, 20–25g recovery protein, and dense carbohydrates to jumpstart glycogen replenishment."
+                                : "Segera minum 500ml elektrolit dingin, 20–25g protein recovery, dan karbohidrat padat untuk mempercepat sintesis glikogen otot."}
                             </p>
                           </div>
                         )}
@@ -2794,7 +3006,9 @@ export default function TrailPlannerPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-sm font-black text-zinc-950 tracking-tight">
-                  Rencana Pos Water Station (WS) & Estimasi Waktu Tiba
+                  {language === "en"
+                    ? "Aid Station Plan & Estimated Arrival Times"
+                    : "Rencana Pos Water Station (WS) & Estimasi Waktu Tiba"}
                 </h3>
                 <span
                   className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase border-2 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] whitespace-nowrap shrink-0 ${
@@ -2809,7 +3023,9 @@ export default function TrailPlannerPage() {
                 </span>
               </div>
               <p className="text-xs text-zinc-600 font-medium mt-1">
-                Dihitung dari VAM COROS ({athleteVam} m/h), deplesi oksigen di ketinggian, dan batas resmi panitia ({raceOfficialCotHours} jam).
+                {language === "en"
+                  ? `Calculated from COROS VAM (${athleteVam} m/h), altitude oxygen decay, and official race cut-off (${raceOfficialCotHours}h).`
+                  : `Dihitung dari VAM COROS (${athleteVam} m/h), deplesi oksigen di ketinggian, dan batas resmi panitia (${raceOfficialCotHours} jam).`}
               </p>
             </div>
 
@@ -2821,12 +3037,12 @@ export default function TrailPlannerPage() {
               {showPacingEstimation ? (
                 <>
                   <EyeOff className="h-3.5 w-3.5 text-zinc-950" />
-                  <span>Sembunyikan Estimasi</span>
+                  <span>{language === "en" ? "Hide Estimation" : "Sembunyikan Estimasi"}</span>
                 </>
               ) : (
                 <>
                   <Eye className="h-3.5 w-3.5 text-zinc-950" />
-                  <span>Tampilkan Estimasi</span>
+                  <span>{language === "en" ? "Show Estimation" : "Tampilkan Estimasi"}</span>
                 </>
               )}
             </button>
@@ -2840,10 +3056,13 @@ export default function TrailPlannerPage() {
                   <Award className="h-5 w-5 text-zinc-950 shrink-0" />
                   <div>
                     <h4 className="text-sm font-black text-zinc-950 tracking-tight">
-                      Estimasi Waktu Finish Atlet (Fisiologi Gunung & VAM COROS Realistis)
+                      {language === "en"
+                        ? "Athlete Finish Time Estimation (Mountain Physiology & Realistic COROS VAM)"
+                        : "Estimasi Waktu Finish Atlet (Fisiologi Gunung & VAM COROS Realistis)"}
                     </h4>
                     <p className="text-[11px] text-zinc-600 font-medium">
-                      Batas COT Resmi Panitia: <strong className="text-zinc-950">{raceOfficialCotHours} Jam</strong> &bull; Mode:{" "}
+                      {language === "en" ? "Official Race Cut-Off:" : "Batas COT Resmi Panitia:"}{" "}
+                      <strong className="text-zinc-950">{raceOfficialCotHours} {language === "en" ? "Hours" : "Jam"}</strong> &bull; Mode:{" "}
                       <strong className="text-zinc-950 uppercase">{strategyTier}</strong>
                     </p>
                   </div>
@@ -2865,23 +3084,27 @@ export default function TrailPlannerPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs pt-2 border-t-2 border-zinc-950">
                 {/* Finish Time */}
                 <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-0.5">
-                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">Total Waktu Finish</span>
+                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                    {language === "en" ? "Total Finish Time" : "Total Waktu Finish"}
+                  </span>
                   <div className="text-xl font-black text-zinc-950">
-                    {finishHours}j {finishMins}m
+                    {finishHours}{language === "en" ? "h" : "j"} {finishMins}m
                   </div>
                   <div className="text-[10px] text-zinc-700 font-sans font-bold">
-                    Jam Tiba: {finishCheckpoint?.clockTimeStr || "--:--"}
+                    {language === "en" ? "Arrival Time:" : "Jam Tiba:"} {finishCheckpoint?.clockTimeStr || "--:--"}
                   </div>
                 </div>
 
                 {/* Avg Trail Speed & Pace */}
                 <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-0.5">
-                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">Rata-rata Pace Trail</span>
+                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                    {language === "en" ? "Average Trail Pace" : "Rata-rata Pace Trail"}
+                  </span>
                   <div className="text-xl font-black text-zinc-950">
                     {formatPace(avgOverallPaceSec)}<span className="text-xs font-normal text-zinc-600">/km</span>
                   </div>
                   <div className="text-[10px] text-zinc-600 font-sans font-bold">
-                    Speed: {avgOverallSpeedKmh} km/jam
+                    Speed: {avgOverallSpeedKmh} {language === "en" ? "km/h" : "km/jam"}
                   </div>
                 </div>
 
@@ -2889,10 +3112,10 @@ export default function TrailPlannerPage() {
                 <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-0.5">
                   <span className="text-[10px] text-zinc-600 font-sans font-bold block">
                     {strategyTier === "elite"
-                      ? "VAM Top Runner"
+                      ? (language === "en" ? "Top Runner VAM" : "VAM Top Runner")
                       : strategyTier === "intermediate"
-                      ? "VAM Target Menengah"
-                      : "VAM COROS Atlet"}
+                      ? (language === "en" ? "Intermediate Target VAM" : "VAM Target Menengah")
+                      : (language === "en" ? "Athlete COROS VAM" : "VAM COROS Atlet")}
                   </span>
                   <div className="text-xl font-black text-amber-700">
                     {activeStrategyStats.vam} <span className="text-xs font-normal text-zinc-600">m/h</span>
@@ -2904,12 +3127,14 @@ export default function TrailPlannerPage() {
 
                 {/* Nutrition Targets */}
                 <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-0.5">
-                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">Total Kebutuhan Nutrisi Race</span>
+                  <span className="text-[10px] text-zinc-600 font-sans font-bold block">
+                    {language === "en" ? "Total Race Nutrition Needs" : "Total Kebutuhan Nutrisi Race"}
+                  </span>
                   <div className="text-lg font-black text-emerald-700">
-                    💧 ~{raceNutritionSummary.totalWaterLiters}L Air
+                    💧 ~{raceNutritionSummary.totalWaterLiters}L {language === "en" ? "Water" : "Air"}
                   </div>
                   <div className="text-[10px] text-amber-700 font-sans font-bold">
-                    ⚡ {raceNutritionSummary.totalCarbs}g Karbo ({raceNutritionSummary.totalGels} gel) • {raceNutritionSummary.totalSaltCaps} Garam
+                    ⚡ {raceNutritionSummary.totalCarbs}g {language === "en" ? "Carbs" : "Karbo"} ({raceNutritionSummary.totalGels} gel) • {raceNutritionSummary.totalSaltCaps} {language === "en" ? "Salt" : "Garam"}
                   </div>
                 </div>
               </div>
@@ -2922,13 +3147,27 @@ export default function TrailPlannerPage() {
               <table className="w-full min-w-[780px] text-left text-xs">
                 <thead className="border-b-2 border-zinc-950 text-[11px] text-zinc-950 font-mono uppercase bg-zinc-100 font-black">
                   <tr>
-                    <th className="py-3 px-3">Nama Pos / WS Asli</th>
-                    <th className="py-3 px-3">Jarak & Ketinggian</th>
-                    <th className="py-3 px-3">Estimasi Tiba (Clock Time)</th>
-                    <th className="py-3 px-3">Batas COT ({raceOfficialCotHours}j)</th>
-                    <th className="py-3 px-3">Buffer Aman</th>
-                    <th className="py-3 px-3">Logistik Refill</th>
-                    <th className="py-3 px-3">Catatan Taktis</th>
+                    <th className="py-3 px-3">
+                      {language === "en" ? "Station / Checkpoint" : "Nama Pos / WS Asli"}
+                    </th>
+                    <th className="py-3 px-3">
+                      {language === "en" ? "Distance & Elevation" : "Jarak & Ketinggian"}
+                    </th>
+                    <th className="py-3 px-3">
+                      {language === "en" ? "Estimated Arrival (Clock Time)" : "Estimasi Tiba (Clock Time)"}
+                    </th>
+                    <th className="py-3 px-3">
+                      {language === "en" ? `Cut-Off COT (${raceOfficialCotHours}h)` : `Batas COT (${raceOfficialCotHours}j)`}
+                    </th>
+                    <th className="py-3 px-3">
+                      {language === "en" ? "Safety Buffer" : "Buffer Aman"}
+                    </th>
+                    <th className="py-3 px-3">
+                      {language === "en" ? "Refill Logistics" : "Logistik Refill"}
+                    </th>
+                    <th className="py-3 px-3">
+                      {language === "en" ? "Tactical Notes" : "Catatan Taktis"}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 bg-white">
@@ -2941,7 +3180,7 @@ export default function TrailPlannerPage() {
                         <div className="font-black text-zinc-950 font-sans flex items-center gap-1.5">
                           {cp.name}
                           {cp.isNight && (
-                            <span className="text-[10px]" title="Zona Lari Malam (Headlamp)">
+                            <span className="text-[10px]" title={language === "en" ? "Night Running Zone (Headlamp)" : "Zona Lari Malam (Headlamp)"}>
                               🌙
                             </span>
                           )}
@@ -2949,7 +3188,7 @@ export default function TrailPlannerPage() {
                       </td>
                       <td className="py-3 px-3">
                         <div className="font-bold text-zinc-950">{cp.distanceKm.toFixed(1)} km</div>
-                        <div className="text-[10px] text-zinc-600 font-bold">{cp.elevationM} mdpl</div>
+                        <div className="text-[10px] text-zinc-600 font-bold">{cp.elevationM} {language === "en" ? "m ASL" : "mdpl"}</div>
                       </td>
                       <td className="py-3 px-3">
                         <div className="font-black text-zinc-950">{cp.predictedTimeStr}</div>
@@ -2961,7 +3200,9 @@ export default function TrailPlannerPage() {
                       <td className="py-3 px-3 text-zinc-950">
                         <div className="font-black">{cp.officialCotTime}</div>
                         {!cp.isFinish && cp.distanceKm > 0 && (
-                          <div className="text-[9px] text-zinc-500 font-sans font-medium">Alokasi Km-Effort</div>
+                          <div className="text-[9px] text-zinc-500 font-sans font-medium">
+                            {language === "en" ? "Km-Effort Allocation" : "Alokasi Km-Effort"}
+                          </div>
                         )}
                       </td>
                       <td className="py-3 px-3 whitespace-nowrap">
@@ -2991,7 +3232,7 @@ export default function TrailPlannerPage() {
                             </div>
                             {cp.waterExceedsCapacity && (
                               <span className="text-[9px] font-black text-rose-800 bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded block whitespace-nowrap">
-                                ⚠️ Butuh {cp.waterNeededMl}ml (&gt;{flaskCapacityMl}ml)
+                                ⚠️ {language === "en" ? `Needs ${cp.waterNeededMl}ml (>${flaskCapacityMl}ml)` : `Butuh ${cp.waterNeededMl}ml (>${flaskCapacityMl}ml)`}
                               </span>
                             )}
                           </div>
