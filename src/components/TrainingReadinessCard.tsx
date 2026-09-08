@@ -8,46 +8,41 @@ import {
   Clock,
   Heart,
   Activity,
-  AlertTriangle,
-  Info,
   CalendarCheck,
-  ChevronRight,
 } from "lucide-react";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { TrainingReadinessResult } from "@/lib/analytics";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface TrainingReadinessCardProps {
   readiness?: TrainingReadinessResult;
 }
 
 export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ readiness }) => {
+  const { t } = useTranslation();
+
   if (!readiness) {
     return null;
   }
 
-  const { score, tier, label, suggestion, governor, factors } = readiness;
+  const { score, tier, label, suggestion, governor, factors, targetTiming = "today" } = readiness;
 
   // Visual accents based on tier
   let badgeColor = "bg-amber-300 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]";
   let scoreBg = "bg-amber-400";
-  let tierHeaderColor = "text-amber-800";
 
   if (tier === "PRIME") {
     badgeColor = "bg-cyan-300 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]";
     scoreBg = "bg-cyan-400";
-    tierHeaderColor = "text-sky-800";
   } else if (tier === "OPTIMAL") {
     badgeColor = "bg-emerald-300 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]";
     scoreBg = "bg-emerald-400";
-    tierHeaderColor = "text-emerald-800";
   } else if (tier === "REST") {
     badgeColor = "bg-rose-300 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]";
     scoreBg = "bg-rose-400";
-    tierHeaderColor = "text-rose-800";
   } else if (tier === "MODERATE") {
     badgeColor = "bg-zinc-200 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]";
     scoreBg = "bg-zinc-300";
-    tierHeaderColor = "text-zinc-800";
   }
 
   return (
@@ -61,13 +56,17 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base sm:text-lg font-black text-zinc-950 tracking-tight leading-tight">
-                Training Readiness & Suggestion
+                {t("readiness.title", "Training Readiness & Suggestion")}
               </h3>
               <MetricTooltip term="readiness" />
             </div>
             <p className="text-xs font-mono text-zinc-600 font-semibold mt-0.5">
-              <span className="hidden sm:inline">Tomorrow&apos;s Workout Prescription • Workload Governor</span>
-              <span className="sm:hidden">Workout Prescription & Readiness</span>
+              <span className="hidden sm:inline">
+                {targetTiming === "tomorrow"
+                  ? t("readiness.subtitleTomorrow", "Session completed today • Recovery & Tomorrow's Target")
+                  : t("readiness.subtitleToday", "Today's Workout Prescription • Workload Governor")}
+              </span>
+              <span className="sm:hidden">{t("readiness.subtitleMobile", "Workout Prescription & Readiness")}</span>
             </p>
           </div>
         </div>
@@ -76,7 +75,9 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
           {/* Readiness Score Pill */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex-1 sm:flex-initial justify-center sm:justify-start">
             <div className="flex flex-col items-end leading-none">
-              <span className="text-[10px] uppercase font-black tracking-wider text-zinc-600">Readiness</span>
+              <span className="text-[10px] uppercase font-black tracking-wider text-zinc-600">
+                {t("readiness.readinessPill", "Readiness")}
+              </span>
               <span className="text-sm font-mono font-black text-zinc-950">{score}/100</span>
             </div>
             <div className={`h-3 w-3 rounded-full border border-zinc-950 ${scoreBg}`} />
@@ -97,7 +98,9 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-zinc-600">
                 <CalendarCheck className="h-3.5 w-3.5 text-zinc-950" />
-                Target Session for Tomorrow
+                {targetTiming === "tomorrow"
+                  ? t("readiness.targetTomorrow", "Target Session for Tomorrow")
+                  : t("readiness.targetToday", "Target Session for Today")}
               </span>
               <span className="px-2 py-0.5 rounded-md bg-zinc-950 text-white text-[10px] font-mono font-bold tracking-wide">
                 {suggestion.category}
@@ -118,7 +121,7 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
             <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20">
               <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
                 <Clock className="h-3 w-3 text-zinc-950" />
-                <span>Duration</span>
+                <span>{t("readiness.duration", "Duration")}</span>
               </div>
               <p className="text-xs font-black text-zinc-950 mt-1 font-mono">
                 {suggestion.durationMinutes}
@@ -128,7 +131,7 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
             <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20">
               <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
                 <Zap className="h-3 w-3 text-amber-500" />
-                <span>Target Load</span>
+                <span>{t("readiness.suggestedLoad", "Target Load")}</span>
               </div>
               <p className="text-xs font-black text-zinc-950 mt-1 font-mono">
                 {suggestion.targetLoad}
@@ -138,7 +141,7 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
             <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20">
               <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
                 <Activity className="h-3 w-3 text-blue-500" />
-                <span>Intensity</span>
+                <span>{t("readiness.intensity", "Intensity")}</span>
               </div>
               <p className="text-[11px] font-black text-zinc-950 mt-1 truncate" title={suggestion.intensityZone}>
                 {suggestion.intensityZone}
@@ -148,7 +151,7 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
             <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20">
               <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
                 <Heart className="h-3 w-3 text-rose-500" />
-                <span>HR Target</span>
+                <span>{t("readiness.hrTarget", "HR Target")}</span>
               </div>
               <p className="text-[11px] font-black text-zinc-950 mt-1 font-mono truncate" title={suggestion.heartRateGuide}>
                 {suggestion.heartRateGuide}
@@ -164,14 +167,18 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-zinc-600">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                Workload Safety Governor
+                {t("readiness.workloadSafetyGovernor", "Workload Safety Governor")}
               </span>
               <span className="text-[11px] font-mono font-bold text-zinc-500">Gabbett 2016</span>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pt-1">
               <div>
-                <span className="text-[11px] text-zinc-600 font-semibold block">Max Safe Load Tomorrow:</span>
+                <span className="text-[11px] text-zinc-600 font-semibold block">
+                  {targetTiming === "tomorrow"
+                    ? t("readiness.maxSafeLoadTomorrow", "Max Safe Load Tomorrow:")
+                    : t("readiness.maxSafeLoadToday", "Max Safe Load Today:")}
+                </span>
                 <div className="text-xl font-black font-mono text-zinc-950">
                   ≤ {governor.maxSafeLoadTomorrow}{" "}
                   <span className="text-xs font-normal text-zinc-500">Load</span>
@@ -179,7 +186,9 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
               </div>
 
               <div className="sm:text-right">
-                <span className="text-[11px] text-zinc-600 font-semibold block">Next Quality Window:</span>
+                <span className="text-[11px] text-zinc-600 font-semibold block">
+                  {t("readiness.nextQualityWindow", "Next Quality Window:")}
+                </span>
                 <div className="text-xs font-black font-mono text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-300 w-fit sm:ml-auto">
                   {governor.nextQualityWindow}
                 </div>
@@ -194,7 +203,9 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
           {/* Tri-factor Telemetry Pills */}
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
             <div className="rounded-lg bg-zinc-50 border border-zinc-950/20 p-1.5 sm:p-2 text-center min-w-0">
-              <div className="text-[8px] sm:text-[9px] font-bold text-zinc-500 uppercase tracking-wider truncate">Fatigue Impact</div>
+              <div className="text-[8px] sm:text-[9px] font-bold text-zinc-500 uppercase tracking-wider truncate">
+                {t("readiness.fatigueImpact", "Fatigue Impact")}
+              </div>
               <div
                 className={`text-[10px] sm:text-xs font-black mt-0.5 truncate ${
                   factors.fatigueImpact === "HIGH"
@@ -209,7 +220,9 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
             </div>
 
             <div className="rounded-lg bg-zinc-50 border border-zinc-950/20 p-1.5 sm:p-2 text-center min-w-0">
-              <div className="text-[8px] sm:text-[9px] font-bold text-zinc-500 uppercase tracking-wider truncate">Form State</div>
+              <div className="text-[8px] sm:text-[9px] font-bold text-zinc-500 uppercase tracking-wider truncate">
+                {t("readiness.formState", "Form State")}
+              </div>
               <div
                 className={`text-[10px] sm:text-xs font-black mt-0.5 truncate ${
                   factors.formReadiness === "OPTIMAL" || factors.formReadiness === "FRESH"
@@ -224,7 +237,9 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
             </div>
 
             <div className="rounded-lg bg-zinc-50 border border-zinc-950/20 p-1.5 sm:p-2 text-center min-w-0">
-              <div className="text-[8px] sm:text-[9px] font-bold text-zinc-500 uppercase tracking-wider truncate">Injury Risk</div>
+              <div className="text-[8px] sm:text-[9px] font-bold text-zinc-500 uppercase tracking-wider truncate">
+                {t("readiness.injuryRisk", "Injury Risk")}
+              </div>
               <div
                 className={`text-[10px] sm:text-xs font-black mt-0.5 truncate ${
                   factors.injuryRisk === "CRITICAL"

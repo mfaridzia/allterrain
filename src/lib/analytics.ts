@@ -1271,6 +1271,7 @@ export interface TrainingReadinessParams {
 export interface TrainingReadinessResult {
   score: number; // 0 - 100
   tier: "PRIME" | "OPTIMAL" | "MODERATE" | "RECOVERY" | "REST";
+  targetTiming: "today" | "tomorrow";
   label: string;
   badgeBg: string;
   badgeBorder: string;
@@ -1307,6 +1308,10 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     hrvStatus = "NORMAL",
   } = params;
 
+  // Determine whether the prescribed target session applies to today or tomorrow
+  // If the athlete has already logged a workout today (todayLoad >= 30), the prescription targets tomorrow.
+  const targetTiming: "today" | "tomorrow" = (todayLoad || 0) >= 30 ? "tomorrow" : "today";
+
   // Safe Load Ceiling from Gabbett ACWR Governor:
   // To keep ACWR <= 1.3: ChronicLoad * 1.3
   const safeLoadCeiling = Math.max(25, Math.round(ctl * 1.25));
@@ -1333,6 +1338,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     return {
       score: Math.max(15, Math.min(35, Math.round(30 + tsb * 0.4))),
       tier: "REST",
+      targetTiming,
       label: "Rest Required",
       badgeBg: "bg-rose-100 text-rose-950",
       badgeBorder: "border-rose-950",
@@ -1364,6 +1370,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     return {
       score,
       tier: "RECOVERY",
+      targetTiming,
       label: "Active Recovery Priority",
       badgeBg: "bg-amber-100 text-amber-950",
       badgeBorder: "border-zinc-950",
@@ -1393,6 +1400,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     return {
       score,
       tier: "PRIME",
+      targetTiming,
       label: "Prime for Speed & Quality",
       badgeBg: "bg-cyan-100 text-cyan-950",
       badgeBorder: "border-zinc-950",
@@ -1423,6 +1431,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     return {
       score,
       tier: "OPTIMAL",
+      targetTiming,
       label: "Productive Building Window",
       badgeBg: "bg-emerald-100 text-emerald-950",
       badgeBorder: "border-zinc-950",
@@ -1452,6 +1461,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
   return {
     score,
     tier: "MODERATE",
+    targetTiming,
     label: "Aerobic Base Maintenance",
     badgeBg: "bg-zinc-100 text-zinc-950",
     badgeBorder: "border-zinc-950",
