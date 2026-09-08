@@ -220,7 +220,11 @@ export function getAiModelInstance(provider: string, apiKey: string, modelName?:
   }
 }
 
-export async function runCoachStream(messages: ChatMessage[], athleteId: string = "athlete_primary") {
+export async function runCoachStream(
+  messages: ChatMessage[],
+  athleteId: string = "athlete_primary",
+  language: "en" | "id" = "id"
+) {
   let provider = await getSetting("ai_provider", "", athleteId);
   if (!provider) {
     if (process.env.AI_PROVIDER) {
@@ -281,7 +285,11 @@ ${athleteContext}
 Coaching Rules:
 1. Always verify the athlete's current TSB (Form) and ACWR before endorsing or prescribing high-intensity workouts. If ACWR > 1.5 or TSB < -25, urge caution or active recovery.
 2. Be concise, authoritative, encouraging, and deeply data-driven. Reference their actual metrics (CTL, TSB, pace, recent activities) naturally.
-3. Speak in the language used by the athlete (Bahasa Indonesia or English). Respond in natural, clean, professional coaching Indonesian when addressed in Indonesian.
+3. Language instruction: ${
+  language === "en"
+    ? "Always communicate in English. Provide sharp, motivating, and scientifically rigorous endurance coaching responses in clean English."
+    : "Always communicate in natural, clean, professional coaching Indonesian (Bahasa Indonesia). Gunakan gaya bicara pelari kasual yang santun dan menyemangati tanpa AI slop."
+} If the athlete asks in a different language, adapt accordingly. Keep universal endurance terms (e.g. pace, cadence, decoupling, VAM, TSB, CTL, ATL, ACWR, VO2max, easy run, power hike) unaltered.
 `;
 
   const model = getAiModelInstance(provider, apiKey, modelName);

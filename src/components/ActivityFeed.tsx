@@ -26,6 +26,7 @@ import {
   calculateGapPace,
   calculateDecouplingAnalysis,
 } from "@/lib/analytics";
+import { useTranslation } from "@/lib/i18n/context";
 import { ActivityShareModal } from "./ActivityShareModal";
 import { ActivityCompareModal } from "./ActivityCompareModal";
 
@@ -61,6 +62,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
   compact = false,
   maxCompactItems = 4,
 }) => {
+  const { language } = useTranslation();
   const [filter, setFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(
@@ -92,7 +94,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
   );
 
   const filterTabs = [
-    { id: "all", label: "All" },
+    { id: "all", label: language === "id" ? "Semua" : "All" },
     { id: "road", label: "Road" },
     { id: "trail", label: "Trail" },
     ...(hasBike ? [{ id: "bike", label: "Bike" }] : []),
@@ -182,7 +184,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
           </div>
           <div>
             <h3 className="text-base font-black text-zinc-950 tracking-tight">
-              Recent Workouts & Sessions
+              {language === "id"
+                ? "Riwayat Latihan & Sesi Terbaru"
+                : "Recent Workouts & Sessions"}
             </h3>
             <p className="text-[11px] font-mono text-zinc-600 font-semibold">
               Pace • HR Zones • Training Load • VAM
@@ -197,7 +201,11 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
               href="/activities"
               className="text-xs font-black text-zinc-950 hover:bg-orange-100 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-[#FAF9F5] shadow-[1.5px_1.5px_0px_0px_#09090b] flex items-center gap-1 transition-all shrink-0"
             >
-              <span>Logbook ({activities.length})</span>
+              <span>
+                {language === "id"
+                  ? `Logbook (${activities.length})`
+                  : `Logbook (${activities.length})`}
+              </span>
               <ChevronRight className="h-3.5 w-3.5 stroke-[2.5]" />
             </Link>
           )}
@@ -224,7 +232,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
       {/* Activities List */}
       {filtered.length === 0 ? (
         <div className="p-8 text-center text-xs text-zinc-600 font-bold">
-          No workouts found for this filter.
+          {language === "id"
+            ? "Tidak ada sesi latihan untuk filter ini."
+            : "No workouts found for this filter."}
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -233,7 +243,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
               act.sportType === "trail_run" || act.elevationGain > 200;
             const decoupling = calculateDecouplingAnalysis(act);
             const dateStr = new Date(act.startTime).toLocaleDateString(
-              "en-US",
+              language === "id" ? "id-ID" : "en-US",
               {
                 day: "numeric",
                 month: "short",
@@ -352,7 +362,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
             className="w-full py-2.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 hover:bg-orange-100 text-xs font-black text-zinc-950 flex items-center justify-center gap-2 transition-all shadow-[2px_2px_0px_0px_#09090b] group"
           >
             <span>
-              Open Full Logbook ({activities.length} Saved Activities)
+              {language === "id"
+                ? `Buka Logbook Lengkap (${activities.length} Sesi Disimpan)`
+                : `Open Full Logbook (${activities.length} Saved Activities)`}
             </span>
             <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform stroke-[2.5]" />
           </Link>
@@ -361,19 +373,39 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
         totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t-2 border-zinc-100 text-xs">
             <div className="text-zinc-600 font-mono text-[11px] font-medium">
-              Menampilkan{" "}
-              <strong className="text-zinc-950 font-black">
-                {(currentPage - 1) * PAGE_SIZE + 1}
-              </strong>{" "}
-              -{" "}
-              <strong className="text-zinc-950 font-black">
-                {Math.min(currentPage * PAGE_SIZE, filtered.length)}
-              </strong>{" "}
-              dari{" "}
-              <strong className="text-zinc-950 font-black">
-                {filtered.length}
-              </strong>{" "}
-              aktivitas
+              {language === "id" ? (
+                <>
+                  Menampilkan{" "}
+                  <strong className="text-zinc-950 font-black">
+                    {(currentPage - 1) * PAGE_SIZE + 1}
+                  </strong>{" "}
+                  -{" "}
+                  <strong className="text-zinc-950 font-black">
+                    {Math.min(currentPage * PAGE_SIZE, filtered.length)}
+                  </strong>{" "}
+                  dari{" "}
+                  <strong className="text-zinc-950 font-black">
+                    {filtered.length}
+                  </strong>{" "}
+                  aktivitas
+                </>
+              ) : (
+                <>
+                  Showing{" "}
+                  <strong className="text-zinc-950 font-black">
+                    {(currentPage - 1) * PAGE_SIZE + 1}
+                  </strong>{" "}
+                  -{" "}
+                  <strong className="text-zinc-950 font-black">
+                    {Math.min(currentPage * PAGE_SIZE, filtered.length)}
+                  </strong>{" "}
+                  of{" "}
+                  <strong className="text-zinc-950 font-black">
+                    {filtered.length}
+                  </strong>{" "}
+                  activities
+                </>
+              )}
             </div>
 
             {/* Mobile pagination: Prev [Page X / Y] Next */}
@@ -465,7 +497,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                   </h3>
                   <p className="text-xs font-mono font-medium text-zinc-600 mt-0.5">
                     {new Date(selectedActivity.startTime).toLocaleString(
-                      "id-ID",
+                      language === "id" ? "id-ID" : "en-US",
                       {
                         dateStyle: "medium",
                         timeStyle: "short",
@@ -508,18 +540,26 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                     }
                   }}
                   className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-sky-200 hover:bg-sky-300 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
-                  title="Compare with another run"
+                  title={
+                    language === "id"
+                      ? "Bandingkan dengan lari lain"
+                      : "Compare with another run"
+                  }
                 >
                   <Scale className="h-3.5 w-3.5 stroke-[2.5]" />
-                  <span>Compare</span>
+                  <span>{language === "id" ? "Bandingkan" : "Compare"}</span>
                 </button>
                 <button
                   onClick={() => setSharingActivity(selectedActivity)}
                   className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-zinc-950 bg-amber-300 hover:bg-amber-400 text-zinc-950 font-black text-xs shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
-                  title="Share workout card"
+                  title={
+                    language === "id"
+                      ? "Bagikan kartu aktivitas"
+                      : "Share workout card"
+                  }
                 >
                   <Share2 className="h-3.5 w-3.5 stroke-[2.5]" />
-                  <span>Share</span>
+                  <span>{language === "id" ? "Bagikan" : "Share"}</span>
                 </button>
                 <button
                   onClick={() => setSelectedActivity(null)}

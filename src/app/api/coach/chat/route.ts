@@ -4,14 +4,14 @@ import { getCurrentAthleteId } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages }: { messages: ChatMessage[] } = await req.json();
+    const { messages, language }: { messages: ChatMessage[]; language?: "en" | "id" } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: "Invalid messages format" }, { status: 400 });
     }
 
     const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
-    const result = await runCoachStream(messages, athleteId);
+    const result = await runCoachStream(messages, athleteId, language);
     return result.toTextStreamResponse();
   } catch (err: any) {
     console.error("AI Coach Chat error:", err);

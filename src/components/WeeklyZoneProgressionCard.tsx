@@ -98,7 +98,9 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               Weekly Hours in Zones (Intensity Distribution)
             </h3>
             <p className="text-[11px] font-mono text-zinc-600">
-              Belum ada data aktivitas yang cukup untuk analisis zona mingguan.
+              {language === "id"
+                ? "Belum ada data aktivitas yang cukup untuk analisis zona mingguan."
+                : "Insufficient activity data for weekly zone analysis."}
             </p>
           </div>
         </div>

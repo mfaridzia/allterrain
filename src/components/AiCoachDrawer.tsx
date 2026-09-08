@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Bot, Send, X, Sparkles, User, AlertCircle, RefreshCw } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface Message {
   id: string;
@@ -24,17 +25,39 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
   currentTsb,
   acwr,
 }) => {
+  const { language } = useTranslation();
+
+  const defaultWelcomeEn =
+    "Hello! I am your AI Athletic Coach, directly connected to your COROS physiological telemetry and performance analytics (TSB, ACWR, VAM). How can I assist your training today?";
+  const defaultWelcomeId =
+    "Halo Coach! Saya adalah AI Training Coach Anda. Saya terhubung langsung ke data fisiologis COROS dan analitik performa Anda (TSB, ACWR, VAM). Ada yang bisa saya bantu hari ini?";
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content:
-        "Halo Coach! Saya adalah AI Training Coach Anda. Saya terhubung langsung ke data fisiologis COROS dan analitik performa Anda (TSB, ACWR, VAM). Ada yang bisa saya bantu hari ini?",
+      content: language === "en" ? defaultWelcomeEn : defaultWelcomeId,
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Dynamically update greeting if user hasn't messaged yet
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === "welcome") {
+        return [
+          {
+            id: "welcome",
+            role: "assistant",
+            content: language === "en" ? defaultWelcomeEn : defaultWelcomeId,
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [language, defaultWelcomeEn, defaultWelcomeId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,11 +65,18 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
 
   if (!isOpen) return null;
 
-  const quickPrompts = [
-    "Apakah hari ini aman untuk sesi interval keras?",
-    "Analisis risiko cedera dari status ACWR dan TSB saya.",
-    "Bagaimana strategi pacing & nanjak race trail berdasarkan VAM saya?",
-  ];
+  const quickPrompts =
+    language === "en"
+      ? [
+          "Is today safe for a hard interval session?",
+          "Analyze my injury risk based on my current ACWR and TSB.",
+          "What pacing & climbing strategy should I use based on my VAM?",
+        ]
+      : [
+          "Apakah hari ini aman untuk sesi interval keras?",
+          "Analisis risiko cedera dari status ACWR dan TSB saya.",
+          "Bagaimana strategi pacing & nanjak race trail berdasarkan VAM saya?",
+        ];
 
   const handleSend = async (textToSend?: string) => {
     const text = textToSend || input;
@@ -72,6 +102,7 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          language,
         }),
       });
 
@@ -104,7 +135,7 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
           msg.id === assistantMsgId
             ? {
                 ...msg,
-                content: `⚠️ ${err.message || "Gagal menghubungi AI model. Pastikan API key sudah diisi di menu Settings."}`,
+                content: `⚠️ ${err.message || (language === "en" ? "Failed to connect to AI model. Please ensure your API key is configured in Settings." : "Gagal menghubungi AI model. Pastikan API key sudah diisi di menu Settings.")}`,
               }
             : msg
         )
@@ -160,7 +191,7 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
                   : "bg-white text-zinc-900 font-medium shadow-[2px_2px_0px_0px_#09090b] rounded-tl-none"
               }`}
             >
-              {m.content || (loading ? <span className="animate-pulse font-bold text-zinc-600">Analyzing athlete metrics...</span> : "")}
+              {m.content || (loading ? <span className="animate-pulse font-bold text-zinc-600">{language === "en" ? "Analyzing athlete metrics..." : "Menganalisis data fisiologis atlet..."}</span> : "")}
             </div>
             {m.role === "user" && (
               <div className="h-6 w-6 rounded-md bg-zinc-950 border-2 border-zinc-950 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-[1px_1px_0px_0px_#09090b]">
@@ -174,7 +205,9 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
 
       {/* Quick Prompt Chips */}
       <div className="px-4 py-3 border-t-2 border-zinc-950 bg-white flex flex-col gap-1.5 shadow-[0_-2px_0px_0px_#09090b]">
-        <span className="text-[10px] text-zinc-600 uppercase font-black tracking-wider">Quick Inquiries:</span>
+        <span className="text-[10px] text-zinc-600 uppercase font-black tracking-wider">
+          {language === "en" ? "Quick Inquiries:" : "Pertanyaan Cepat:"}
+        </span>
         <div className="flex flex-col gap-1.5">
           {quickPrompts.map((p, idx) => (
             <button
@@ -201,7 +234,7 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Tanya coach tentang latihan hari ini..."
+          placeholder={language === "en" ? "Ask coach about today's training..." : "Tanya coach tentang latihan hari ini..."}
           disabled={loading}
           className="flex-1 px-3.5 py-2.5 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 placeholder-zinc-500 focus:outline-none focus:bg-white font-medium shadow-[1.5px_1.5px_0px_0px_#09090b]"
         />
