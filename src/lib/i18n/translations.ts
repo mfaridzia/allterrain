@@ -203,10 +203,9 @@ export const translations = {
       trailRunning: "Trail Running",
     },
     featuresPage: {
-      badge: "Sports Science & Exercise Physiology",
       heroTitle: "Inside the Engine: AllTerrain Methodology",
       heroSubtitle:
-        "Bridging raw COROS wearable telemetry and actionable sports science. Designed for marathoners, trail runners, and coaches who demand precision.",
+        "Transforming raw COROS wearable telemetry into clear, actionable training science for every run.",
       backToHome: "Back to Dashboard",
       connectCtaTitle: "Ready to elevate your training with real science?",
       connectCtaSubtitle:
@@ -446,10 +445,9 @@ export const translations = {
       trailRunning: "Trail Run",
     },
     featuresPage: {
-      badge: "Sports Science & Exercise Physiology",
       heroTitle: "Di Balik Layar: Metodologi Sains AllTerrain",
       heroSubtitle:
-        "Menjembatani telemetri mentah jam COROS dengan fisiologi latihan presisi. Dirancang untuk pelari maraton, ultra, dan pelatih yang mengutamakan data objektif.",
+        "Mengubah data perangkat COROS Anda menjadi panduan latihan berbasis sains yang mudah dipahami.",
       backToHome: "Kembali ke Dashboard",
       connectCtaTitle: "Siap meningkatkan performa lari Anda dengan sains?",
       connectCtaSubtitle:

@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import {
   Activity,
-  ShieldCheck,
   Mountain,
   Brain,
   Layers,
@@ -12,13 +11,8 @@ import {
   Lock,
   ArrowLeft,
   ArrowRight,
-  TrendingUp,
-  HeartPulse,
-  Compass,
   Gauge,
-  Sparkles,
   Key,
-  CheckCircle2,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useTranslation } from "@/lib/i18n/context";
@@ -147,26 +141,15 @@ export default function FeaturesPage() {
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border-2 border-zinc-950 font-black text-xs text-zinc-900 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+            aria-label={t("featuresPage.backToHome", "Back to Dashboard")}
+            className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-white border-2 border-zinc-950 text-zinc-900 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
           >
-            <ArrowLeft className="h-3.5 w-3.5 stroke-[2.5]" />
-            <span>{t("featuresPage.backToHome", "Back to Dashboard")}</span>
+            <ArrowLeft className="h-4 w-4 stroke-[2.5]" />
           </Link>
-
-          <span className="text-[11px] font-black uppercase tracking-wider text-zinc-500">
-            ALLTERRAIN v2.0
-          </span>
         </div>
 
         {/* Hero Header */}
-        <section className="text-center space-y-4 pt-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-100 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-            <Sparkles className="h-3.5 w-3.5 text-orange-600" />
-            <span className="text-[11px] font-black uppercase tracking-wider text-orange-950">
-              {t("featuresPage.badge", "Sports Science & Exercise Physiology")}
-            </span>
-          </div>
-
+        <section className="text-center space-y-3 pt-2">
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-950 leading-tight">
             {t("featuresPage.heroTitle", "Inside the Engine: AllTerrain Methodology")}
           </h1>
@@ -174,7 +157,7 @@ export default function FeaturesPage() {
           <p className="text-zinc-700 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed font-medium">
             {t(
               "featuresPage.heroSubtitle",
-              "Bridging raw COROS wearable telemetry and actionable sports science. Designed for marathoners, trail runners, and coaches who demand precision."
+              "Transforming raw COROS wearable telemetry into clear, actionable training science for every run."
             )}
           </p>
         </section>
@@ -293,19 +276,6 @@ export default function FeaturesPage() {
               </form>
             </div>
           )}
-
-          {/* Security Subtext */}
-          <div className="pt-2 flex items-center justify-center">
-            <p className="text-[11px] text-zinc-600 font-bold text-center flex items-center justify-center">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 stroke-[2.5] mr-1.5 shrink-0" />
-              <span>
-                {t(
-                  "landing.privacyNotice",
-                  "Private & Secure: Tokens & athlete metrics are stored in your private encrypted database. Never shared with third parties."
-                )}
-              </span>
-            </p>
-          </div>
         </section>
       </main>
     </div>
