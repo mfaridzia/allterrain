@@ -210,16 +210,22 @@ When maintaining or extending this interface, adhere to these rules:
 
 ## 8. Codebase File Mapping
 
-- **Core CSS & Global Utilities:** `src/app/globals.css`
-- **Global Instrument Navigation:** `src/components/Header.tsx`
+- **Global Instrument Navigation & Layout:**
+  - Navigation Header: `src/components/Header.tsx`
+  - Universal Neo-Brutalist Footer: `src/components/Footer.tsx`
+  - Language Switcher: `src/components/LanguageToggle.tsx`
 - **Core Visualizations & Telemetry:**
   - Bannister PMC Chart: `src/components/PmcChart.tsx`
   - ACWR & Workload Gauge: `src/components/AcwrCard.tsx`
   - TID & Aerobic Decoupling: `src/components/TidCard.tsx`
   - Daily Recovery Radar: `src/components/RecoveryRadar.tsx`
+  - Training Readiness & Daily Prescriptions: `src/components/TrainingReadinessCard.tsx`
+  - Weekly Zone Progression: `src/components/WeeklyZoneProgressionCard.tsx`
   - EvoLab & Race Predictor: `src/components/EvoLabSuite.tsx`
   - Ultra Mountain & Trail Suite: `src/components/TrailSuite.tsx`
   - Activity Feed & Inspector: `src/components/ActivityFeed.tsx`
+  - Activity Compare Modal: `src/components/ActivityCompareModal.tsx`
+  - Social Share Card Modal: `src/components/ActivityShareModal.tsx`
   - Topographic Geospatial Map: `src/components/TrailMap.tsx`
   - AI Coach Drawer: `src/components/AiCoachDrawer.tsx`
   - BYOK Settings: `src/components/SettingsModal.tsx`
@@ -228,3 +234,6 @@ When maintaining or extending this interface, adhere to these rules:
   - Overview Dashboard: `src/app/page.tsx`
   - Activity Logbook: `src/app/activities/page.tsx`
   - GPX Course & COT Simulator: `src/app/trail-planner/page.tsx`
+  - Public Features & Methodology: `src/app/features/page.tsx`
+  - Privacy Policy: `src/app/privacy/page.tsx`
+  - Terms of Service: `src/app/terms/page.tsx`

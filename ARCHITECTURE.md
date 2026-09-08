@@ -20,6 +20,8 @@ flowchart TD
         Logbook_View["Multi-Sport Logbook (Calendar Month & Sport Filters)"]
         Share_View["Social Media Share Card Generator (9:16 Story / 1:1 Feed)"]
         Coach_View["Context-Aware AI Coach Drawer (Gemini / DeepSeek / OpenAI / Claude / Ollama)"]
+        Public_Pages["Public Discovery & Legal Pages (/features, /privacy, /terms)"]
+        i18n_Engine["Global Dual-Locale i18n Engine (EN / ID)"]
     end
 
     subgraph Server["Backend Server (Next.js Route Handlers & Server Libs)"]
@@ -155,6 +157,39 @@ Supports comprehensive telemetry across major endurance and fitness disciplines:
   - Attempting to visit protected routes (`/activities`, `/trail-planner`) triggers an immediate redirect to `/`.
   - The Header automatically hides all internal navigation links, AI Coach trigger, Settings button, and Online/Offline badges, leaving only the clean brand mark.
   - The landing page renders a secure `<AuthGate />` locking all telemetry until reconnected.
+
+### 3.12 Public Information Architecture & Transparent Methodology (`/features`)
+- **Unauthenticated Public Route:** Serves a comprehensive breakdown of all 7 core sports science engines without requiring COROS OAuth credentials.
+- **Architectural Pillars Detailed:**
+  1. Banister Impulse-Response Model & EMA time-constants (42d CTL / 7d ATL).
+  2. Tim Gabbett ACWR sweet spot ($0.8 - 1.3$) and adaptive safety downshifting.
+  3. Stephen Seiler 80/20 polarized distribution and grey-zone threshold stagnation prevention.
+  4. Mountain VAM climbing velocity ($m/h$), GPX parsing, and hydration/carbohydrate pacing.
+  5. Joe Friel Aerobic Decoupling ($Pa:HR$) and split-by-split workout compare.
+  6. BYOK multi-provider AI Coach prompt context injection architecture.
+  7. Local-first zero-knowledge privacy and official COROS MCP integration.
+- **Conversion Pathways:** Includes direct connect CTA button (`/api/auth/coros/login`) and manual Bearer Token drawer.
+
+### 3.13 Legal Framework & Regulatory Compliance (`/privacy`, `/terms`)
+- **Privacy Policy (`/privacy`):**
+  - Explicitly states zero-knowledge local SQLite storage, encryption-at-rest for athlete OAuth tokens, and zero monetization or third-party telemetry brokering.
+  - Documents BYOK AI privacy (API keys communicated directly with LLM providers; never intercepted or logged).
+  - Specifies full data sovereignty with 1-click token purge via Disconnect.
+- **Terms of Service (`/terms`):**
+  - **Essential Non-Medical Disclaimer:** Legally specifies that all algorithmic calculations (PMC, ACWR, VAM, cardiac drift, and fueling) are sports science estimations intended strictly for educational and athletic performance purposes, not licensed medical advice.
+  - **COROS Platform Compliance:** Clarifies independent operation via official COROS Open API / MCP protocols and non-affiliation trademark disclaimers.
+  - **Developer Contact:** Official channel directed to Muhammad Farid Zia (`muhfaridzia@gmail.com`).
+
+### 3.14 Global Internationalization (i18n) Engine
+- **Client-Side Reactive Context (`src/lib/i18n/`):**
+  - `LanguageContext.tsx`: Manages active language state (`en` | `id`), provides the `t(path, fallback)` translation helper, and handles browser `localStorage` persistence (`allterrain_language`).
+  - `translations.ts`: Single-source-of-truth bilingual dictionary covering navigation, metrics, tooltips, form zones, workout logbook, trail planner, AI coach, features showcase, and legal disclaimers.
+  - Synchronizes HTML document `lang` attribute dynamically (`<html lang="id">` or `<html lang="en">`).
+
+### 3.15 Universal Footer Architecture (`<Footer />`)
+- Standardized neo-brutalist footer component integrated across all public (`/`, `/features`, `/privacy`, `/terms`) and authenticated dashboard views.
+- Features direct cross-navigation links (`Overview`, `Features & Science`, `Privacy Policy`, `Terms of Service`) and official community attribution:
+  *“© 2026 ALLTERRAIN. Developed for the COROS user community. Not affiliated with COROS Wearables Inc.”*
 
 ---
 
