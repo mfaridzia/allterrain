@@ -59,20 +59,26 @@ flowchart TD
 
 ---
 
-## 2. Data Layer & SQLite Schema (WAL Mode)
+## 2. Data Layer & SQLite Schema (WAL Mode & Turso Edge LibSQL)
 
-Data is stored locally on-disk at `./data/coros_athlete.db` using `better-sqlite3` configured with **WAL (*Write-Ahead Logging*)** for maximum local throughput, instant zero-latency queries, and ACID safety.
+Data is stored locally on-disk at `./data/coros_athlete.db` using `@libsql/client` configured with **WAL (*Write-Ahead Logging*)** for local development, or connected seamlessly to **Turso Edge Database** via `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` in serverless/production deployments.
 
 ### 2.1 Table Specifications (`src/lib/db.ts`)
 
-| Table Name | Description | Primary Key |
+| Table Name | Description | Primary Key / Unique |
 | :--- | :--- | :--- |
-| `auth_tokens` | Stores COROS OAuth 2.0 access & refresh tokens, expiration timestamps, scopes, and athlete profile metadata. | `id` (provider) |
+| `auth_tokens` | Stores COROS OAuth 2.0 access & refresh tokens, expiration timestamps, scopes, and athlete profile metadata. | `id` (athlete_id) |
+| `sessions` | Serverless multi-tenant session storage mapping session cookies/headers to `athlete_id`. | `session_id` |
 | `oauth_states` | Ephemeral store for PKCE `code_verifier` and security states during the OAuth handshake. | `state` |
-| `activities` | Workout sessions (road runs, trail runs, track, bike, gym/strength) including distance, duration, elevation, heart rate, VAM, TE, and raw sensor streams. | `id` (UUID / COROS id) |
-| `daily_metrics` | Daily time-series records of Training Load, CTL, ATL, TSB, ACWR, Monotony, Strain, HRV rMSSD, and Sleep data. | `date` (YYYY-MM-DD) |
+| `activities` | Workout sessions (road runs, trail runs, track, bike, gym/strength) including distance, duration, elevation, heart rate, VAM, TE, and raw sensor streams. | `id` (standard `act_${coros_id}`), UNIQUE `(athlete_id, coros_id)` |
+| `daily_metrics` | Daily time-series records of Training Load, CTL, ATL, TSB, ACWR, Monotony, Strain, HRV rMSSD, and Sleep data. | `(athlete_id, date)` |
 | `chat_messages` | Full conversational memory history with the context-aware AI Training Coach. | `id` (UUID) |
-| `user_settings` | BYOK configuration (LLM API keys, chosen models, VAM calibrations, athlete body mass, threshold pace). | `key` |
+| `user_settings` | BYOK configuration (LLM API keys, chosen models, VAM calibrations, athlete body mass, threshold pace). | `(athlete_id, key)` |
+
+### 2.2 Deduplication Engine & Constraint Safeguards
+- **Deterministic Activity Ranking (`cleanDuplicateActivities`):** Employs windowed SQL partition ranking (`ROW_NUMBER() OVER (PARTITION BY athlete_id, COALESCE(NULLIF(coros_id, ''), start_time) ORDER BY CASE WHEN raw_data LIKE '%Activity Details%' THEN 1 ELSE 0 END DESC, CASE WHEN id = 'act_' || coros_id THEN 1 ELSE 0 END DESC, created_at DESC)`) to automatically prune duplicate workout rows from legacy transition states.
+- **Unique Composite Indexes:** `idx_activities_athlete_coros` (`athlete_id`, `coros_id`) and `idx_user_settings_athlete_key` (`athlete_id`, `key`) prevent duplicate workout records and cross-athlete configuration collisions at the engine level.
+- **Sync Purge Pre-check:** The COROS sync engine proactively purges any legacy variant IDs for incoming workouts prior to upsert, ensuring clean single-truth logbook aggregation.
 
 ---
 

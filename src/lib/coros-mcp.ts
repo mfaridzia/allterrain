@@ -458,6 +458,14 @@ export async function syncCorosData(
           decouplingPct = Math.max(0.5, Math.round((baseDrift + seed) * 10) / 10);
         }
 
+        // Purge any legacy duplicate format ID for this activity
+        try {
+          await db.execute({
+            sql: `DELETE FROM activities WHERE athlete_id = ? AND (coros_id = ? OR start_time = ?) AND id != ?`,
+            args: [athleteId, labelId, startTimestamp, activityId],
+          });
+        } catch {}
+
         await db.execute({
           sql: `
             INSERT INTO activities (

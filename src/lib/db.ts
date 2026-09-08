@@ -155,11 +155,20 @@ export async function initSchema(client: Client): Promise<void> {
     await client.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_metrics_athlete_date ON daily_metrics (athlete_id, date);`);
     await client.execute(`CREATE INDEX IF NOT EXISTS idx_sessions_athlete ON sessions (athlete_id);`);
     await client.execute(`CREATE INDEX IF NOT EXISTS idx_auth_athlete ON auth_tokens (athlete_id);`);
+    await client.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_user_settings_athlete_key ON user_settings (athlete_id, key);`);
   } catch {
     // Ignore index creation notices
   }
 
-  // 4. Migrate any unassigned 'athlete_primary' data to active athlete
+  // 4. Automatic Deduplication of legacy duplicate activity entries
+  try {
+    await cleanDuplicateActivities(client);
+    await client.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_activities_athlete_coros ON activities (athlete_id, coros_id);`);
+  } catch (e) {
+    console.warn("Deduplication notice:", e);
+  }
+
+  // 5. Migrate any unassigned 'athlete_primary' data to active athlete
   try {
     const activeAthleteRes = await client.execute(
       `SELECT athlete_id FROM auth_tokens WHERE athlete_id != 'athlete_primary' ORDER BY updated_at DESC LIMIT 1;`
@@ -171,6 +180,44 @@ export async function initSchema(client: Client): Promise<void> {
       await client.execute({ sql: `UPDATE user_settings SET athlete_id = ? WHERE athlete_id = 'athlete_primary';`, args: [targetAthlete] });
     }
   } catch {}
+}
+
+/**
+ * Deduplicate any activities where multiple records exist for the same athlete and activity/coros_id.
+ * Retains the highest-fidelity entry (authentic barometric raw_data, matching standard ID act_${coros_id}, latest timestamp).
+ */
+export async function cleanDuplicateActivities(client: Client, athleteId?: string): Promise<number> {
+  try {
+    const athleteFilter = athleteId ? "WHERE athlete_id = ?" : "";
+    const args = athleteId ? [athleteId] : [];
+
+    const res = await client.execute({
+      sql: `
+        DELETE FROM activities
+        WHERE id IN (
+          SELECT id FROM (
+            SELECT id,
+                   ROW_NUMBER() OVER (
+                     PARTITION BY athlete_id, COALESCE(NULLIF(coros_id, ''), start_time)
+                     ORDER BY
+                       CASE WHEN raw_data LIKE '%Activity Details%' THEN 1 ELSE 0 END DESC,
+                       CASE WHEN id = 'act_' || coros_id THEN 1 ELSE 0 END DESC,
+                       created_at DESC,
+                       rowid DESC
+                   ) as rn
+            FROM activities
+            ${athleteFilter}
+          )
+          WHERE rn > 1
+        );
+      `,
+      args,
+    });
+    return Number(res.rowsAffected || 0);
+  } catch (err) {
+    console.warn("cleanDuplicateActivities notice:", err);
+    return 0;
+  }
 }
 
 // Token Helpers
@@ -318,14 +365,29 @@ export async function setSetting(
   const db = getDb();
   const now = Date.now();
 
-  await db.execute({
-    sql: `
-      INSERT INTO user_settings (key, athlete_id, value, updated_at)
-      VALUES (?, ?, ?, ?)
-      ON CONFLICT(athlete_id, key) DO UPDATE SET
-        value = excluded.value,
-        updated_at = excluded.updated_at
-    `,
-    args: [key, athleteId, value, now],
-  });
+  try {
+    await db.execute({
+      sql: `
+        INSERT INTO user_settings (key, athlete_id, value, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(athlete_id, key) DO UPDATE SET
+          value = excluded.value,
+          updated_at = excluded.updated_at
+      `,
+      args: [key, athleteId, value, now],
+    });
+  } catch {
+    // Graceful fallback if database table has primary key on (key) alone
+    await db.execute({
+      sql: `
+        INSERT INTO user_settings (key, athlete_id, value, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET
+          athlete_id = excluded.athlete_id,
+          value = excluded.value,
+          updated_at = excluded.updated_at
+      `,
+      args: [key, athleteId, value, now],
+    });
+  }
 }

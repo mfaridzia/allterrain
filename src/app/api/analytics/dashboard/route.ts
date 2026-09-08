@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, getCorosToken, getSetting } from "@/lib/db";
+import { getDb, getCorosToken, getSetting, cleanDuplicateActivities } from "@/lib/db";
 import { refreshCorosToken } from "@/lib/coros-auth";
 import { getCurrentAthleteId, getRequestTimezone } from "@/lib/session";
 import {
@@ -50,6 +50,9 @@ export async function GET(req: NextRequest) {
   }
 
   const db = getDb();
+
+  // Auto-deduplicate any legacy duplicate activities for this athlete
+  await cleanDuplicateActivities(db, athleteId);
 
   // Parallel fetch to eliminate async waterfall (Vercel Best Practice: async-parallel)
   const [
