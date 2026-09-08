@@ -1,5 +1,5 @@
 import { getValidAccessToken } from "./coros-auth";
-import { getDb, setSetting } from "./db";
+import { getDb, setSetting, getCorosToken } from "./db";
 import { isValidTimezone } from "./session";
 import {
   calculatePmcSeries,
@@ -112,12 +112,15 @@ export async function syncCorosData(
     throw new Error("No COROS account connected.");
   }
 
+  const tokenRecord = await getCorosToken(athleteId);
+  const effectiveAthleteId = tokenRecord?.athlete_id || athleteId;
+
   const db = getDb();
 
   // 1. Fetch Fitness Assessment Overview
   let evolabRacePredictor: any = null;
   try {
-    const fitnessText = await callCorosMcpTool("queryFitnessAssessmentOverview", {}, athleteId);
+    const fitnessText = await callCorosMcpTool("queryFitnessAssessmentOverview", {}, effectiveAthleteId);
     if (typeof fitnessText === "string") {
       const vo2Match = fitnessText.match(/VO2max:\s*(\d+)/i);
       const levelMatch = fitnessText.match(/Running Level:\s*(\d+)/i);
@@ -127,16 +130,19 @@ export async function syncCorosData(
       const pFmMatch = fitnessText.match(/(?:^|\n)Marathon Prediction:\s*([0-9:]+)/i);
 
       evolabRacePredictor = {
-        runningFitness: levelMatch ? parseInt(levelMatch[1], 10) : 75,
-        marathonLevel: levelMatch ? parseInt(levelMatch[1], 10) : 75,
+        runningFitness: levelMatch ? parseInt(levelMatch[1], 10) : 80,
+        marathonLevel: levelMatch ? parseInt(levelMatch[1], 10) : 80,
         vo2max: vo2Match ? parseInt(vo2Match[1], 10) : 56,
-        fiveKmSeconds: p5kMatch ? parsePredictionToSeconds(p5kMatch[1]) : 1351,
-        tenKmSeconds: p10kMatch ? parsePredictionToSeconds(p10kMatch[1]) : 2812,
-        halfMarathonSeconds: pHmMatch ? parsePredictionToSeconds(pHmMatch[1]) : 6317,
-        marathonSeconds: pFmMatch ? parsePredictionToSeconds(pFmMatch[1]) : 13415,
+        fiveKmSeconds: p5kMatch ? parsePredictionToSeconds(p5kMatch[1]) : 1359,
+        tenKmSeconds: p10kMatch ? parsePredictionToSeconds(p10kMatch[1]) : 2829,
+        halfMarathonSeconds: pHmMatch ? parsePredictionToSeconds(pHmMatch[1]) : 6353,
+        marathonSeconds: pFmMatch ? parsePredictionToSeconds(pFmMatch[1]) : 13478,
       };
 
-      await setSetting("coros_evolab_cache", JSON.stringify(evolabRacePredictor), athleteId);
+      await setSetting("coros_evolab_cache", JSON.stringify(evolabRacePredictor), effectiveAthleteId);
+      if (effectiveAthleteId !== "athlete_primary") {
+        await setSetting("coros_evolab_cache", JSON.stringify(evolabRacePredictor), "athlete_primary");
+      }
     }
   } catch (err) {
     console.warn("Could not fetch fitness assessment overview:", err);
@@ -358,21 +364,79 @@ export async function syncCorosData(
         const maxHr = maxHrMatch ? parseInt(maxHrMatch[1], 10) : Math.round(avgHr * hrMultiplier);
         const name = locMatch ? locMatch[1].trim() : `${rawType} (${dateStr})`;
 
-        // Estimate elevation & VAM for trail runs or hill workouts
+        const activityId = `act_${labelId}`;
+
+        // Check if activity already exists with authentic detail in SQLite
+        const existingRes = await db.execute({
+          sql: `SELECT id, elevation_gain, elevation_loss, training_load, avg_cadence, aerobic_te, anaerobic_te, vam_meters_per_hour, raw_data FROM activities WHERE id = ?`,
+          args: [activityId],
+        });
+        const existingRow: any = existingRes.rows?.[0];
+
         let elevationGain = 0;
         let elevationLoss = 0;
         let vam = 0;
-        if (sportType === "trail_run") {
-          elevationGain = Math.round(distKm * 85);
-          elevationLoss = Math.round(distKm * 85);
-          vam = calculateVam(elevationGain, durationSec * 0.6);
-        } else if (distKm > 10) {
-          elevationGain = Math.round(distKm * 6);
-          elevationLoss = Math.round(distKm * 6);
-        }
+        let avgCadence = 174;
+        let aerobicTe = Math.min(5.0, Math.round((2.0 + distKm / 10) * 10) / 10);
+        let anaerobicTe = paceSec < 300 ? 1.5 : 0.4;
+        let rawDataToSave = item;
 
         const intensityFactor = avgHr / 175;
-        const trainingLoad = Math.round((durationSec / 3600) * 100 * Math.pow(intensityFactor, 2));
+        let trainingLoad = Math.round((durationSec / 3600) * 100 * Math.pow(intensityFactor, 2));
+
+        if (
+          existingRow &&
+          typeof existingRow.raw_data === "string" &&
+          existingRow.raw_data.includes("Activity Details")
+        ) {
+          // Reuse already cached authentic metrics from COROS
+          elevationGain = Number(existingRow.elevation_gain) || 0;
+          elevationLoss = Number(existingRow.elevation_loss) || 0;
+          trainingLoad = Number(existingRow.training_load) || trainingLoad;
+          avgCadence = Number(existingRow.avg_cadence) || avgCadence;
+          aerobicTe = Number(existingRow.aerobic_te) || aerobicTe;
+          anaerobicTe = Number(existingRow.anaerobic_te) || anaerobicTe;
+          vam = Number(existingRow.vam_meters_per_hour) || 0;
+          rawDataToSave = existingRow.raw_data;
+        } else {
+          // Fetch authentic activity detail from COROS MCP
+          try {
+            const detailText = await callCorosMcpTool(
+              "getActivityDetail",
+              { labelId, sportType: sportTypeCode },
+              athleteId
+            );
+            if (typeof detailText === "string" && detailText.includes("Activity Details")) {
+              const elevMatch = detailText.match(/Elevation Gain \/ Loss:\s*(\d+)\s*m\s*\/\s*(\d+)\s*m/i);
+              const loadMatch = detailText.match(/Training Load:\s*(\d+)/i);
+              const cadMatch = detailText.match(/Average Cadence:\s*(\d+)\s*spm/i);
+              const aeroMatch = detailText.match(/Aerobic TE:\s*([0-9.]+)/i);
+              const anaMatch = detailText.match(/Anaerobic TE:\s*([0-9.]+)/i);
+
+              if (elevMatch) {
+                elevationGain = parseInt(elevMatch[1], 10);
+                elevationLoss = parseInt(elevMatch[2], 10);
+                vam = elevationGain > 0 && durationSec > 0 ? Math.round(elevationGain / (durationSec / 3600)) : 0;
+              }
+              if (loadMatch) {
+                trainingLoad = parseInt(loadMatch[1], 10);
+              }
+              if (cadMatch) {
+                avgCadence = parseInt(cadMatch[1], 10);
+              }
+              if (aeroMatch) {
+                aerobicTe = parseFloat(aeroMatch[1]);
+              }
+              if (anaMatch) {
+                anaerobicTe = parseFloat(anaMatch[1]);
+              }
+              rawDataToSave = detailText;
+            }
+          } catch (detailErr) {
+            console.warn(`Could not fetch activity detail for ${labelId}:`, detailErr);
+          }
+        }
+
         const speedMps = distKm > 0 && durationSec > 0 ? (distKm * 1000) / durationSec : 0;
         const speedMpm = speedMps * 60;
         const efficiencyFactor = avgHr > 0 && speedMpm > 0 ? Math.round((speedMpm / avgHr) * 100) / 100 : 0;
@@ -393,7 +457,6 @@ export async function syncCorosData(
           const seed = Math.sin(durationSec * 0.13 + distKm * 7.1) * 0.4;
           decouplingPct = Math.max(0.5, Math.round((baseDrift + seed) * 10) / 10);
         }
-        const activityId = `act_${labelId}`;
 
         await db.execute({
           sql: `
@@ -415,10 +478,15 @@ export async function syncCorosData(
               name = excluded.name,
               training_load = excluded.training_load,
               elevation_gain = excluded.elevation_gain,
+              elevation_loss = excluded.elevation_loss,
+              avg_cadence = excluded.avg_cadence,
+              aerobic_te = excluded.aerobic_te,
+              anaerobic_te = excluded.anaerobic_te,
               max_hr = excluded.max_hr,
               vam_meters_per_hour = excluded.vam_meters_per_hour,
               decoupling_pct = excluded.decoupling_pct,
-              efficiency_factor = excluded.efficiency_factor
+              efficiency_factor = excluded.efficiency_factor,
+              raw_data = excluded.raw_data
           `,
           args: [
             activityId,
@@ -435,15 +503,15 @@ export async function syncCorosData(
             paceSec,
             avgHr,
             maxHr,
-            174,
+            avgCadence,
             trainingLoad,
-            Math.min(5.0, Math.round((2.0 + distKm / 10) * 10) / 10),
-            paceSec < 300 ? 1.5 : 0.4,
+            aerobicTe,
+            anaerobicTe,
             paceSec,
             vam,
             decouplingPct,
             efficiencyFactor,
-            item,
+            rawDataToSave,
             Date.now(),
           ],
         });
