@@ -25,6 +25,7 @@ import {
   Hourglass,
   Info,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/context";
 import { WeeklyZoneData, WeeklyZoneProgressionResult } from "@/lib/analytics";
 
 interface WeeklyZoneProgressionCardProps {
@@ -46,14 +47,15 @@ function formatDurationReadable(hours: number): string {
   return m > 0 ? `${h}j ${m}m (${totalMin} mnt)` : `${h} jam (${totalMin} mnt)`;
 }
 
-function formatMinutesOnly(hours: number): string {
+function formatMinutesOnly(hours: number, lang: string = "id"): string {
   const totalMin = Math.round((hours || 0) * 60);
-  return `${totalMin} mnt`;
+  return `${totalMin} ${lang === "en" ? "min" : "mnt"}`;
 }
 
 export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps> = ({
   progression,
 }) => {
+  const { language } = useTranslation();
   const [selectedWeeksCount, setSelectedWeeksCount] = useState<number>(8);
   const [metricMode, setMetricMode] = useState<"percentage" | "minutes" | "hours">("percentage");
   const [zoneMode, setZoneMode] = useState<"seiler3" | "zones5">("seiler3");
@@ -229,7 +231,9 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               </span>
             </div>
             <p className="text-xs font-mono text-zinc-600 mt-0.5">
-              Distribusi volume latihan mingguan • Deteksi profil Polarized, Pyramidal & Grey Zone
+              {language === "en"
+                ? "Weekly training volume breakdown • Polarized, Pyramidal & Grey Zone detection"
+                : "Distribusi volume latihan mingguan • Deteksi profil Polarized, Pyramidal & Grey Zone"}
             </p>
           </div>
         </div>
@@ -246,7 +250,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   : "text-zinc-600 hover:text-zinc-950"
               }`}
             >
-              3 Kategori (80/20)
+              {language === "en" ? "3 Categories (80/20)" : "3 Kategori (80/20)"}
             </button>
             <button
               onClick={() => setZoneMode("zones5")}
@@ -256,7 +260,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   : "text-zinc-600 hover:text-zinc-950"
               }`}
             >
-              5 Zona HR
+              {language === "en" ? "5 HR Zones" : "5 Zona HR"}
             </button>
           </div>
 
@@ -269,10 +273,10 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   ? "bg-emerald-300 text-zinc-950 shadow-sm"
                   : "text-zinc-600 hover:text-zinc-950"
               }`}
-              title="Tampilkan proporsi persentase (100% stacked)"
+              title={language === "en" ? "Display percentage ratio (100% stacked)" : "Tampilkan proporsi persentase (100% stacked)"}
             >
               <Percent className="h-3 w-3" />
-              <span>% Rasio</span>
+              <span>{language === "en" ? "% Ratio" : "% Rasio"}</span>
             </button>
             <button
               onClick={() => setMetricMode("minutes")}
@@ -281,10 +285,10 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   ? "bg-emerald-300 text-zinc-950 shadow-sm"
                   : "text-zinc-600 hover:text-zinc-950"
               }`}
-              title="Tampilkan durasi dalam menit (mudah dibaca tanpa desimal)"
+              title={language === "en" ? "Display duration in minutes" : "Tampilkan durasi dalam menit"}
             >
               <Timer className="h-3 w-3" />
-              <span>Menit</span>
+              <span>{language === "en" ? "Minutes" : "Menit"}</span>
             </button>
             <button
               onClick={() => setMetricMode("hours")}
@@ -293,10 +297,10 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   ? "bg-emerald-300 text-zinc-950 shadow-sm"
                   : "text-zinc-600 hover:text-zinc-950"
               }`}
-              title="Tampilkan total jam latihan absolut"
+              title={language === "en" ? "Display total training hours" : "Tampilkan total jam latihan absolut"}
             >
               <Hourglass className="h-3 w-3" />
-              <span>Jam</span>
+              <span>{language === "en" ? "Hours" : "Jam"}</span>
             </button>
           </div>
 
@@ -493,7 +497,9 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           {metricMode === "percentage" && (
             <div className="hidden sm:flex items-center gap-1.5 text-zinc-600 font-mono">
               <span className="border-b-2 border-dashed border-zinc-950 w-5 h-0" />
-              <span className="font-black text-zinc-950">Garis Acuan 80% (Seiler Polarized)</span>
+              <span className="font-black text-zinc-950">
+                {language === "en" ? "80% Guideline (Seiler Polarized)" : "Garis Acuan 80% (Seiler Polarized)"}
+              </span>
             </div>
           )}
         </div>
