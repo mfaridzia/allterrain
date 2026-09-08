@@ -19,14 +19,14 @@ export async function POST(req: NextRequest) {
       apiKey = await getSetting(`${provider}_api_key`, "", athleteId);
     }
 
-    if (!apiKey && provider !== "ollama") {
+    if (!apiKey) {
       if (provider === "gemini") apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
       else if (provider === "openai") apiKey = process.env.OPENAI_API_KEY || "";
       else if (provider === "claude" || provider === "anthropic") apiKey = process.env.ANTHROPIC_API_KEY || "";
       else if (provider === "deepseek") apiKey = process.env.DEEPSEEK_API_KEY || "";
     }
 
-    if (!apiKey && provider !== "ollama") {
+    if (!apiKey) {
       return NextResponse.json(
         { success: false, error: `Please enter an API Key for ${provider.toUpperCase()} first.` },
         { status: 400 }
@@ -161,24 +161,6 @@ export async function POST(req: NextRequest) {
         models = rawList.map((m: any) => ({
           id: m.id,
           label: m.id === "deepseek-chat" ? "DeepSeek V3 Chat (deepseek-chat)" : m.id === "deepseek-reasoner" ? "DeepSeek R1 Reasoner (deepseek-reasoner)" : m.id,
-        }));
-        break;
-      }
-
-      case "ollama": {
-        const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-        const res = await fetch(`${baseUrl}/api/tags`);
-        if (!res.ok) {
-          return NextResponse.json(
-            { success: false, error: "Ollama instance not running on localhost:11434." },
-            { status: 503 }
-          );
-        }
-        const data = await res.json();
-        const rawList = Array.isArray(data.models) ? data.models : [];
-        models = rawList.map((m: any) => ({
-          id: m.name,
-          label: m.name,
         }));
         break;
       }

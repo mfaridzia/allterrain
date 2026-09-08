@@ -203,13 +203,6 @@ export function getAiModelInstance(provider: string, apiKey: string, modelName?:
       });
       return deepseek(normalizedModel);
     }
-    case "ollama": {
-      const openaiCompat = createOpenAI({
-        baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1",
-        apiKey: "ollama",
-      });
-      return openaiCompat(modelName?.trim() || "llama3.2");
-    }
     case "gemini":
     default: {
       const google = createGoogleGenerativeAI({

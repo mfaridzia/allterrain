@@ -40,11 +40,6 @@ const CURATED_MODELS: Record<string, { id: string; label: string }[]> = {
     { id: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (Paling Cepat & Ringan)" },
     { id: "claude-3-opus-20240229", label: "Claude 3 Opus" },
   ],
-  ollama: [
-    { id: "llama3.2", label: "Llama 3.2 (Default)" },
-    { id: "mistral", label: "Mistral" },
-    { id: "deepseek-r1", label: "DeepSeek R1 (Local)" },
-  ],
 };
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
@@ -82,13 +77,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const saving = updateSettingsMutation.isPending;
 
   const getProviderBadge = (pId: string) => {
-    if (pId === "ollama") {
-      return (
-        <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300 font-mono">
-          {t("settingsModal.localBadge", "Local / Free")}
-        </span>
-      );
-    }
     if (pId === "deepseek" && (serverProvidedKeys.deepseek || configuredKeys.deepseek)) {
       return (
         <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-400 font-mono">
@@ -228,8 +216,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 { id: "deepseek", label: "DeepSeek", defModel: "deepseek-chat" },
                 { id: "openai", label: "OpenAI", defModel: "gpt-4o-mini" },
                 { id: "claude", label: "Anthropic Claude", defModel: "claude-3-5-sonnet-20241022" },
-                { id: "ollama", label: "Ollama (Local)", defModel: "llama3.2" },
-              ].map((p, idx) => (
+              ].map((p) => (
                 <button
                   type="button"
                   key={p.id}
@@ -240,8 +227,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     setFetchError(null);
                   }}
                   className={`p-2.5 rounded-xl text-left transition-all min-w-0 flex items-center justify-between gap-2 ${
-                    idx === 4 ? "sm:col-span-2" : ""
-                  } ${
                     provider === p.id
                       ? "border-2 border-zinc-950 bg-orange-100 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
                       : "border-2 border-zinc-200 bg-[#FAF9F5] text-zinc-700 hover:border-zinc-950"
@@ -334,56 +319,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           </div>
 
           {/* API Key Input */}
-          {provider !== "ollama" && (
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center gap-2 flex-wrap">
-                <label className="text-xs font-black text-zinc-900 flex items-center gap-1 truncate">
-                  <Key className="h-3.5 w-3.5 text-orange-600 stroke-[2.5] shrink-0" />
-                  <span>{t("settingsModal.apiKey", "API Key")} ({provider.toUpperCase()})</span>
-                </label>
-                <div className="flex items-center gap-2.5">
-                  {PROVIDER_KEY_PORTALS[provider] && (
-                    <a
-                      href={PROVIDER_KEY_PORTALS[provider].url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 hover:underline"
-                    >
-                      <span>{PROVIDER_KEY_PORTALS[provider].label}</span>
-                      <ExternalLink className="h-3 w-3 stroke-[2.5]" />
-                    </a>
-                  )}
-                  {configuredKeys[provider] && (
-                    <span className="text-[10px] text-emerald-700 font-bold shrink-0">
-                      {t("settingsModal.apiKeyStored", "✓ Stored")}
-                    </span>
-                  )}
-                </div>
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center gap-2 flex-wrap">
+              <label className="text-xs font-black text-zinc-900 flex items-center gap-1 truncate">
+                <Key className="h-3.5 w-3.5 text-orange-600 stroke-[2.5] shrink-0" />
+                <span>{t("settingsModal.apiKey", "API Key")} ({provider.toUpperCase()})</span>
+              </label>
+              <div className="flex items-center gap-2.5">
+                {PROVIDER_KEY_PORTALS[provider] && (
+                  <a
+                    href={PROVIDER_KEY_PORTALS[provider].url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 hover:underline"
+                  >
+                    <span>{PROVIDER_KEY_PORTALS[provider].label}</span>
+                    <ExternalLink className="h-3 w-3 stroke-[2.5]" />
+                  </a>
+                )}
+                {configuredKeys[provider] && (
+                  <span className="text-[10px] text-emerald-700 font-bold shrink-0">
+                    {t("settingsModal.apiKeyStored", "✓ Stored")}
+                  </span>
+                )}
               </div>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={
-                  configuredKeys[provider]
-                    ? t("settingsModal.apiKeyPlaceholderExisting", "Leave blank to keep existing key")
-                    : t("settingsModal.apiKeyPlaceholderEmpty", "Enter API Key...")
-                }
-                className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 placeholder-zinc-500 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
-              />
-              {provider === "deepseek" && serverProvidedKeys.deepseek && !configuredKeys.deepseek && (
-                <p className="text-[10px] text-emerald-800 font-medium font-mono">
-                  {t(
-                    "settingsModal.deepseekServerReadyNotice",
-                    "DeepSeek is active via server default. Enter an API key only if you want to use your personal quota."
-                  )}
-                </p>
-              )}
-              <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium leading-tight">
-                {t("settingsModal.apiKeyNotice", "Your API key is stored securely in your encrypted database and never transmitted to third parties.")}
-              </p>
             </div>
-          )}
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={
+                configuredKeys[provider]
+                  ? t("settingsModal.apiKeyPlaceholderExisting", "Leave blank to keep existing key")
+                  : t("settingsModal.apiKeyPlaceholderEmpty", "Enter API Key...")
+              }
+              className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 placeholder-zinc-500 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
+            />
+            {provider === "deepseek" && serverProvidedKeys.deepseek && !configuredKeys.deepseek && (
+              <p className="text-[10px] text-emerald-800 font-medium font-mono">
+                {t(
+                  "settingsModal.deepseekServerReadyNotice",
+                  "DeepSeek is active via server default. Enter an API key only if you want to use your personal quota."
+                )}
+              </p>
+            )}
+            <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium leading-tight">
+              {t("settingsModal.apiKeyNotice", "Your API key is stored securely in your encrypted database and never transmitted to third parties.")}
+            </p>
+          </div>
 
           {savedSuccess && (
             <div className="flex items-center gap-2 text-xs text-emerald-950 bg-emerald-100 border-2 border-zinc-950 p-2.5 rounded-xl shadow-[2px_2px_0px_0px_#09090b] font-bold">

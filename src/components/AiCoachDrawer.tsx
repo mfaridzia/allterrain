@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bot, Send, X, Sparkles, User, AlertCircle, RefreshCw, Key, Settings as SettingsIcon } from "lucide-react";
+import { Bot, Send, X, User, AlertCircle, RefreshCw, Key, Settings as SettingsIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 import { useAppSettings } from "@/lib/queries";
 
@@ -32,7 +32,7 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
   const activeProvider = settingsData?.aiProvider || "deepseek";
   const configuredKeys = settingsData?.configuredKeys || {};
   const serverProvidedKeys = settingsData?.serverProvidedKeys || {};
-  const isMissingKey = activeProvider !== "ollama" && !configuredKeys[activeProvider];
+  const isMissingKey = !configuredKeys[activeProvider];
 
   const getProviderDisplayName = (pId: string) => {
     switch (pId) {
@@ -44,8 +44,6 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
         return "OpenAI";
       case "claude":
         return "Claude";
-      case "ollama":
-        return "Ollama";
       default:
         return pId;
     }
@@ -178,25 +176,9 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
             <Bot className="h-4 w-4 stroke-[2.5]" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="text-sm font-black text-zinc-950 flex items-center gap-1">
-                <span>COROS AI Coach</span>
-                <Sparkles className="h-3 w-3 text-orange-600 stroke-[2.5]" />
-              </h3>
-              {isMissingKey ? (
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-zinc-950 font-mono">
-                  {getProviderDisplayName(activeProvider)} • {t("aiCoach.keyRequired", "Key Required")}
-                </span>
-              ) : activeProvider === "deepseek" && serverProvidedKeys.deepseek && !configuredKeys.deepseek ? (
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-950 border border-zinc-950 font-mono">
-                  DeepSeek • {t("aiCoach.serverDefault", "Server Default")}
-                </span>
-              ) : (
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-sky-200 text-sky-950 border border-zinc-950 font-mono">
-                  {getProviderDisplayName(activeProvider)} • {activeProvider === "ollama" ? t("aiCoach.local", "Local") : t("aiCoach.personalKey", "Your Key")}
-                </span>
-              )}
-            </div>
+            <h3 className="text-sm font-black text-zinc-950">
+              COROS AI Coach
+            </h3>
             <p className="text-[10px] font-mono font-bold text-zinc-600">
               Live: TSB {currentTsb > 0 ? `+${currentTsb}` : currentTsb} • ACWR {acwr.toFixed(2)}
             </p>
