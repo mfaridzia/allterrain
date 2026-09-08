@@ -21,6 +21,7 @@ import {
 import { ActivityItem } from "./ActivityFeed";
 import { formatPace, calculateKmEffort, calculateDecouplingAnalysis } from "@/lib/analytics";
 import { toPng } from "html-to-image";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface ActivityShareModalProps {
   activity: ActivityItem | null;
@@ -180,6 +181,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const { language } = useTranslation();
 
   if (!activity) return null;
 
@@ -324,10 +326,12 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
             </div>
             <div className="min-w-0 flex-1">
               <h2 className="text-sm sm:text-base font-black text-zinc-950 leading-tight truncate">
-                Share Workout Card
+                {language === "en" ? "Share Workout Card" : "Bagikan Kartu Latihan"}
               </h2>
               <p className="text-[10px] sm:text-[11px] font-medium text-zinc-500 truncate">
-                Export high-resolution story & feed cards ready for social media
+                {language === "en"
+                  ? "Export high-resolution story & feed cards ready for social media"
+                  : "Ekspor kartu story & feed resolusi tinggi untuk media sosial"}
               </p>
             </div>
           </div>
@@ -864,10 +868,10 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
             <Download className="h-4 w-4 stroke-[2.5]" />
             <span>
               {isExporting
-                ? "Rendering Image..."
+                ? (language === "en" ? "Rendering Image..." : "Menyiapkan Gambar...")
                 : isLoadingGps
-                ? "Syncing GPS..."
-                : "Download Image (PNG)"}
+                ? (language === "en" ? "Syncing GPS..." : "Sinkronisasi GPS...")
+                : (language === "en" ? "Download Image (PNG)" : "Unduh Gambar (PNG)")}
             </span>
           </button>
 
@@ -879,12 +883,14 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
             {copied ? (
               <>
                 <Check className="h-4 w-4 text-emerald-600 stroke-[3]" />
-                <span className="text-emerald-700">Copied to Clipboard!</span>
+                <span className="text-emerald-700">
+                  {language === "en" ? "Copied to Clipboard!" : "Tersalin ke Clipboard!"}
+                </span>
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4 stroke-[2.5]" />
-                <span>Copy Image</span>
+                <span>{language === "en" ? "Copy Image" : "Salin Gambar"}</span>
               </>
             )}
           </button>

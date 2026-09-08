@@ -30,6 +30,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { ActivityItem } from "./ActivityFeed";
+import { useTranslation } from "@/lib/i18n/context";
 import {
   formatPace,
   generateActivityComparison,
@@ -51,6 +52,7 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
   onSelectActivityB,
   onClose,
 }) => {
+  const { language } = useTranslation();
   const [activeTab, setActiveTab] = useState<"pace" | "hr" | "elevation">("pace");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
@@ -66,12 +68,13 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
       .slice(0, 15);
   }, [allActivities, activityA.id]);
 
-  const dateA = new Date(activityA.startTime).toLocaleDateString("en-US", {
+  const locale = language === "en" ? "en-US" : "id-ID";
+  const dateA = new Date(activityA.startTime).toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
-  const dateB = new Date(activityB.startTime).toLocaleDateString("en-US", {
+  const dateB = new Date(activityB.startTime).toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",

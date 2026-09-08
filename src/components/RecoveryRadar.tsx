@@ -3,6 +3,7 @@
 import React from "react";
 import { BatteryCharging, Sparkles } from "lucide-react";
 import { MetricTooltip } from "@/components/MetricTooltip";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface RecoveryProps {
   recoveryScore: number;
@@ -21,13 +22,15 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
   sleepHours,
   date,
 }) => {
-  let readiness = "Fully Recovered";
+  const { language } = useTranslation();
+
+  let readiness = language === "en" ? "Fully Recovered" : "Pulih Maksimal";
   let readinessColor = "bg-emerald-300 text-zinc-950 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]";
   if (recoveryScore < 50) {
-    readiness = "Fatigued - Rest";
+    readiness = language === "en" ? "Fatigued - Rest" : "Lelah - Istirahat";
     readinessColor = "bg-rose-400 text-zinc-950 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]";
   } else if (recoveryScore < 75) {
-    readiness = "Moderate Base";
+    readiness = language === "en" ? "Moderate Base" : "Pemulihan Cukup";
     readinessColor = "bg-amber-300 text-zinc-950 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]";
   }
 
@@ -38,7 +41,7 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
       const parts = date.split("-");
       if (parts.length === 3) {
         const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-        formattedDate = d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+        formattedDate = d.toLocaleDateString(language === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short" });
       }
     } catch {}
   }
