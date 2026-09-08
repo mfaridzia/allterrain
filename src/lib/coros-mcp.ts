@@ -117,11 +117,28 @@ export async function syncCorosData(
 
   const db = getDb();
 
-  // 1. Fetch Fitness Assessment Overview
+  // 1-3. Fetch Assessment & Health Data Concurrently (Vercel Best Practice: async-parallel)
+  const [
+    fitnessResult,
+    recoveryResult,
+    loadResult,
+    healthResult,
+    rhrResult,
+    hrvResult,
+  ] = await Promise.allSettled([
+    callCorosMcpTool("queryFitnessAssessmentOverview", {}, effectiveAthleteId),
+    callCorosMcpTool("queryRecoveryStatus", {}, athleteId),
+    callCorosMcpTool("queryTrainingLoadAssessment", { days: 30 }, athleteId),
+    callCorosMcpTool("queryDailyHealthData", {}, athleteId),
+    callCorosMcpTool("queryRestingHeartRate", {}, athleteId),
+    callCorosMcpTool("querySleepHrv", {}, athleteId),
+  ]);
+
+  // 1. Process Fitness Assessment Overview
   let evolabRacePredictor: any = null;
-  try {
-    const fitnessText = await callCorosMcpTool("queryFitnessAssessmentOverview", {}, effectiveAthleteId);
-    if (typeof fitnessText === "string") {
+  if (fitnessResult.status === "fulfilled" && typeof fitnessResult.value === "string") {
+    try {
+      const fitnessText = fitnessResult.value;
       const vo2Match = fitnessText.match(/VO2max:\s*(\d+)/i);
       const levelMatch = fitnessText.match(/Running Level:\s*(\d+)/i);
       const p5kMatch = fitnessText.match(/5 km Prediction:\s*([0-9:]+)/i);
@@ -143,145 +160,120 @@ export async function syncCorosData(
       if (effectiveAthleteId !== "athlete_primary") {
         await setSetting("coros_evolab_cache", JSON.stringify(evolabRacePredictor), "athlete_primary");
       }
+    } catch (err) {
+      console.warn("Could not save fitness assessment overview:", err);
     }
-  } catch (err) {
-    console.warn("Could not fetch fitness assessment overview:", err);
   }
 
-  // 2. Fetch Recovery Status
+  // 2. Process Recovery Status
   let recoveryScore = 100;
-  try {
-    const recoveryText = await callCorosMcpTool("queryRecoveryStatus", {}, athleteId);
-    if (typeof recoveryText === "string") {
-      const recMatch = recoveryText.match(/Recovery:\s*(\d+)%/i);
-      if (recMatch) {
-        recoveryScore = parseInt(recMatch[1], 10);
-      }
+  if (recoveryResult.status === "fulfilled" && typeof recoveryResult.value === "string") {
+    const recMatch = recoveryResult.value.match(/Recovery:\s*(\d+)%/i);
+    if (recMatch) {
+      recoveryScore = parseInt(recMatch[1], 10);
     }
-  } catch (err) {
-    console.warn("Could not fetch recovery status:", err);
   }
 
-  // 3. Fetch Training Load Assessment (ATL, CTL, Load Ratio)
+  // 3. Process Training Load Assessment (ATL, CTL, Load Ratio)
   const trainingLoadDays: { date: string; shortLoad: number; longLoad: number; ratio: number }[] = [];
-  try {
-    const loadText = await callCorosMcpTool("queryTrainingLoadAssessment", { days: 30 }, athleteId);
-    if (typeof loadText === "string") {
-      const blocks = loadText.split(/\n\s*\n/);
-      for (const block of blocks) {
-        const dateMatch = block.match(/(\d{4}-\d{2}-\d{2})/);
-        const shortMatch = block.match(/Short-Term Load:\s*(\d+)/i);
-        const longMatch = block.match(/Long-Term Load:\s*(\d+)/i);
-        const ratioMatch = block.match(/Load Ratio:\s*([0-9.]+)/i);
+  if (loadResult.status === "fulfilled" && typeof loadResult.value === "string") {
+    const blocks = loadResult.value.split(/\n\s*\n/);
+    for (const block of blocks) {
+      const dateMatch = block.match(/(\d{4}-\d{2}-\d{2})/);
+      const shortMatch = block.match(/Short-Term Load:\s*(\d+)/i);
+      const longMatch = block.match(/Long-Term Load:\s*(\d+)/i);
+      const ratioMatch = block.match(/Load Ratio:\s*([0-9.]+)/i);
 
-        if (dateMatch && shortMatch && longMatch) {
-          trainingLoadDays.push({
-            date: dateMatch[1],
-            shortLoad: parseInt(shortMatch[1], 10),
-            longLoad: parseInt(longMatch[1], 10),
-            ratio: ratioMatch ? parseFloat(ratioMatch[1]) : 1.0,
-          });
-        }
+      if (dateMatch && shortMatch && longMatch) {
+        trainingLoadDays.push({
+          date: dateMatch[1],
+          shortLoad: parseInt(shortMatch[1], 10),
+          longLoad: parseInt(longMatch[1], 10),
+          ratio: ratioMatch ? parseFloat(ratioMatch[1]) : 1.0,
+        });
       }
     }
-  } catch (err) {
-    console.warn("Could not fetch training load assessment:", err);
   }
 
-  // 3b. Fetch Sleep, Resting HR, & HRV Data from COROS MCP
+  // 3b. Process Sleep, Resting HR, & HRV Data from COROS MCP
   const dailySleepMap = new Map<string, number>();
   const dailyRhrMap = new Map<string, number>();
   const dailyHrvMap = new Map<string, number>();
   const dailyHrvStatusMap = new Map<string, string>();
 
-  try {
-    const healthText = await callCorosMcpTool("queryDailyHealthData", {}, athleteId);
-    if (typeof healthText === "string") {
-      const blocks = healthText.split(/---\s*(\d{8})\s*---/);
-      for (let i = 1; i < blocks.length; i += 2) {
-        const rawD = blocks[i];
-        const content = blocks[i + 1] || "";
-        const dateStr = `${rawD.slice(0, 4)}-${rawD.slice(4, 6)}-${rawD.slice(6, 8)}`;
-        const sleepMatch = content.match(/Total:\s*(?:(\d+)h)?\s*(?:(\d+)min)?/i);
-        const awakeMatch = content.match(/Awake:\s*(\d+)\s*min/i);
-        if (sleepMatch) {
-          const h = parseInt(sleepMatch[1] || "0", 10);
-          const m = parseInt(sleepMatch[2] || "0", 10);
-          const awakeM = awakeMatch ? parseInt(awakeMatch[1], 10) : 0;
-          // Calculate net sleep duration (Total sleep minus awake time, matching COROS app)
-          const netSeconds = Math.max(0, (h * 60 + m - awakeM) * 60);
-          dailySleepMap.set(dateStr, netSeconds);
-        }
+  if (healthResult.status === "fulfilled" && typeof healthResult.value === "string") {
+    const blocks = healthResult.value.split(/---\s*(\d{8})\s*---/);
+    for (let i = 1; i < blocks.length; i += 2) {
+      const rawD = blocks[i];
+      const content = blocks[i + 1] || "";
+      const dateStr = `${rawD.slice(0, 4)}-${rawD.slice(4, 6)}-${rawD.slice(6, 8)}`;
+      const sleepMatch = content.match(/Total:\s*(?:(\d+)h)?\s*(?:(\d+)min)?/i);
+      const awakeMatch = content.match(/Awake:\s*(\d+)\s*min/i);
+      if (sleepMatch) {
+        const h = parseInt(sleepMatch[1] || "0", 10);
+        const m = parseInt(sleepMatch[2] || "0", 10);
+        const awakeM = awakeMatch ? parseInt(awakeMatch[1], 10) : 0;
+        const netSeconds = Math.max(0, (h * 60 + m - awakeM) * 60);
+        dailySleepMap.set(dateStr, netSeconds);
       }
     }
-  } catch (err) {
-    console.warn("Could not fetch daily health data:", err);
   }
 
-  try {
-    const rhrText = await callCorosMcpTool("queryRestingHeartRate", {}, athleteId);
-    if (typeof rhrText === "string") {
-      const lines = rhrText.split("\n");
-      for (const line of lines) {
-        const m = line.match(/^(\d{4}-\d{2}-\d{2}):\s*(\d+)\s*bpm/);
-        if (m) {
-          dailyRhrMap.set(m[1], parseInt(m[2], 10));
-        }
+  if (rhrResult.status === "fulfilled" && typeof rhrResult.value === "string") {
+    const lines = rhrResult.value.split("\n");
+    for (const line of lines) {
+      const m = line.match(/^(\d{4}-\d{2}-\d{2}):\s*(\d+)\s*bpm/);
+      if (m) {
+        dailyRhrMap.set(m[1], parseInt(m[2], 10));
       }
     }
-  } catch (err) {
-    console.warn("Could not fetch resting heart rate:", err);
   }
 
   let watchTimezone: string | null = null;
-  try {
-    const hrvText = await callCorosMcpTool("querySleepHrv", {}, athleteId);
-    if (typeof hrvText === "string") {
-      const tzMatch = hrvText.match(/timezone=(-?\d+)/);
-      if (tzMatch) {
-        const offsetQuarterHours = parseInt(tzMatch[1], 10);
-        const offsetHours = offsetQuarterHours / 4;
-        if (offsetHours === 7) watchTimezone = "Asia/Jakarta"; // WIB (UTC+7)
-        else if (offsetHours === 8) watchTimezone = "Asia/Makassar"; // WITA (UTC+8)
-        else if (offsetHours === 9) watchTimezone = "Asia/Jayapura"; // WIT (UTC+9)
-      }
+  if (hrvResult.status === "fulfilled" && typeof hrvResult.value === "string") {
+    const hrvText = hrvResult.value;
+    const tzMatch = hrvText.match(/timezone=(-?\d+)/);
+    if (tzMatch) {
+      const offsetQuarterHours = parseInt(tzMatch[1], 10);
+      const offsetHours = offsetQuarterHours / 4;
+      if (offsetHours === 7) watchTimezone = "Asia/Jakarta"; // WIB (UTC+7)
+      else if (offsetHours === 8) watchTimezone = "Asia/Makassar"; // WITA (UTC+8)
+      else if (offsetHours === 9) watchTimezone = "Asia/Jayapura"; // WIT (UTC+9)
+    }
 
-      // 1. Parse official COROS Assessment section first (official average and evaluation from COROS)
-      const assessSection = hrvText.split(/Sleep HRV Time Series/i)[0] || hrvText;
-      const assessBlocks = assessSection.split(/(?=\d{4}-\d{2}-\d{2}:)/);
-      for (const block of assessBlocks) {
-        const dateMatch = block.match(/^(\d{4}-\d{2}-\d{2}):/);
-        const avgMatch = block.match(/HRV Avg:\s*(\d+)\s*ms(?:\s*—\s*([A-Za-z]+))?/i);
-        if (dateMatch && avgMatch) {
-          const dStr = dateMatch[1];
-          const avgHrv = parseInt(avgMatch[1], 10);
-          const status = avgMatch[2]?.toUpperCase() || (avgHrv >= 60 ? "NORMAL" : avgHrv >= 45 ? "MODERATE" : "TIRED");
-          dailyHrvMap.set(dStr, avgHrv);
-          dailyHrvStatusMap.set(dStr, status);
-        }
-      }
-
-      // 2. Fallback to time series points only for days without an official summary
-      const timeSeriesSection = hrvText.includes("Sleep HRV Time Series")
-        ? hrvText.split(/Sleep HRV Time Series/i)[1]
-        : hrvText;
-      const dateBlocks = timeSeriesSection.split(/(?=\d{4}-\d{2}-\d{2}:)/);
-      for (const block of dateBlocks) {
-        const dateMatch = block.match(/^(\d{4}-\d{2}-\d{2}):/);
-        if (!dateMatch) continue;
+    // 1. Parse official COROS Assessment section first
+    const assessSection = hrvText.split(/Sleep HRV Time Series/i)[0] || hrvText;
+    const assessBlocks = assessSection.split(/(?=\d{4}-\d{2}-\d{2}:)/);
+    for (const block of assessBlocks) {
+      const dateMatch = block.match(/^(\d{4}-\d{2}-\d{2}):/);
+      const avgMatch = block.match(/HRV Avg:\s*(\d+)\s*ms(?:\s*—\s*([A-Za-z]+))?/i);
+      if (dateMatch && avgMatch) {
         const dStr = dateMatch[1];
-        if (dailyHrvMap.has(dStr)) continue; // Already set from official assessment
-
-        const hrvMatches = [...block.matchAll(/hrv=(\d+)\s*ms/g)];
-        if (hrvMatches.length > 0) {
-          const sum = hrvMatches.reduce((acc, match) => acc + parseInt(match[1], 10), 0);
-          const avg = Math.round(sum / hrvMatches.length);
-          dailyHrvMap.set(dStr, avg);
-        }
+        const avgHrv = parseInt(avgMatch[1], 10);
+        const status = avgMatch[2]?.toUpperCase() || (avgHrv >= 60 ? "NORMAL" : avgHrv >= 45 ? "MODERATE" : "TIRED");
+        dailyHrvMap.set(dStr, avgHrv);
+        dailyHrvStatusMap.set(dStr, status);
       }
     }
-  } catch (err) {
-    console.warn("Could not fetch sleep HRV:", err);
+
+    // 2. Fallback to time series points only for days without an official summary
+    const timeSeriesSection = hrvText.includes("Sleep HRV Time Series")
+      ? hrvText.split(/Sleep HRV Time Series/i)[1]
+      : hrvText;
+    const dateBlocks = timeSeriesSection.split(/(?=\d{4}-\d{2}-\d{2}:)/);
+    for (const block of dateBlocks) {
+      const dateMatch = block.match(/^(\d{4}-\d{2}-\d{2}):/);
+      if (!dateMatch) continue;
+      const dStr = dateMatch[1];
+      if (dailyHrvMap.has(dStr)) continue;
+
+      const hrvMatches = [...block.matchAll(/hrv=(\d+)\s*ms/g)];
+      if (hrvMatches.length > 0) {
+        const sum = hrvMatches.reduce((acc, match) => acc + parseInt(match[1], 10), 0);
+        const avg = Math.round(sum / hrvMatches.length);
+        dailyHrvMap.set(dStr, avg);
+      }
+    }
   }
 
   // 4. Fetch Sport Records (Workouts) with Incremental Sync
@@ -639,6 +631,8 @@ export async function syncCorosData(
   let lastKnownRhr = 50;
   let lastKnownHrv = 68;
 
+  const dailyBatchStatements: { sql: string; args: any[] }[] = [];
+
   for (let i = 0; i < pmcSeries.length; i++) {
     const p = pmcSeries[i];
     const windowPastLoads = pmcSeries.slice(Math.max(0, i - 6), i + 1).map((x) => x.load);
@@ -654,7 +648,7 @@ export async function syncCorosData(
     const hrv = dailyHrvMap.get(p.date) ?? lastKnownHrv;
     const hrvStatus = dailyHrvStatusMap.get(p.date) || (hrv >= 60 ? "NORMAL" : hrv >= 45 ? "MODERATE" : "TIRED");
 
-    await db.execute({
+    dailyBatchStatements.push({
       sql: `
         INSERT INTO daily_metrics (
           date, athlete_id, training_load, ctl, atl, tsb, form_pct, ramp_rate,
@@ -703,6 +697,11 @@ export async function syncCorosData(
         Date.now(),
       ],
     });
+  }
+
+  // Execute all PMC daily metrics in 1 single high-performance batch operation to eliminate network round-trips
+  if (dailyBatchStatements.length > 0) {
+    await db.batch(dailyBatchStatements, "write");
   }
 
   return {
