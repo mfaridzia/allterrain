@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { SettingsModal } from "./SettingsModal";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./LanguageToggle";
+import { useTranslation } from "@/lib/i18n/context";
 import { useAuthStatus, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
 
 export interface HeaderProps {
@@ -42,6 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
   extraActions,
 }) => {
   const pathname = usePathname();
+  const { t } = useTranslation();
   const [internalSettingsOpen, setInternalSettingsOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
@@ -94,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
       return;
     }
 
-    if (window.confirm("Are you sure you want to disconnect your COROS account?")) {
+    if (window.confirm(t("nav.disconnectConfirm", "Are you sure you want to disconnect your COROS account?"))) {
       try {
         await disconnectMutation.mutateAsync();
         window.location.href = "/";
@@ -107,21 +110,21 @@ export const Header: React.FC<HeaderProps> = ({
   const navLinks = [
     {
       href: "/",
-      label: "Dashboard",
+      label: t("nav.home", "Overview"),
       description: "Load metrics summary & PMC chart",
       icon: Activity,
       exact: true,
     },
     {
       href: "/trail-planner",
-      label: "GPX Planner",
+      label: t("nav.trailPlanner", "GPX Planner"),
       description: "Trail elevation profile & route simulation",
       icon: Mountain,
       exact: false,
     },
     {
       href: "/activities",
-      label: "Logbook",
+      label: t("nav.activities", "Logbook"),
       description: "COROS activity history & logbook",
       icon: ClipboardList,
       exact: false,
@@ -201,7 +204,8 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
 
-            {/* Dark Mode Theme Toggle */}
+            {/* Language & Dark Mode Theme Toggle */}
+            <LanguageToggle />
             <ThemeToggle />
 
             {/* Authenticated Controls */}
@@ -213,7 +217,7 @@ export const Header: React.FC<HeaderProps> = ({
                   title="COROS MCP connected"
                 >
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse border border-zinc-950 dark:border-zinc-700" />
-                  <span>Online</span>
+                  <span>{t("common.online", "Online")}</span>
                 </div>
 
                 {/* Manual Sync Button - Desktop */}
@@ -226,7 +230,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <RefreshCw
                     className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin text-orange-600" : ""}`}
                   />
-                  <span>{isSyncing ? "Syncing..." : "Sync"}</span>
+                  <span>{isSyncing ? t("common.syncing", "Syncing...") : t("common.sync", "Sync")}</span>
                 </button>
 
                 {/* AI Coach Trigger - Desktop */}
@@ -358,7 +362,7 @@ export const Header: React.FC<HeaderProps> = ({
                       isSyncing ? "animate-spin text-orange-600" : "text-zinc-700 dark:text-zinc-300"
                     }`}
                   />
-                  <span>{isSyncing ? "Syncing..." : "Sync COROS"}</span>
+                  <span>{isSyncing ? t("common.syncing", "Syncing...") : `${t("common.sync", "Sync")} COROS`}</span>
                 </button>
 
                 {/* AI Coach Action */}
@@ -388,7 +392,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                 >
                   <Settings className="h-3.5 w-3.5 text-zinc-700 dark:text-zinc-300" />
-                  <span>Settings</span>
+                  <span>{t("common.settings", "Settings")}</span>
                 </button>
 
                 {/* Disconnect Action */}
@@ -400,7 +404,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border-2 border-zinc-950 dark:border-zinc-700 text-rose-700 dark:text-rose-400 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                 >
                   <LogOut className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-                  <span>Disconnect</span>
+                  <span>{t("nav.disconnect", "Disconnect")}</span>
                 </button>
               </div>
             </div>

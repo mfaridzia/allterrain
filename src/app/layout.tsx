@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { LanguageProvider } from "@/lib/i18n/context";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 
 const geistSans = Geist({
@@ -103,10 +104,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-[#f6f4ee] dark:bg-[#09090b] text-[#09090b] dark:text-[#f4f4f5] transition-colors duration-200">
         <ThemeProvider>
-          <QueryProvider>
-            {children}
-            <PwaInstallPrompt />
-          </QueryProvider>
+          <LanguageProvider>
+            <QueryProvider>
+              {children}
+              <PwaInstallPrompt />
+            </QueryProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

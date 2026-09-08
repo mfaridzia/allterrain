@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { HelpCircle, Info, Sparkles, BookOpen } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/context";
 
 export type MetricTerm =
   | "ctl"
@@ -197,6 +198,170 @@ export const METRIC_GLOSSARY: Record<MetricTerm, MetricDefinition> = {
   },
 };
 
+export const METRIC_GLOSSARY_EN: Record<MetricTerm, MetricDefinition> = {
+  ctl: {
+    title: "CTL (Chronic Training Load) — Fitness",
+    subtitle: "Long-Term Aerobic Base & Fitness",
+    definition:
+      "Measures your aerobic fitness foundation based on an exponentially weighted 42-day rolling average of daily Training Load (rTSS). Higher CTL reflects greater cardiovascular capacity and muscular endurance.",
+    sweetSpot: "Progressive ramp of +5 to +8 points/week. Avoid sudden volume spikes.",
+    source: "Dr. Eric Bannister (1975) & Dr. Andrew Coggan (PMC Modeling)",
+  },
+  atl: {
+    title: "ATL (Acute Training Load) — Fatigue",
+    subtitle: "Short-Term Physiological Fatigue",
+    definition:
+      "Measures immediate physiological fatigue based on an exponential 7-day average of Training Load. Spikes quickly with intense sessions and decays rapidly with rest.",
+    sweetSpot: "Expected to spike during hard training blocks; should decay during taper before race day.",
+    source: "Bannister Impulse-Response Model",
+  },
+  tsb: {
+    title: "TSB (Training Stress Balance) — Form",
+    subtitle: "Race Readiness & Freshness (CTL - ATL)",
+    definition:
+      "Quantifies how fresh or fatigued you are today by subtracting Fatigue (ATL) from Fitness (CTL). Positive values reflect freshness; negative values indicate accumulated fatigue.",
+    sweetSpot:
+      "+5 to +15 (Fresh / Peak Race Day), -10 to -30 (Optimal Training Stress), < -30 (High Injury Risk / Overreaching).",
+    source: "Joe Friel & Andrew Coggan Athletic Performance Model",
+  },
+  ramp_rate: {
+    title: "Ramp Rate — Weekly Fitness Progression",
+    subtitle: "Rate of Training Load Progression",
+    definition:
+      "The net change in your CTL (Fitness) over the trailing 7 days. Key indicator for sustainable workload progression.",
+    sweetSpot: "+5 to +8 pts/week is safe and effective. Ramp rate > +10 pts/week significantly elevates soft-tissue injury risk.",
+    source: "Endurance Sports Science Workload Guidelines",
+  },
+  acwr: {
+    title: "ACWR (Acute:Chronic Workload Ratio)",
+    subtitle: "Injury Risk Index (Gabbett Model)",
+    definition:
+      "Compares acute workload (7-day average) against chronic fitness (28-day average). The global gold standard in sports medicine for workload safety and injury prevention.",
+    sweetSpot: "0.8 – 1.3 (Sweet Spot / Optimal Adaptability). Values > 1.5 indicate an injury danger spike.",
+    source: "Prof. Tim Gabbett (2016), British Journal of Sports Medicine",
+  },
+  monotony: {
+    title: "Training Monotony — Daily Load Variability",
+    subtitle: "Session-to-Session Load Uniformity",
+    definition:
+      "Mean daily load divided by its 7-day standard deviation. High values indicate repetitive, unvaried daily training without true restorative rest.",
+    sweetSpot: "< 1.5 is healthy with good hard/easy variation. > 2.0 indicates excessive monotony and risk of overtraining.",
+    source: "Dr. Carl Foster (1998), University of Wisconsin",
+  },
+  strain: {
+    title: "Training Strain — Cumulative Physiological Stress",
+    subtitle: "Weekly Total Stress Index",
+    definition:
+      "Product of total weekly training load multiplied by training monotony. Quantifies systemic stress on immune function and muscular repair.",
+    sweetSpot: "< 4,000 is safe. Values > 6,000 indicate high susceptibility to illness, systemic inflammation, or burnout.",
+    source: "Foster's Athletic Monitoring Model",
+  },
+  tid: {
+    title: "TID (Training Intensity Distribution)",
+    subtitle: "Aerobic vs Anaerobic Time Allocation (80/20)",
+    definition:
+      "Allocation of training time between Low Intensity (Z1/Z2 Aerobic), Moderate Intensity (Z3 Tempo/Threshold), and High Intensity (Z4/Z5 VO2max/Anaerobic).",
+    sweetSpot: "Polarized / Pyramidal: At least 75-80% of total volume should remain in Zone 1-2 to optimize mitochondrial density and fat oxidation.",
+    source: "Dr. Stephen Seiler (2006) & Dr. Matt Fitzgerald (80/20 Running)",
+  },
+  decoupling: {
+    title: "Aerobic Decoupling (Cardiac Drift)",
+    subtitle: "Heart Rate to Pace Relationship (Pa:HR)",
+    definition:
+      "Evaluates cardiovascular stability during sustained steady-state running. If heart rate drifts upward while pace remains constant, aerobic decoupling occurs.",
+    sweetSpot: "< 3.5% – 5.0% reflects a strong aerobic base. > 5.0% indicates dehydration, thermal stress, or insufficient Zone 2 base.",
+    source: "Joe Friel & Scott Johnston (Training for the Uphill Athlete)",
+  },
+  hrv: {
+    title: "HRV (Heart Rate Variability — rMSSD)",
+    subtitle: "Autonomic Nervous System Recovery",
+    definition:
+      "Millisecond variation between successive heartbeats during sleep. High nocturnal HRV signifies parasympathetic dominance (recovery and adaptation).",
+    sweetSpot: "'NORMAL' status aligned with personal COROS baseline. Sharp drops indicate systemic stress, poor sleep, or oncoming illness.",
+    source: "Autonomic Nervous System & COROS EvoLab Science",
+  },
+  recovery_score: {
+    title: "Recovery Score (%)",
+    subtitle: "Daily Physiological Readiness",
+    definition:
+      "Comprehensive readiness score calculated by COROS integrating sleep quality, nocturnal HRV, resting heart rate, and previous day's load.",
+    sweetSpot: "80% - 100% (Ready for High Intensity / Race), 60% - 79% (Moderate Load), < 60% (Rest Day or Easy Spin).",
+    source: "COROS EvoLab Recovery Algorithm",
+  },
+  resting_hr: {
+    title: "Resting Heart Rate (RHR)",
+    subtitle: "Basal Cardiac Frequency",
+    definition:
+      "Lowest pulse rate recorded during sleep or full rest. Conditioned endurance athletes exhibit low RHR (40–55 bpm) due to high cardiac stroke volume.",
+    sweetSpot: "An elevation of +5 to +7 bpm above personal baseline signals incomplete recovery or impending infection.",
+    source: "Cardiovascular Endurance Physiology",
+  },
+  vam: {
+    title: "VAM (Velocità Ascensionale Media)",
+    subtitle: "Vertical Climbing Velocity (m/h)",
+    definition:
+      "Measures vertical meters ascended per hour on steep trail climbs. Essential benchmark for pacing mountain races and estimating aid station arrival.",
+    sweetSpot: "400 - 600 m/h (Solid Mountain Runner), 600 - 800 m/h (Advanced), > 800 m/h (Elite / Vertical Kilometer).",
+    source: "Dr. Michele Ferrari (VAM Climbing Model)",
+  },
+  km_effort: {
+    title: "ITRA Km-Effort",
+    subtitle: "Flat-Equivalent Distance (Km + D+/100)",
+    definition:
+      "Standard trail running formula by ITRA equating mountain elevation to flat running. Every 100 meters of vertical gain (D+) equals an extra 1 km of flat running effort.",
+    sweetSpot: "Example: 36 km with +2,200m D+ equals the physiological load of running 58 km on flat pavement.",
+    source: "International Trail Running Association (ITRA)",
+  },
+  gap: {
+    title: "GAP (Grade Adjusted Pace — Minetti Model)",
+    subtitle: "Gradient-Normalized Running Pace",
+    definition:
+      "Equivalent running pace if you were exerting the same metabolic wattage on flat asphalt, calculated using Dr. Alberto Minetti's metabolic grade cost curve.",
+    sweetSpot: "Allows runners to manage effort on climbs without panic when pace drops to 13:00/km, knowing true effort equals 5:15/km flat.",
+    source: "Dr. Alberto E. Minetti (2002), Journal of Applied Physiology",
+  },
+  climb_density: {
+    title: "Climb Density Ratio (D+ / Km)",
+    subtitle: "Route Steepness & Technical Profile",
+    definition:
+      "Ratio of total vertical elevation gain (D+) divided by horizontal distance (km). Categorizes whether a race is rolling trail, alpine, or skyrunning.",
+    sweetSpot: "< 25 m/km (Rolling), 25 - 60 m/km (Moderate Mountain), 60 - 95 m/km (High Alpine), > 95 m/km (Skyrunning).",
+    source: "Kílian Jornet & Scott Johnston ('Training for the Uphill Athlete')",
+  },
+  ads: {
+    title: "Aerobic Deficiency Syndrome (ADS)",
+    subtitle: "Sub-optimal Fat Oxidation Capacity",
+    definition:
+      "Condition where lipid metabolism is underdeveloped due to excessive mid-intensity running (Zone 3/4). Causes rapid glycogen depletion and premature bonking on long mountain runs.",
+    sweetSpot: "'No ADS Detected' indicates efficient aerobic fat burning (validated by Decoupling < 3.5%).",
+    source: "Scott Johnston, Uphill Athlete Aerobic Threshold Diagnostics",
+  },
+  cumulative_gain: {
+    title: "Cumulative Gain (D+) — Total Elevation",
+    subtitle: "Barometric Vertical Ascent Total",
+    definition:
+      "Total vertical elevation gain (meters D+) recorded by your COROS watch across all workouts in the database (90-day window). Quantifies accumulated uphill climbing volume.",
+    sweetSpot: "1,000m - 2,500m D+ weekly accumulation during peak ultra-trail preparation blocks.",
+    source: "COROS Barometric Altimeter Sensor & GPS Elevation Engine",
+  },
+  cumulative_loss: {
+    title: "Cumulative Loss (D-) — Total Descent",
+    subtitle: "Eccentric Quadriceps Load Total",
+    definition:
+      "Total vertical descent (meters D-) across all sessions. Downhill running imposes heavy eccentric muscle stress on the quadriceps, essential for building race resistance.",
+    sweetSpot: "D- volume should ideally track D+ to build 'Quad Armor' without excessive knee joint wear.",
+    source: "Eccentric Muscle Contraction Science & Kilian Jornet Quad Armor Model",
+  },
+  readiness: {
+    title: "Training Readiness & Suggestion",
+    subtitle: "Science-Backed Daily Workout Recommendation",
+    definition:
+      "Deterministic calculation combining TSB Form (Bannister), safe load ceilings (Gabbett ACWR Governor), and autonomic recovery. Guides optimal target load, duration, and intensity zone for the next day.",
+    sweetSpot: "Adhere to Active Recovery recommendations following hard sessions (TL >= 80) to maximize adaptation and minimize injury risk.",
+    source: "Bannister (1991), Coggan & Allen (2010), Gabbett (2016 BJSM), Plews et al. (2013)",
+  },
+};
+
 import { createPortal } from "react-dom";
 
 interface MetricTooltipProps {
@@ -212,6 +377,7 @@ export const MetricTooltip: React.FC<MetricTooltipProps> = ({
   iconOnly = false,
   className = "",
 }) => {
+  const { language } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [coords, setCoords] = useState<{
@@ -221,7 +387,8 @@ export const MetricTooltip: React.FC<MetricTooltipProps> = ({
     arrowLeft: number;
   } | null>(null);
 
-  const data = METRIC_GLOSSARY[term];
+  const glossary = language === "en" ? METRIC_GLOSSARY_EN : METRIC_GLOSSARY;
+  const data = glossary[term] || METRIC_GLOSSARY[term];
   const triggerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -359,7 +526,7 @@ export const MetricTooltip: React.FC<MetricTooltipProps> = ({
             <div className="p-2 rounded-lg bg-zinc-900/90 border border-zinc-800/80 space-y-0.5 text-[10px]">
               <div className="flex items-center gap-1 text-emerald-400 font-bold">
                 <Sparkles className="h-3 w-3 shrink-0" />
-                <span>Sweet Spot / Target Ideal:</span>
+                <span>{language === "en" ? "Sweet Spot / Optimal Range:" : "Sweet Spot / Target Ideal:"}</span>
               </div>
               <p className="text-zinc-300 font-mono leading-normal">{data.sweetSpot}</p>
             </div>

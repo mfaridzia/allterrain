@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
 import { useAppSettings, useUpdateSettingsMutation } from "@/lib/queries";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ const CURATED_MODELS: Record<string, { id: string; label: string }[]> = {
 };
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
   const { data: settingsData } = useAppSettings();
   const updateSettingsMutation = useUpdateSettingsMutation();
 
@@ -143,8 +145,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <Settings className="h-5 w-5 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-base font-black text-zinc-950 truncate">App Settings</h3>
-              <p className="text-[11px] sm:text-xs font-medium text-zinc-600 truncate">BYOK AI Provider & Model Config</p>
+              <h3 className="text-base font-black text-zinc-950 truncate">{t("settingsModal.title", "App Settings")}</h3>
+              <p className="text-[11px] sm:text-xs font-medium text-zinc-600 truncate">{t("settingsModal.subtitle", "BYOK AI Provider & Model Config")}</p>
             </div>
           </div>
 
@@ -158,7 +160,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <div className="space-y-1.5">
             <label className="text-xs font-black text-zinc-900 flex items-center gap-1.5">
               <Cpu className="h-3.5 w-3.5 text-orange-600 stroke-[2.5]" />
-              AI Coach Provider
+              {t("settingsModal.aiProvider", "AI Coach Provider")}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
@@ -187,7 +189,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 >
                   <div className="text-xs font-black truncate">{p.label}</div>
                   <div className="text-[10px] font-bold text-zinc-500 font-mono truncate">
-                    {configuredKeys[p.id] ? "✓ Configured" : "Needs Key"}
+                    {configuredKeys[p.id] ? t("settingsModal.apiKeyStored", "✓ Stored") : "Needs Key"}
                   </div>
                 </button>
               ))}
@@ -199,7 +201,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             <div className="flex items-center justify-between gap-2">
               <label className="text-xs font-black text-zinc-900 flex items-center gap-1.5 truncate">
                 <Sparkles className="h-3.5 w-3.5 text-orange-600 stroke-[2.5] shrink-0" />
-                <span>Model AI</span>
+                <span>{t("settingsModal.modelName", "AI Model")}</span>
                 {dynamicModels[provider] && (
                   <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-300">
                     Live API
@@ -211,10 +213,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 onClick={handleFetchLiveModels}
                 disabled={isFetchingModels}
                 className="text-[10px] font-bold text-zinc-700 hover:text-zinc-950 flex items-center gap-1 px-2 py-0.5 rounded-lg border border-zinc-300 hover:border-zinc-950 bg-white hover:bg-zinc-50 transition-all shadow-sm active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-50 shrink-0"
-                title="Tarik daftar model resmi terbaru dari API provider"
+                title={t("settingsModal.fetchModels", "Fetch Latest Models")}
               >
                 <RefreshCw className={`h-3 w-3 ${isFetchingModels ? "animate-spin text-orange-600" : ""}`} />
-                <span>{isFetchingModels ? "Fetching..." : "Tarik Model Terbaru"}</span>
+                <span>{isFetchingModels ? t("settingsModal.fetching", "Fetching...") : t("settingsModal.fetchModels", "Fetch Latest Models")}</span>
               </button>
             </div>
 
@@ -245,7 +247,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   </option>
                 ))}
                 <option value="__custom__" className="font-sans font-bold text-zinc-800">
-                  ✏️ Custom Model... (Input Manual)
+                  {t("settingsModal.customModelOption", "✏️ Custom Model... (Manual Input)")}
                 </option>
               </select>
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-600 text-xs font-bold">
@@ -260,12 +262,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   type="text"
                   value={modelName}
                   onChange={(e) => setModelName(e.target.value)}
-                  placeholder="e.g. claude-3-7-sonnet-20250219 atau model fine-tune"
+                  placeholder={t("settingsModal.customModelPlaceholder", "e.g. claude-3-7-sonnet-20250219 or fine-tuned model")}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
                   autoFocus
                 />
                 <p className="text-[10px] text-zinc-500 font-medium">
-                  Ketik model ID persis seperti di dokumentasi API provider.
+                  {t("settingsModal.customModelHelper", "Enter model ID exactly as shown in provider API documentation.")}
                 </p>
               </div>
             )}
@@ -277,21 +279,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <div className="flex justify-between items-center gap-2">
                 <label className="text-xs font-black text-zinc-900 flex items-center gap-1 truncate">
                   <Key className="h-3.5 w-3.5 text-orange-600 stroke-[2.5] shrink-0" />
-                  <span>API Key ({provider.toUpperCase()})</span>
+                  <span>{t("settingsModal.apiKey", "API Key")} ({provider.toUpperCase()})</span>
                 </label>
                 {configuredKeys[provider] && (
-                  <span className="text-[10px] text-emerald-700 font-bold shrink-0">✓ Stored</span>
+                  <span className="text-[10px] text-emerald-700 font-bold shrink-0">{t("settingsModal.apiKeyStored", "✓ Stored")}</span>
                 )}
               </div>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder={configuredKeys[provider] ? "Leave blank to keep existing key" : "Enter API Key..."}
+                placeholder={configuredKeys[provider] ? t("settingsModal.apiKeyPlaceholderExisting", "Leave blank to keep existing key") : t("settingsModal.apiKeyPlaceholderEmpty", "Enter API Key...")}
                 className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 placeholder-zinc-500 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
               />
               <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium leading-tight">
-                Your API key is stored securely in your encrypted database and never transmitted to third parties.
+                {t("settingsModal.apiKeyNotice", "Your API key is stored securely in your encrypted database and never transmitted to third parties.")}
               </p>
             </div>
           )}
@@ -299,7 +301,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           {savedSuccess && (
             <div className="flex items-center gap-2 text-xs text-emerald-950 bg-emerald-100 border-2 border-zinc-950 p-2.5 rounded-xl shadow-[2px_2px_0px_0px_#09090b] font-bold">
               <Check className="h-4 w-4 stroke-[2.5] shrink-0" />
-              <span>Settings saved successfully!</span>
+              <span>{t("settingsModal.savedSuccess", "Settings saved successfully!")}</span>
             </div>
           )}
 
@@ -309,14 +311,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               onClick={onClose}
               className="w-full sm:w-auto px-4 py-2 text-xs font-black rounded-xl bg-zinc-100 hover:bg-zinc-200 border-2 border-zinc-950 text-zinc-950 transition-all shadow-[1.5px_1.5px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
-              Cancel
+              {t("settingsModal.cancelButton", "Cancel")}
             </button>
             <button
               type="submit"
               disabled={saving}
               className="w-full sm:w-auto px-5 py-2 text-xs font-black rounded-xl bg-orange-500 hover:bg-orange-600 text-white border-2 border-zinc-950 transition-all shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save Configuration"}
+              {saving ? t("common.saving", "Saving...") : t("settingsModal.saveButton", "Save Configuration")}
             </button>
           </div>
         </form>
