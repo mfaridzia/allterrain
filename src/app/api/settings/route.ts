@@ -47,6 +47,12 @@ export async function GET(req: NextRequest) {
       claude: hasClaudeKey,
       deepseek: hasDeepseekKey,
     },
+    serverProvidedKeys: {
+      gemini: !geminiKey && !!process.env.GEMINI_API_KEY,
+      openai: !openAiKey && !!process.env.OPENAI_API_KEY,
+      claude: !claudeKey && !!process.env.ANTHROPIC_API_KEY,
+      deepseek: !deepseekKey && !!process.env.DEEPSEEK_API_KEY,
+    },
     trailSettings: {
       targetRaceDist: Number(trailTargetRaceDistStr),
       targetRaceElev: Number(trailTargetRaceElevStr),

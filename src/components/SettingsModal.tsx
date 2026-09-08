@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
+import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Sparkles, Info, ExternalLink } from "lucide-react";
 import { useAppSettings, useUpdateSettingsMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -9,6 +9,13 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const PROVIDER_KEY_PORTALS: Record<string, { url: string; label: string }> = {
+  gemini: { url: "https://aistudio.google.com/app/apikey", label: "Get Gemini Key" },
+  deepseek: { url: "https://platform.deepseek.com/api_keys", label: "Get DeepSeek Key" },
+  openai: { url: "https://platform.openai.com/api-keys", label: "Get OpenAI Key" },
+  claude: { url: "https://console.anthropic.com/settings/keys", label: "Get Claude Key" },
+};
 
 const CURATED_MODELS: Record<string, { id: string; label: string }[]> = {
   gemini: [
@@ -71,7 +78,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   if (!isOpen) return null;
 
   const configuredKeys = settingsData?.configuredKeys || {};
+  const serverProvidedKeys = settingsData?.serverProvidedKeys || {};
   const saving = updateSettingsMutation.isPending;
+
+  const getProviderBadge = (pId: string) => {
+    if (pId === "ollama") {
+      return (
+        <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300 font-mono">
+          {t("settingsModal.localBadge", "Local / Free")}
+        </span>
+      );
+    }
+    if (pId === "deepseek" && (serverProvidedKeys.deepseek || configuredKeys.deepseek)) {
+      return (
+        <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-400 font-mono">
+          {serverProvidedKeys.deepseek
+            ? t("settingsModal.serverDefaultBadge", "Server Ready")
+            : t("settingsModal.apiKeyStored", "✓ Stored")}
+        </span>
+      );
+    }
+    if (serverProvidedKeys[pId]) {
+      return (
+        <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-400 font-mono">
+          {t("settingsModal.serverDefaultBadge", "Server Ready")}
+        </span>
+      );
+    }
+    if (configuredKeys[pId]) {
+      return (
+        <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-400 font-mono">
+          {t("settingsModal.apiKeyStored", "✓ Stored")}
+        </span>
+      );
+    }
+    return (
+      <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-400 font-mono">
+        {t("settingsModal.needsKeyBadge", "Needs Key")}
+      </span>
+    );
+  };
 
   const handleFetchLiveModels = async () => {
     setIsFetchingModels(true);
@@ -156,11 +202,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         </div>
 
         <form onSubmit={handleSave} className="space-y-4">
+          {/* BYOK Info Banner */}
+          <div className="p-3 rounded-xl bg-amber-50 border-2 border-zinc-950 text-xs text-zinc-900 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+            <div className="flex items-center gap-1.5 font-black text-amber-900">
+              <Info className="h-4 w-4 stroke-[2.5] text-amber-700 shrink-0" />
+              <span>{t("settingsModal.byokBadge", "Bring Your Own Key (BYOK)")}</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-700 font-medium">
+              {t(
+                "settingsModal.byokDescription",
+                "AllTerrain provides DeepSeek for free out-of-the-box (server default). To unlock other models (Claude, OpenAI, Gemini), please connect your personal API keys."
+              )}
+            </p>
+          </div>
+
           {/* Provider Selection */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-zinc-900 flex items-center gap-1.5">
               <Cpu className="h-3.5 w-3.5 text-orange-600 stroke-[2.5]" />
-              {t("settingsModal.aiProvider", "AI Coach Provider")}
+              {t("settingsModal.aiProvider", "AI Coach Provider (BYOK)")}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
@@ -179,7 +239,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     setIsCustomModel(false);
                     setFetchError(null);
                   }}
-                  className={`p-2.5 rounded-xl text-left transition-all min-w-0 ${
+                  className={`p-2.5 rounded-xl text-left transition-all min-w-0 flex items-center justify-between gap-2 ${
                     idx === 4 ? "sm:col-span-2" : ""
                   } ${
                     provider === p.id
@@ -188,8 +248,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   }`}
                 >
                   <div className="text-xs font-black truncate">{p.label}</div>
-                  <div className="text-[10px] font-bold text-zinc-500 font-mono truncate">
-                    {configuredKeys[p.id] ? t("settingsModal.apiKeyStored", "✓ Stored") : "Needs Key"}
+                  <div className="shrink-0">
+                    {getProviderBadge(p.id)}
                   </div>
                 </button>
               ))}
@@ -275,23 +335,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
           {/* API Key Input */}
           {provider !== "ollama" && (
-            <div className="space-y-1">
-              <div className="flex justify-between items-center gap-2">
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center gap-2 flex-wrap">
                 <label className="text-xs font-black text-zinc-900 flex items-center gap-1 truncate">
                   <Key className="h-3.5 w-3.5 text-orange-600 stroke-[2.5] shrink-0" />
                   <span>{t("settingsModal.apiKey", "API Key")} ({provider.toUpperCase()})</span>
                 </label>
-                {configuredKeys[provider] && (
-                  <span className="text-[10px] text-emerald-700 font-bold shrink-0">{t("settingsModal.apiKeyStored", "✓ Stored")}</span>
-                )}
+                <div className="flex items-center gap-2.5">
+                  {PROVIDER_KEY_PORTALS[provider] && (
+                    <a
+                      href={PROVIDER_KEY_PORTALS[provider].url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 hover:underline"
+                    >
+                      <span>{PROVIDER_KEY_PORTALS[provider].label}</span>
+                      <ExternalLink className="h-3 w-3 stroke-[2.5]" />
+                    </a>
+                  )}
+                  {configuredKeys[provider] && (
+                    <span className="text-[10px] text-emerald-700 font-bold shrink-0">
+                      {t("settingsModal.apiKeyStored", "✓ Stored")}
+                    </span>
+                  )}
+                </div>
               </div>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder={configuredKeys[provider] ? t("settingsModal.apiKeyPlaceholderExisting", "Leave blank to keep existing key") : t("settingsModal.apiKeyPlaceholderEmpty", "Enter API Key...")}
+                placeholder={
+                  configuredKeys[provider]
+                    ? t("settingsModal.apiKeyPlaceholderExisting", "Leave blank to keep existing key")
+                    : t("settingsModal.apiKeyPlaceholderEmpty", "Enter API Key...")
+                }
                 className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 placeholder-zinc-500 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
               />
+              {provider === "deepseek" && serverProvidedKeys.deepseek && !configuredKeys.deepseek && (
+                <p className="text-[10px] text-emerald-800 font-medium font-mono">
+                  {t(
+                    "settingsModal.deepseekServerReadyNotice",
+                    "DeepSeek is active via server default. Enter an API key only if you want to use your personal quota."
+                  )}
+                </p>
+              )}
               <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium leading-tight">
                 {t("settingsModal.apiKeyNotice", "Your API key is stored securely in your encrypted database and never transmitted to third parties.")}
               </p>
