@@ -223,7 +223,7 @@ export function getAiModelInstance(provider: string, apiKey: string, modelName?:
 export async function runCoachStream(
   messages: ChatMessage[],
   athleteId: string = "athlete_primary",
-  language: "en" | "id" = "id"
+  language: "en" | "id" = "en"
 ) {
   let provider = await getSetting("ai_provider", "", athleteId);
   if (!provider) {

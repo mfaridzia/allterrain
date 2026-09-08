@@ -4,7 +4,7 @@ import { getCurrentAthleteId } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, language }: { messages: ChatMessage[]; language?: "en" | "id" } = await req.json();
+    const { messages, language = "en" }: { messages: ChatMessage[]; language?: "en" | "id" } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: "Invalid messages format" }, { status: 400 });

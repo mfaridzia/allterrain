@@ -24,9 +24,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (stored === "id" || stored === "en") {
         setLanguageState(stored);
       } else {
-        const browserLang = navigator.language?.toLowerCase() || "";
-        const detected: Language = browserLang.startsWith("id") ? "id" : "en";
-        setLanguageState(detected);
+        setLanguageState("en");
       }
     } catch {
       // ignore storage error
