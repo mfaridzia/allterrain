@@ -284,7 +284,7 @@ export async function syncCorosData(
     console.warn("Could not fetch sleep HRV:", err);
   }
 
-  // 4. Fetch Sport Records (Workouts)
+  // 4. Fetch Sport Records (Workouts) with Incremental Sync
   const today = new Date();
   const past90 = new Date(Date.now() - 90 * 86400 * 1000);
   const formatDateStr = (d: Date) =>
@@ -292,12 +292,32 @@ export async function syncCorosData(
     (d.getMonth() + 1).toString().padStart(2, "0") +
     d.getDate().toString().padStart(2, "0");
 
+  // Determine incremental sync date range
+  let syncStartDate = past90;
+  try {
+    const latestActRes = await db.execute({
+      sql: `SELECT MAX(start_time) as latest_start, COUNT(*) as total_count FROM activities WHERE athlete_id = ?`,
+      args: [athleteId],
+    });
+    const latestRow: any = latestActRes.rows?.[0];
+    const latestStartMs = Number(latestRow?.latest_start || 0);
+    const totalCount = Number(latestRow?.total_count || 0);
+
+    // If athlete already has activities, sync from (latest_activity - 7 days) to catch any late-synced workouts or edits
+    // If empty, sync 90 days for initial baseline
+    if (totalCount > 0 && latestStartMs > 0) {
+      const bufferMs = 7 * 86400 * 1000; // 7-day safety buffer
+      const bufferedStart = new Date(Math.max(past90.getTime(), latestStartMs - bufferMs));
+      syncStartDate = bufferedStart;
+    }
+  } catch {}
+
   let parsedActivitiesCount = 0;
   try {
     const recordsText = await callCorosMcpTool(
       "querySportRecords",
       {
-        startDate: formatDateStr(past90),
+        startDate: formatDateStr(syncStartDate),
         endDate: formatDateStr(today),
         sportTypeCodes: [100, 101, 102, 103, 104, 105, 200, 201, 65535],
         minDistanceKm: 0,

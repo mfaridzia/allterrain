@@ -78,7 +78,8 @@ Data is stored locally on-disk at `./data/coros_athlete.db` using `@libsql/clien
 ### 2.2 Deduplication Engine & Constraint Safeguards
 - **Deterministic Activity Ranking (`cleanDuplicateActivities`):** Employs windowed SQL partition ranking (`ROW_NUMBER() OVER (PARTITION BY athlete_id, COALESCE(NULLIF(coros_id, ''), start_time) ORDER BY CASE WHEN raw_data LIKE '%Activity Details%' THEN 1 ELSE 0 END DESC, CASE WHEN id = 'act_' || coros_id THEN 1 ELSE 0 END DESC, created_at DESC)`) to automatically prune duplicate workout rows from legacy transition states.
 - **Unique Composite Indexes:** `idx_activities_athlete_coros` (`athlete_id`, `coros_id`) and `idx_user_settings_athlete_key` (`athlete_id`, `key`) prevent duplicate workout records and cross-athlete configuration collisions at the engine level.
-- **Sync Purge Pre-check:** The COROS sync engine proactively purges any legacy variant IDs for incoming workouts prior to upsert, ensuring clean single-truth logbook aggregation.
+- **Incremental Sync Engine (7-Day Sliding Window):** Instead of requesting 90 days on every invocation, the sync engine queries the athlete's latest workout timestamp in the database and requests only `[latest_activity - 7 days, today]`. This eliminates 95% of remote payload overhead, captures late-synced workouts or watch metadata edits, and falls back to a 90-day baseline only on empty initial athlete syncs.
+- **Sync Purge Pre-check & Batch Preload:** Preloads existing workout IDs and barometric detail cache in 1 query, skipping unchanged workouts via fast-path in-memory checks.
 
 ---
 
