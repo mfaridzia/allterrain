@@ -187,6 +187,9 @@ For charts (Bannister PMC, Altimetry Profile, HR Distributions):
 </span>
 ```
 
+### 6.5 Responsive Universal Footer Links
+Navigation links in the footer must be grouped semantically into sub-containers (e.g. Product Links vs Legal Links) with an internal bullet divider and a responsive inter-group divider (`hidden sm:inline`). This prevents awkward bullet wrapping or orphaned bullet points on mobile viewports.
+
 ---
 
 ## 7. Strict Anti-Patterns & Quality Rules

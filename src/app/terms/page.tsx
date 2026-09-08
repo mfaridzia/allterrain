@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { FileText, AlertTriangle, ShieldCheck, HeartPulse, Scale, Mail } from "lucide-react";
+import { AlertTriangle, ShieldCheck, HeartPulse, Scale, Mail } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useTranslation } from "@/lib/i18n/context";
@@ -105,15 +104,6 @@ export default function TermsOfServicePage() {
           </article>
         </div>
 
-        {/* Back Link */}
-        <div className="pt-2">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white border-2 border-zinc-950 font-black text-xs text-zinc-900 shadow-[3px_3px_0px_0px_#09090b] hover:bg-orange-50 hover:border-orange-600 hover:text-orange-600 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
-          >
-            <span>{isId ? "← Kembali ke Overview" : "← Back to Overview"}</span>
-          </Link>
-        </div>
       </main>
 
       <Footer />
