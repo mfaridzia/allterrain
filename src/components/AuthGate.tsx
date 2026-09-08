@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { ShieldCheck, Activity, Mountain, Brain, ArrowRight, Key } from "lucide-react";
 import { useManualTokenMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
@@ -159,6 +160,17 @@ export const AuthGate: React.FC = () => {
               )}
             </p>
           </div>
+        </div>
+
+        {/* Link to Full Feature Breakdown */}
+        <div className="pt-2 flex items-center justify-center">
+          <Link
+            href="/features"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border-2 border-zinc-950 font-black text-xs text-zinc-900 shadow-[3px_3px_0px_0px_#09090b] hover:bg-orange-50 hover:border-orange-600 hover:text-orange-600 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
+          >
+            <span>{t("landing.exploreFeaturesBtn", "Explore Full Feature Suite & Sports Science Methodology")}</span>
+            <ArrowRight className="h-3.5 w-3.5 stroke-[2.5] text-zinc-950 group-hover:text-orange-600 transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
 
         {/* Security & Privacy Badge */}

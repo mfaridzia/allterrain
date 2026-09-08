@@ -61,6 +61,7 @@ export const translations = {
       privacyNotice:
         "Private & Secure: Tokens & athlete metrics are stored in your private encrypted database. Never shared with third parties.",
       loadingAthleteEngine: "Loading Athlete Intelligence Engine...",
+      exploreFeaturesBtn: "Explore Full Feature Suite & Sports Science Methodology",
     },
     header: {
       syncTooltip: "Sync latest data from COROS MCP",
@@ -201,6 +202,47 @@ export const translations = {
       running: "Running",
       trailRunning: "Trail Running",
     },
+    featuresPage: {
+      badge: "Sports Science & Exercise Physiology",
+      heroTitle: "Inside the Engine: AllTerrain Methodology",
+      heroSubtitle:
+        "Bridging raw COROS wearable telemetry and actionable sports science. Designed for marathoners, trail runners, and coaches who demand precision.",
+      backToHome: "Back to Dashboard",
+      connectCtaTitle: "Ready to elevate your training with real science?",
+      connectCtaSubtitle:
+        "Connect your COROS account in seconds. Zero ads, zero tracking, your data stays in your private encrypted database.",
+      connectButton: "Connect COROS Account",
+      manualTokenButton: "Use Bearer Token",
+      pillarsTitle: "Core Architectural Pillars",
+      p1Title: "1. Banister PMC & Exponential Moving Averages",
+      p1Subtitle: "Eric Banister Impulse-Response Model (1975)",
+      p1Desc:
+        "Calculates Chronic Training Load (CTL / Fitness, 42-day rolling EWMA) and Acute Training Load (ATL / Fatigue, 7-day EWMA) to derive Training Stress Balance (TSB / Form = CTL - ATL). Supports both COROS Native 0-100 baseline normalization and Intervals.icu absolute load scaling, complete with 5 discrete Form Zones and Ramp Rate velocity tracking to prevent overreaching spikes.",
+      p2Title: "2. Adaptive Readiness & ACWR Workload Governor",
+      p2Subtitle: "Dr. Tim Gabbett ACWR Injury Prevention Paradigm",
+      p2Desc:
+        "Continuously monitors the Acute:Chronic Workload Ratio (ACWR). Values between 0.8–1.3 represent the safe 'Sweet Spot', 1.3–1.5 trigger fatigue warnings, and >1.5 activate the physiological safety governor. Dynamically prescribes target mileage and intensity for Today and Tomorrow, automatically downshifting when fatigue compromises musculoskeletal safety.",
+      p3Title: "3. Weekly 80/20 Polarization & Zone Progression",
+      p3Subtitle: "Dr. Stephen Seiler Polarized Endurance Model",
+      p3Desc:
+        "Quantifies time-in-zone across Zone 1-2 (Aerobic Base), Zone 3-4 (Threshold / Grey Zone), and Zone 5+ (High Intensity). Diagnoses whether an athlete is falling into the recreational trap of 'training too hard on easy days and too exhausted on hard days'. Tracks multi-week zone progressions against ideal 80/20 and Pyramidal benchmarks.",
+      p4Title: "4. Trail GPX Simulator, Historical VAM & Fueling",
+      p4Subtitle: "Mountain Ascent Velocity (VAM) & Ultra Hydration Protocol",
+      p4Desc:
+        "Upload any GPX course file to interactively inspect elevation gain (D+), loss (D-), and grade difficulty. Dynamically extracts your historical VAM (vertical ascent meters/hour) from previous COROS mountain sessions to predict realistic race finish times, accompanied by an hourly carbohydrate (40-90g/hr), electrolyte, and hydration pacing strategy.",
+      p5Title: "5. Head-to-Head Compare & Cardiac Drift (Pa:HR)",
+      p5Subtitle: "Aerobic Decoupling & Mitochondrial Durability Analysis",
+      p5Desc:
+        "Compare any two training sessions side-by-side with split-by-split pace differences and elevation overlays. Calculates Pa:HR aerobic decoupling between the first and second half of runs; decoupling below 5% demonstrates superior aerobic durability and heat/fuel stability, while decoupling above 5% highlights cardiovascular strain or dehydration.",
+      p6Title: "6. BYOK Contextual AI Coach",
+      p6Subtitle: "Multi-LLM Intelligence (DeepSeek, Claude, GPT, Gemini)",
+      p6Desc:
+        "Bring Your Own Key (BYOK) for total privacy and zero rate limits. Unlike standard generic AI chats, the AllTerrain coach receives your exact training telemetry in its system prompt—including real-time CTL, ATL, TSB, recovery score, recent sleep/HRV, and past workouts—enabling deep, contextual answers for tapering, pacing, and recovery questions.",
+      p7Title: "7. Zero-Knowledge Privacy & Official COROS MCP",
+      p7Subtitle: "Encrypted SQLite Storage & Direct Hardware Telemetry",
+      p7Desc:
+        "Direct integration via official COROS MCP / API protocols. Your athlete tokens, heart rate data, and GPS telemetry are stored locally in your private encrypted database. No analytics trackers, no third-party data selling, no vendor lock-in.",
+    },
   },
   id: {
     common: {
@@ -262,6 +304,7 @@ export const translations = {
       privacyNotice:
         "Privat & Aman: Token & metrik latihan disimpan terenkripsi di database privat Anda. Tidak pernah dibagikan ke pihak ketiga.",
       loadingAthleteEngine: "Memuat Engine Inteligensi Atlet...",
+      exploreFeaturesBtn: "Jelajahi Semua Fitur & Metodologi Sports Science",
     },
     header: {
       syncTooltip: "Tarik data terbaru dari COROS MCP",
@@ -401,6 +444,47 @@ export const translations = {
       allSports: "Semua Olahraga",
       running: "Lari",
       trailRunning: "Trail Run",
+    },
+    featuresPage: {
+      badge: "Sports Science & Exercise Physiology",
+      heroTitle: "Di Balik Layar: Metodologi Sains AllTerrain",
+      heroSubtitle:
+        "Menjembatani telemetri mentah jam COROS dengan fisiologi latihan presisi. Dirancang untuk pelari maraton, ultra, dan pelatih yang mengutamakan data objektif.",
+      backToHome: "Kembali ke Dashboard",
+      connectCtaTitle: "Siap meningkatkan performa lari Anda dengan sains?",
+      connectCtaSubtitle:
+        "Hubungkan akun COROS Anda dalam hitungan detik. Tanpa iklan, tanpa pelacak, data Anda aman di database privat terenkripsi.",
+      connectButton: "Hubungkan Akun COROS",
+      manualTokenButton: "Gunakan Token Manual",
+      pillarsTitle: "Pilar Metodologi Utama",
+      p1Title: "1. Banister PMC & Exponential Moving Averages",
+      p1Subtitle: "Model Impulse-Response Eric Banister (1975)",
+      p1Desc:
+        "Menghitung Chronic Training Load (CTL / Fitness, EWMA 42 hari) dan Acute Training Load (ATL / Fatigue, EWMA 7 hari) untuk mendapatkan Training Stress Balance (TSB / Form = CTL - ATL). Mendukung skala bawaan COROS 0-100 maupun skala absolut Intervals.icu, lengkap dengan 5 Form Zones dan pelacak Ramp Rate mingguan untuk mencegah lonjakan beban tiba-tiba.",
+      p2Title: "2. Kesiapan Adaptif & Governor Beban ACWR",
+      p2Subtitle: "Paradigma Pencegahan Cedera ACWR Dr. Tim Gabbett",
+      p2Desc:
+        "Memantau rasio beban akut terhadap kronis (ACWR). Rentang 0.8–1.3 adalah 'Sweet Spot' aman, 1.3–1.5 memberikan peringatan kelelahan, dan >1.5 mengaktifkan governor keselamatan. Sistem memberikan rekomendasi target jarak dan intensitas untuk Hari Ini dan Besok secara dinamis sesuai kesiapan fisiologis.",
+      p3Title: "3. Polarisasi Mingguan 80/20 & Distribusi Zona",
+      p3Subtitle: "Model Endurance Terpolarisasi Dr. Stephen Seiler",
+      p3Desc:
+        "Menganalisis akumulasi waktu di Zone 1-2 (Fondasi Aerobik), Zone 3-4 (Threshold / Grey Zone), dan Zone 5+ (Intensitas Tinggi). Menghindarkan pelari dari jebakan umum 'terlalu kencang saat lari santai, dan terlalu lelah saat sesi kencang'. Menampilkan perbandingan distribusi aktual vs target 80/20 & Piramidal.",
+      p4Title: "4. Simulator GPX Trail, VAM Historis & Nutrisi",
+      p4Subtitle: "Kecepatan Tanjakan Vertikal (VAM) & Protokol Nutrisi Ultra",
+      p4Desc:
+        "Unggah file rute GPX untuk menganalisis elevasi kumulatif (D+/D-) dan profil tanjakan. Sistem menghitung VAM historis (kecepatan vertikal meter/jam) dari data lari gunung COROS Anda untuk memperkirakan waktu finish lomba trail, lengkap dengan panduan kebutuhan karbohidrat (40-90g/jam), elektrolit, dan hidrasi.",
+      p5Title: "5. Komparasi Head-to-Head & Cardiac Drift (Pa:HR)",
+      p5Subtitle: "Efisiensi Aerobik & Dekopling Kardiovaskular",
+      p5Desc:
+        "Bandingkan dua sesi latihan secara berdampingan dengan overlay selisih split pace dan elevasi. Menganalisis dekopling Pa:HR antara paruh pertama dan kedua; angka < 5% menandakan efisiensi aerobik dan durabilitas yang prima, sedangkan > 5% mengindikasikan beban kardiovaskular tinggi atau dehidrasi.",
+      p6Title: "6. BYOK Contextual AI Coach",
+      p6Subtitle: "Kecerdasan Multi-LLM (DeepSeek, Claude, GPT, Gemini)",
+      p6Desc:
+        "Gunakan API Key sendiri (BYOK) untuk privasi penuh tanpa batasan kuota. Berbeda dengan AI umum, AI Coach AllTerrain menerima konteks data latihan Anda secara real-time—termasuk CTL, ATL, TSB, skor pemulihan, HRV, dan riwayat latihan—sehingga rekomendasi tapering, pacing, dan recovery menjadi sangat personal dan berbasis sains.",
+      p7Title: "7. Privasi Tingkat Tinggi & Integrasi Resmi COROS MCP",
+      p7Subtitle: "Database Terenkripsi Privat & Telemetri Perangkat Resmi",
+      p7Desc:
+        "Sinkronisasi langsung melalui protokol resmi COROS MCP / API. Token akun, data detak jantung, dan telemetri GPS Anda tersimpan terenkripsi di database privat Anda. Tidak ada pelacak pihak ketiga, tidak ada penjualan data, data atlet seutuhnya milik Anda.",
     },
   },
 } as const;
