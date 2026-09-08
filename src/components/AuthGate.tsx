@@ -41,7 +41,7 @@ export const AuthGate: React.FC = () => {
             className="h-[19px] w-[78px] object-contain shrink-0"
           />
           <span className="text-[11px] font-black uppercase tracking-wider text-zinc-900 border-l-2 border-zinc-300 pl-2.5">
-            {t("landing.badge", "Official Open API Integration")}
+            {t("landing.badge", "Official COROS MCP Integration")}
           </span>
         </div>
 
@@ -162,14 +162,16 @@ export const AuthGate: React.FC = () => {
         </div>
 
         {/* Security & Privacy Badge */}
-        <div className="pt-4 flex items-center justify-center gap-2 text-xs text-zinc-600 font-bold">
-          <ShieldCheck className="h-4 w-4 text-emerald-600 stroke-[2.5]" />
-          <span>
-            {t(
-              "landing.privacyNotice",
-              "Private & Secure: Tokens & athlete metrics are stored in your private encrypted database. Never shared with third parties."
-            )}
-          </span>
+        <div className="pt-4 flex items-center justify-center px-4">
+          <p className="text-xs text-zinc-600 font-bold max-w-2xl text-center leading-relaxed">
+            <ShieldCheck className="h-4 w-4 text-emerald-600 stroke-[2.5] inline-block -mt-0.5 mr-1.5 align-middle shrink-0" />
+            <span>
+              {t(
+                "landing.privacyNotice",
+                "Private & Secure: Tokens & athlete metrics are stored in your private encrypted database. Never shared with third parties."
+              )}
+            </span>
+          </p>
         </div>
       </div>
     </div>

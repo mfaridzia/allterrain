@@ -34,7 +34,7 @@ export const translations = {
       connectedBadge: "Online",
     },
     landing: {
-      badge: "Official Open API Integration",
+      badge: "Official COROS MCP Integration",
       heroTitlePrefix: "Unlock Elite",
       heroTitlePerformance: "Performance Science",
       heroTitleAnd: "&",
@@ -235,12 +235,12 @@ export const translations = {
       connectedBadge: "Online",
     },
     landing: {
-      badge: "Integrasi Resmi Open API",
-      heroTitlePrefix: "Buka Analisis",
-      heroTitlePerformance: "Sains Performa",
+      badge: "Integrasi Resmi COROS MCP",
+      heroTitlePrefix: "Buka Potensi Penuh",
+      heroTitlePerformance: "Performance Science",
       heroTitleAnd: "&",
-      heroTitleAthletic: "Atletik",
-      heroTitleSuffix: "Kelas Elit",
+      heroTitleAthletic: "Athletic",
+      heroTitleSuffix: "Analytics",
       heroDescription:
         "Hubungkan akun COROS Anda untuk menarik beban latihan, menghitung kurva Banister PMC presisi (CTL/ATL/TSB), evaluasi kesiapan & pemulihan harian, serta panduan pintar dari AI Coach.",
       connectButton: "Hubungkan Akun COROS",
@@ -260,7 +260,7 @@ export const translations = {
       feature3Desc:
         "Pelatih AI cerdas berbasis konteks latihan Anda (DeepSeek, Claude, OpenAI, atau Gemini) untuk analisis kesiapan fisik harian.",
       privacyNotice:
-        "Privat & Aman: Token dan metrik latihan disimpan terenkripsi di database privat Anda. Tidak pernah dibagikan ke pihak ketiga.",
+        "Privat & Aman: Token & metrik latihan disimpan terenkripsi di database privat Anda. Tidak pernah dibagikan ke pihak ketiga.",
       loadingAthleteEngine: "Memuat Engine Inteligensi Atlet...",
     },
     header: {
