@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Activity, Mountain, Brain, ArrowRight, Key } from "lucide-react";
+import { Activity, Mountain, Brain, ArrowRight, Key } from "lucide-react";
 import { useManualTokenMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -171,19 +171,6 @@ export const AuthGate: React.FC = () => {
             <span>{t("landing.exploreFeaturesBtn", "Explore Full Feature Suite & Sports Science Methodology")}</span>
             <ArrowRight className="h-3.5 w-3.5 stroke-[2.5] text-zinc-950 group-hover:text-orange-600 transition-transform group-hover:translate-x-0.5" />
           </Link>
-        </div>
-
-        {/* Security & Privacy Badge */}
-        <div className="pt-4 flex items-center justify-center">
-          <p className="text-xs text-zinc-600 font-bold text-center leading-relaxed md:whitespace-nowrap flex items-center justify-center">
-            <ShieldCheck className="h-4 w-4 text-emerald-600 stroke-[2.5] mr-1.5 shrink-0" />
-            <span>
-              {t(
-                "landing.privacyNotice",
-                "Private & Secure: Tokens & athlete metrics are stored in your private encrypted database. Never shared with third parties."
-              )}
-            </span>
-          </p>
         </div>
       </div>
     </div>
