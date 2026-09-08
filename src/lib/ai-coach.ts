@@ -70,15 +70,57 @@ export async function buildAthleteContext(athleteId: string = "athlete_primary")
       .join("\n");
   }
 
-  const targetDist = await getSetting("trail_target_race_dist", "36", athleteId);
-  const targetElev = await getSetting("trail_target_race_elev", "2200", athleteId);
-  const targetVert = await getSetting("trail_weekly_vert_target", "1000", athleteId);
-  const targetTier = await getSetting("trail_training_tier", "finisher", athleteId);
+  // Load COROS EvoLab benchmarks if available
+  let evolabSummary = "";
+  try {
+    const evolabRaw = await getSetting("coros_evolab_cache", "", athleteId);
+    if (evolabRaw) {
+      const evo = JSON.parse(evolabRaw);
+      const parts: string[] = [];
+      if (evo.runningFitness) parts.push(`Running Fitness: ${evo.runningFitness}`);
+      if (evo.vo2max) parts.push(`VO2max: ${evo.vo2max}`);
+      if (evo.marathonLevel) parts.push(`Marathon Level: ${evo.marathonLevel}`);
+      if (evo.fiveKmSeconds) {
+        const m = Math.floor(evo.fiveKmSeconds / 60);
+        const s = (evo.fiveKmSeconds % 60).toString().padStart(2, "0");
+        parts.push(`Predicted 5K: ${m}:${s}`);
+      }
+      if (evo.tenKmSeconds) {
+        const m = Math.floor(evo.tenKmSeconds / 60);
+        const s = (evo.tenKmSeconds % 60).toString().padStart(2, "0");
+        parts.push(`Predicted 10K: ${m}:${s}`);
+      }
+      if (evo.halfMarathonSeconds) {
+        const h = Math.floor(evo.halfMarathonSeconds / 3600);
+        const m = Math.floor((evo.halfMarathonSeconds % 3600) / 60);
+        parts.push(`Predicted HM: ${h}h${m}m`);
+      }
+      if (evo.marathonSeconds) {
+        const h = Math.floor(evo.marathonSeconds / 3600);
+        const m = Math.floor((evo.marathonSeconds % 3600) / 60);
+        parts.push(`Predicted FM: ${h}h${m}m`);
+      }
+      if (parts.length > 0) {
+        evolabSummary = `- COROS EvoLab Benchmarks: ${parts.join(" | ")}\n`;
+      }
+    }
+  } catch {
+    // ignore parse error
+  }
+
+  const targetDist = await getSetting("trail_target_race_dist", "", athleteId);
+  const targetElev = await getSetting("trail_target_race_elev", "", athleteId);
+  const targetVert = await getSetting("trail_weekly_vert_target", "", athleteId);
+  const targetTier = await getSetting("trail_training_tier", "", athleteId);
+
+  let trailTargetLine = "";
+  if (targetDist && Number(targetDist) > 0 && targetElev && Number(targetElev) > 0) {
+    trailTargetLine = `- Optional Event Reference (Trail): ${targetDist} km with +${targetElev}m D+ (Weekly Vert Target: +${targetVert || 0}m D+, Tier: ${targetTier || "finisher"}) [NOTE: Secondary reference only. Do NOT frame general running workouts around trail unless asked]\n`;
+  }
 
   return `
 [ATHLETE LIVE PHYSIOLOGICAL DATA (COROS & PERFORMANCE SCIENCE)]
-- Active Target Mountain Race: ${targetDist} km with +${targetElev}m D+ (Target Weekly Vert: +${targetVert}m D+, Mode: ${targetTier})
-- Today's Fitness (CTL - 42d EMA): ${ctl}
+${evolabSummary}${trailTargetLine}- Today's Fitness (CTL - 42d EMA): ${ctl}
 - Today's Fatigue (ATL - 7d EMA): ${atl}
 - Today's Form (TSB = CTL - ATL): ${tsb} (${formZone.label} - ${formZone.description})
 - Form %: ${latestMetric ? latestMetric.form_pct : 0}%
@@ -210,21 +252,36 @@ export async function runCoachStream(messages: ChatMessage[], athleteId: string 
 
   const athleteContext = await buildAthleteContext(athleteId);
 
-  const systemPrompt = `You are "COROS AI Athletic Coach", an elite endurance running & trail performance sports scientist and coach.
-You combine scientific principles from Bannister Impulse-Response (CTL/ATL/TSB), advanced endurance metrics (ACWR, Decoupling Pa:HR, Foster's Monotony & Strain, Polarized 80/20 TID), and Mountain/Trail metrics (VAM m/h, Naismith/Minetti energetic cost).
+  const systemPrompt = `You are "COROS AI Athletic Coach", a world-class endurance sports scientist and elite head coach specializing across all endurance running disciplines (Road Racing from 5K to Marathon, Track & Speedwork, Trail & Ultra Running, and Recovery Physiology).
 
-Current athlete context:
+Your coaching methodology combines:
+1. Exercise Physiology & Impulse-Response Science:
+   - Bannister Fitness-Fatigue model: CTL (Fitness, 42-day EMA), ATL (Fatigue, 7-day EMA), TSB (Form = CTL - ATL).
+   - Injury Prevention: Tim Gabbett's ACWR (Acute:Chronic Workload Ratio; sweet spot 0.8-1.3; >1.5 high injury risk) and CTL Ramp Rate (+5 to +8/week optimal; >+10 is dangerous).
+   - Aerobic Efficiency: Pa:HR Aerobic Decoupling (drift < 5% indicates solid aerobic base; >5% indicates cardiac drift, dehydration, or premature fatigue).
+   - Autonomic Recovery: Nocturnal HRV (rMSSD baseline stability), Resting Heart Rate (RHR), and Sleep architecture.
+2. Training Intensity Distribution (TID) Mastery (All 3 Models):
+   - You understand that endurance training is NOT one-size-fits-all:
+     * Polarized (80/20, Dr. Stephen Seiler): ~80% Zone 1-2 (below LT1), minimal Zone 3, ~15-20% Zone 4-5 (above LT2). Best for base building, 5K/10K speed, and avoiding the "grey zone" trap.
+     * Pyramidal Model: Dominant Zone 1-2 (~70-75%), measured Zone 3 tempo/marathon pace (~15-20%), sharp Zone 4-5 (~5-10%). Essential for Half Marathon & Marathon race-pace economy.
+     * Threshold-Centric (Norwegian Method): High volume of sub-threshold work (Zone 3 / LT2, ~2.5-3.5 mmol/L lactate) with minimal high-acidosis fatigue.
+   - You evaluate which distribution best serves the athlete based on their target distance, current training phase, and recent zone progression.
+3. Strict Discipline Context Matching:
+   - ROAD RUNNING & SPEEDWORK: When the athlete asks about road running (5K, 10K, Half Marathon, Marathon, tempo runs, track intervals, stride cadence, road pacing, threshold pace, fueling):
+     * Focus 100% on road biomechanics, lactate threshold (LT2), VO2max intervals, pacing splits, and running economy.
+     * STRICTLY DO NOT mention trail running, mountains, vertical elevation, or hiking. Treat the athlete purely as a road/track runner.
+   - TRAIL & ULTRA RUNNING: ONLY when the athlete explicitly asks about trail running, mountain running, ultra, vert/elevation gain, or trail race prep:
+     * Integrate mountain sports science: VAM (Vertical Ascent Meters/hour), Naismith/Minetti energetic cost of grade, eccentric downhill loading resilience, power hiking efficiency, and ultra gut training.
+   - RECOVERY & HEALTH: When discussing HRV, sleep, fatigue, resting HR, or soreness:
+     * Focus on autonomic balance, parasympathetic recovery, and whether to execute an active recovery vs complete rest day based on TSB and ACWR.
+
+Current athlete live physiological & training context:
 ${athleteContext}
 
-Guidelines:
-1. Always analyze the athlete's current TSB (Form) and ACWR before recommending workout intensities. If ACWR > 1.5 or TSB < -30, emphasize recovery, easy aerobic spinning, or rest to prevent injury.
-2. Adapt seamlessly to whatever topic the athlete asks:
-   - If asking about Road running (5K, 10K, Half Marathon, Marathon), focus on road pacing, threshold pace (4:42/km), interval sessions, cadence, and road race nutrition.
-   - If asking about recovery, HRV, sleep, or resting HR, analyze their autonomic nervous system trends and recovery score.
-   - If asking about injury prevention, knee pain, shin splints, or gym strength training, provide actionable biomechanical & physical therapy advice.
-   - ONLY bring up the active mountain race goal if the user asks about trail/mountain running, or if their question directly relates to target race preparation. Never force trail topics into unrelated road, recovery, or general questions.
-3. Be encouraging, concise, highly data-driven, and clear.
-4. Speak in the language used by the athlete (Bahasa Indonesia or English).
+Coaching Rules:
+1. Always verify the athlete's current TSB (Form) and ACWR before endorsing or prescribing high-intensity workouts. If ACWR > 1.5 or TSB < -25, urge caution or active recovery.
+2. Be concise, authoritative, encouraging, and deeply data-driven. Reference their actual metrics (CTL, TSB, pace, recent activities) naturally.
+3. Speak in the language used by the athlete (Bahasa Indonesia or English). Respond in natural, clean, professional coaching Indonesian when addressed in Indonesian.
 `;
 
   const model = getAiModelInstance(provider, apiKey, modelName);
