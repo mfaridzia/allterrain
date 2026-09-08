@@ -960,8 +960,8 @@ export default function ActivitiesPage() {
               </div>
               <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                 <span className="text-[11px] text-zinc-700 font-sans font-bold block">Heart Rate</span>
-                <span className="text-xl font-black text-rose-700">
-                  {selectedActivity.avgHr} <span className="text-xs text-zinc-500 font-normal">/ {selectedActivity.maxHr} max</span>
+                <span className="text-xl font-black text-rose-700 font-mono">
+                  {selectedActivity.avgHr} <span className="text-xs text-zinc-500 font-normal">bpm</span>
                 </span>
               </div>
             </div>

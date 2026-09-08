@@ -321,6 +321,7 @@ export async function syncCorosData(
         const distMatch = item.match(/Distance:\s*([0-9.]+)\s*km/);
         const paceMatch = item.match(/Average Pace:\s*([0-9:]+\s*\/km)/);
         const hrMatch = item.match(/Avg HR:\s*(\d+)\s*bpm/);
+        const maxHrMatch = item.match(/(?:Max|Peak)\s*HR:\s*(\d+)\s*bpm/i);
         const idMatch = item.match(/LabelId:\s*([0-9]+)\s*\|\s*SportType:\s*([0-9]+)/);
 
         const labelId = idMatch ? idMatch[1] : `lbl_${dateStr}_${parsedActivitiesCount}`;
@@ -353,6 +354,8 @@ export async function syncCorosData(
         const distKm = distMatch ? parseFloat(distMatch[1]) : 0;
         const paceSec = paceMatch ? parsePaceToSeconds(paceMatch[1]) : distKm > 0 ? durationSec / distKm : 300;
         const avgHr = hrMatch ? parseInt(hrMatch[1], 10) : 145;
+        const hrMultiplier = sportType === "trail_run" ? 1.16 : 1.12;
+        const maxHr = maxHrMatch ? parseInt(maxHrMatch[1], 10) : Math.round(avgHr * hrMultiplier);
         const name = locMatch ? locMatch[1].trim() : `${rawType} (${dateStr})`;
 
         // Estimate elevation & VAM for trail runs or hill workouts
@@ -412,6 +415,7 @@ export async function syncCorosData(
               name = excluded.name,
               training_load = excluded.training_load,
               elevation_gain = excluded.elevation_gain,
+              max_hr = excluded.max_hr,
               vam_meters_per_hour = excluded.vam_meters_per_hour,
               decoupling_pct = excluded.decoupling_pct,
               efficiency_factor = excluded.efficiency_factor
@@ -430,7 +434,7 @@ export async function syncCorosData(
             elevationLoss,
             paceSec,
             avgHr,
-            Math.round(avgHr * 1.12),
+            maxHr,
             174,
             trainingLoad,
             Math.min(5.0, Math.round((2.0 + distKm / 10) * 10) / 10),

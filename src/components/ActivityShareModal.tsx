@@ -677,24 +677,6 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                     />
                   </svg>
 
-                  {/* Peak HR Callout Label */}
-                  <div
-                    className="absolute text-[9px] font-mono font-black px-2 py-0.5 rounded-md border flex items-center gap-1 shadow-sm"
-                    style={{
-                      left: Math.min(
-                        Math.max(hrWaveData.highestPt.x - 36, 12),
-                        svgWidth - 80
-                      ),
-                      top: Math.max(hrWaveData.highestPt.y - 20, 8),
-                      backgroundColor: theme === "dark" ? "#18181B" : "#FFFFFF",
-                      borderColor: "#EF4444",
-                      color: "#EF4444",
-                    }}
-                  >
-                    <Heart className="h-2.5 w-2.5 fill-current" />
-                    <span>Peak {activity.maxHr || hrWaveData.highestPt.hr} bpm</span>
-                  </div>
-
                   {/* Bottom legend */}
                   <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[9px] font-mono text-zinc-500">
                     <span>{isStrength ? "Cardio-Strength Waveform" : "Pace & HR Intensity Profile"}</span>
@@ -733,11 +715,11 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                     }`}
                   >
                     <span className="text-[9px] font-bold block text-zinc-500 uppercase">
-                      Avg / Max HR
+                      Avg HR
                     </span>
                     <span className="text-sm font-black font-mono text-rose-500 leading-none">
                       {activity.avgHr}
-                      <span className="text-[10px] font-normal text-zinc-400">/{activity.maxHr}</span>
+                      <span className="text-[10px] font-normal text-zinc-400"> bpm</span>
                     </span>
                   </div>
 
@@ -832,7 +814,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                 <div className="flex items-center gap-1.5 shrink-0 min-w-0">
                   <Heart className="h-3 w-3 text-rose-500 fill-current shrink-0" />
                   <span className="whitespace-nowrap">
-                    Avg {activity.avgHr} • Max {activity.maxHr} bpm
+                    Avg {activity.avgHr} bpm
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 font-bold shrink-0">

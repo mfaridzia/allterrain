@@ -93,6 +93,7 @@ Data is stored locally on-disk at `./data/coros_athlete.db` using `better-sqlite
 ### 3.3 Multi-Sport Architecture
 Supports comprehensive telemetry across major endurance and fitness disciplines:
 - **Road Running:** Distance, duration, pace (`min/km`), average/max heart rate, cadence, training load, aerobic/anaerobic TE.
+- **Heart Rate Telemetry:** Prioritizes native Max/Peak HR from COROS records (`querySportRecords`), with automatic physiological extrapolation fallback ($\text{Avg HR} \times 1.12$ for road running, $\text{Avg HR} \times 1.16$ for mountain trail sessions) when summary payloads only provide Average Heart Rate.
 - **Trail Running:** VAM climbing rate, cumulative D+/D-, ITRA Km-Effort, Effort Pace (GAP), and Aerobic Decoupling ($Pa:HR$). Mountain dynamics card automatically hides for flat road sessions ($\le 150\text{m}$ D+).
 - **Cycling / Bike:** Speed calculation in `km/h`, cycling load, and cadence.
 - **Gym / Strength Training:** Duration, workout sets, TRIMP load, peak HR, and aerobic/anaerobic training effect without erroneous pace calculations.
