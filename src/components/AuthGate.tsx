@@ -29,8 +29,8 @@ export const AuthGate: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-[#F6F4EE]">
-      <div className="max-w-4xl w-full text-center space-y-8">
+    <div className="flex flex-col items-center justify-center px-4 py-4 sm:py-6 bg-[#F6F4EE]">
+      <div className="max-w-4xl w-full text-center space-y-6">
         {/* Badge with Official COROS Logo */}
         <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
           {/* eslint-disable-next-line @next/next/no-img-element */}

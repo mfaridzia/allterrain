@@ -8,8 +8,8 @@ export const Footer: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <footer className="w-full border-t-2 border-zinc-950 bg-white py-8 px-4 text-center mt-12 shadow-[0_-2px_0px_0px_#09090b]">
-      <div className="max-w-5xl mx-auto space-y-3">
+    <footer className="w-full border-t-2 border-zinc-950 bg-white py-6 px-4 text-center mt-4 sm:mt-6 shadow-[0_-2px_0px_0px_#09090b]">
+      <div className="max-w-5xl mx-auto space-y-2.5">
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-black text-zinc-900">
           <Link href="/" className="hover:text-orange-600 transition-colors">
             {t("nav.home", "Overview")}
@@ -31,7 +31,7 @@ export const Footer: React.FC = () => {
         <p className="text-[11px] font-medium text-zinc-500">
           {t(
             "footer.disclaimer",
-            "© 2026 ALLTERRAIN. Developed for COROS athletes. Not affiliated with COROS Wearables Inc."
+            "© 2026 ALLTERRAIN. Developed for the COROS user community. Not affiliated with COROS Wearables Inc."
           )}
         </p>
       </div>

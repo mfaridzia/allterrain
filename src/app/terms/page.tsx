@@ -18,10 +18,6 @@ export default function TermsOfServicePage() {
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-8 pt-6">
         {/* Title */}
         <section className="space-y-2 border-b-2 border-zinc-950 pb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 border-2 border-zinc-950 text-xs font-black text-amber-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
-            <FileText className="h-3.5 w-3.5 text-amber-700 stroke-[2.5]" />
-            <span>{isId ? "Ketentuan Layanan" : "Terms of Service"}</span>
-          </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-950 leading-tight">
             {isId ? "Ketentuan Layanan ALLTERRAIN" : "ALLTERRAIN Terms of Service"}
           </h1>
@@ -101,9 +97,9 @@ export default function TermsOfServicePage() {
                 : "If you have questions regarding these Terms of Service, please reach out directly:"}
             </p>
             <p className="font-mono text-xs font-bold text-zinc-950 bg-zinc-100 p-3 rounded-xl border-2 border-zinc-950 inline-block shadow-[2px_2px_0px_0px_#09090b]">
-              Muh Farid Zia ·{" "}
-              <a href="mailto:privacy@muhfaridzia.live" className="text-orange-600 underline">
-                privacy@muhfaridzia.live
+              Muhammad Farid Zia ·{" "}
+              <a href="mailto:muhfaridzia@gmail.com" className="text-orange-600 underline">
+                muhfaridzia@gmail.com
               </a>
             </p>
           </article>

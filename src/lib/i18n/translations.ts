@@ -246,7 +246,7 @@ export const translations = {
       features: "Features & Science",
       privacy: "Privacy Policy",
       terms: "Terms of Service",
-      disclaimer: "© 2026 ALLTERRAIN. Developed for COROS athletes. Not affiliated with COROS Wearables Inc.",
+      disclaimer: "© 2026 ALLTERRAIN. Developed for the COROS user community. Not affiliated with COROS Wearables Inc.",
     },
   },
   id: {
@@ -494,7 +494,7 @@ export const translations = {
       features: "Fitur & Sains",
       privacy: "Kebijakan Privasi",
       terms: "Ketentuan Layanan",
-      disclaimer: "© 2026 ALLTERRAIN. Dirancang untuk atlet COROS. Tidak terafiliasi dengan COROS Wearables Inc.",
+      disclaimer: "© 2026 ALLTERRAIN. Dikembangkan untuk komunitas pengguna COROS. Tidak terafiliasi dengan COROS Wearables Inc.",
     },
   },
 } as const;
