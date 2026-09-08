@@ -17,7 +17,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { SettingsModal } from "./SettingsModal";
-import { ThemeToggle } from "./ThemeToggle";
 import { LanguageToggle } from "./LanguageToggle";
 import { useTranslation } from "@/lib/i18n/context";
 import { useAuthStatus, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
@@ -204,9 +203,8 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
 
-            {/* Language & Dark Mode Theme Toggle */}
+            {/* Language Toggle */}
             <LanguageToggle />
-            <ThemeToggle />
 
             {/* Authenticated Controls */}
             {isConnected && (
