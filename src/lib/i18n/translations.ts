@@ -33,6 +33,35 @@ export const translations = {
       disconnectConfirm: "Are you sure you want to disconnect your COROS account?",
       connectedBadge: "Online",
     },
+    landing: {
+      badge: "Official Open API Integration",
+      heroTitlePrefix: "Unlock Elite",
+      heroTitlePerformance: "Performance Science",
+      heroTitleAnd: "&",
+      heroTitleAthletic: "Athletic",
+      heroTitleSuffix: "Analytics",
+      heroDescription:
+        "Connect your COROS account to stream training loads, compute precise Bannister PMC curves (CTL/ATL/TSB), evaluate live recovery & readiness, and get AI-driven coaching insights.",
+      connectButton: "Connect COROS Account",
+      manualTokenButton: "Manual Bearer Token",
+      manualTokenTitle: "Paste COROS Bearer / Access Token",
+      manualTokenPlaceholder: "eyJhbGciOi...",
+      manualTokenSubmit: "Save & Load Dashboard",
+      manualTokenConnecting: "Connecting...",
+      manualTokenError: "Failed to set manual token",
+      feature1Title: "Performance Science Engine",
+      feature1Desc:
+        "Full PMC (Fitness CTL, Fatigue ATL, Form TSB), Form Zones, Ramp Rate, and ACWR Injury Risk analysis.",
+      feature2Title: "Trail & Mountain Suite",
+      feature2Desc:
+        "VAM (vertical ascent rate), cumulative D+/D-, and customizable trail race finish time estimator.",
+      feature3Title: "BYOK AI Training Coach",
+      feature3Desc:
+        "Context-aware AI coach powered by DeepSeek, Claude, OpenAI, or Gemini analyzing your live readiness.",
+      privacyNotice:
+        "Private & Secure: Tokens & athlete metrics are stored in your private encrypted database. Never shared with third parties.",
+      loadingAthleteEngine: "Loading Athlete Intelligence Engine...",
+    },
     header: {
       syncTooltip: "Sync latest data from COROS MCP",
       settingsTooltip: "Settings & API Keys",
@@ -204,6 +233,35 @@ export const translations = {
       disconnect: "Putuskan Akun",
       disconnectConfirm: "Yakin ingin memutuskan koneksi akun COROS?",
       connectedBadge: "Online",
+    },
+    landing: {
+      badge: "Integrasi Resmi Open API",
+      heroTitlePrefix: "Buka Analisis",
+      heroTitlePerformance: "Sains Performa",
+      heroTitleAnd: "&",
+      heroTitleAthletic: "Atletik",
+      heroTitleSuffix: "Kelas Elit",
+      heroDescription:
+        "Hubungkan akun COROS Anda untuk menarik beban latihan, menghitung kurva Banister PMC presisi (CTL/ATL/TSB), evaluasi kesiapan & pemulihan harian, serta panduan pintar dari AI Coach.",
+      connectButton: "Hubungkan Akun COROS",
+      manualTokenButton: "Input Bearer Token Manual",
+      manualTokenTitle: "Tempel COROS Bearer / Access Token",
+      manualTokenPlaceholder: "eyJhbGciOi...",
+      manualTokenSubmit: "Simpan & Buka Dashboard",
+      manualTokenConnecting: "Menghubungkan...",
+      manualTokenError: "Gagal menyimpan token manual",
+      feature1Title: "Performance Science Engine",
+      feature1Desc:
+        "Analisis lengkap kurva PMC (Fitness CTL, Fatigue ATL, Form TSB), Form Zones, Ramp Rate, dan governor risiko cedera ACWR.",
+      feature2Title: "Trail & Mountain Suite",
+      feature2Desc:
+        "Kalkulasi VAM (kecepatan tanjakan m/jam), elevasi kumulatif D+/D-, serta estimasi waktu finish race trail & nutrisi.",
+      feature3Title: "BYOK AI Training Coach",
+      feature3Desc:
+        "Pelatih AI cerdas berbasis konteks latihan Anda (DeepSeek, Claude, OpenAI, atau Gemini) untuk analisis kesiapan fisik harian.",
+      privacyNotice:
+        "Privat & Aman: Token dan metrik latihan disimpan terenkripsi di database privat Anda. Tidak pernah dibagikan ke pihak ketiga.",
+      loadingAthleteEngine: "Memuat Engine Inteligensi Atlet...",
     },
     header: {
       syncTooltip: "Tarik data terbaru dari COROS MCP",

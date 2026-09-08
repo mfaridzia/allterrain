@@ -15,6 +15,7 @@ import { WeeklyZoneProgressionCard } from "@/components/WeeklyZoneProgressionCar
 import dynamic from "next/dynamic";
 import { Trophy, Mountain, RefreshCw, AlertCircle, Sparkles, Layers } from "lucide-react";
 import { useDashboardData, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
+import { useTranslation } from "@/lib/i18n/context";
 
 const AiCoachDrawer = dynamic(
   () => import("@/components/AiCoachDrawer").then((mod) => mod.AiCoachDrawer),
@@ -26,6 +27,7 @@ const SettingsModal = dynamic(
 );
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const { data: dashboardData, isLoading: loading } = useDashboardData();
   const syncMutation = useSyncCorosMutation();
   const disconnectMutation = useDisconnectMutation();
@@ -81,7 +83,7 @@ export default function DashboardPage() {
           <RefreshCw className="h-6 w-6" />
         </div>
         <p className="text-xs font-black text-zinc-900 uppercase tracking-wider">
-          Loading Athlete Intelligence Engine...
+          {t("landing.loadingAthleteEngine", "Loading Athlete Intelligence Engine...")}
         </p>
       </div>
     );
