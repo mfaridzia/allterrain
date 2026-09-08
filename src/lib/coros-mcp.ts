@@ -314,6 +314,17 @@ export async function syncCorosData(
     if (typeof recordsText === "string") {
       const items = recordsText.split(/\n(?=\d+\.\s+)/);
 
+      // Preload all existing activities for this athlete in 1 single fast query to eliminate O(N) network round-trips
+      const existingActivitiesRes = await db.execute({
+        sql: `SELECT id, coros_id, elevation_gain, elevation_loss, training_load, avg_cadence, aerobic_te, anaerobic_te, vam_meters_per_hour, raw_data FROM activities WHERE athlete_id = ?`,
+        args: [athleteId],
+      });
+      const existingMap = new Map<string, any>();
+      for (const row of existingActivitiesRes.rows as any[]) {
+        if (row.coros_id) existingMap.set(String(row.coros_id), row);
+        if (row.id) existingMap.set(String(row.id), row);
+      }
+
       for (const item of items) {
         const headerMatch = item.match(/\d+\.\s+([A-Za-z\s]+)\s*—\s*(\d{4}-\d{2}-\d{2})/);
         if (!headerMatch) continue;
@@ -366,12 +377,19 @@ export async function syncCorosData(
 
         const activityId = `act_${labelId}`;
 
-        // Check if activity already exists with authentic detail in SQLite
-        const existingRes = await db.execute({
-          sql: `SELECT id, elevation_gain, elevation_loss, training_load, avg_cadence, aerobic_te, anaerobic_te, vam_meters_per_hour, raw_data FROM activities WHERE id = ?`,
-          args: [activityId],
-        });
-        const existingRow: any = existingRes.rows?.[0];
+        // Instant in-memory cache lookup
+        const existingRow: any = existingMap.get(labelId) || existingMap.get(activityId);
+
+        // Fast-path: if activity is already fully persisted with authentic barometric details, skip remote calls and DB writes
+        if (
+          existingRow &&
+          existingRow.id === activityId &&
+          typeof existingRow.raw_data === "string" &&
+          existingRow.raw_data.includes("Activity Details")
+        ) {
+          parsedActivitiesCount++;
+          continue;
+        }
 
         let elevationGain = 0;
         let elevationLoss = 0;
