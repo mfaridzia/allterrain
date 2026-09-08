@@ -176,9 +176,14 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
             <Bot className="h-4 w-4 stroke-[2.5]" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-black text-zinc-950">
-              COROS AI Coach
-            </h3>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className="text-sm font-black text-zinc-950">
+                COROS AI Coach
+              </h3>
+              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-orange-100 text-zinc-950 border border-zinc-950 font-mono">
+                {getProviderDisplayName(activeProvider)}
+              </span>
+            </div>
             <p className="text-[10px] font-mono font-bold text-zinc-600">
               Live: TSB {currentTsb > 0 ? `+${currentTsb}` : currentTsb} • ACWR {acwr.toFixed(2)}
             </p>
