@@ -34,22 +34,177 @@ interface WeeklyZoneProgressionCardProps {
 
 /**
  * Format hours to human readable minutes & hours
- * e.g. 0.5 -> "30 mnt"
- * e.g. 0.6 -> "36 mnt"
- * e.g. 4.4 -> "4j 24m (264 mnt)"
+ * e.g. 0.5 -> "30 min" / "30 mnt"
+ * e.g. 4.4 -> "4h 24m (264 min)" / "4j 24m (264 mnt)"
  */
-function formatDurationReadable(hours: number): string {
+function formatDurationReadable(hours: number, lang: string = "id"): string {
   const totalMin = Math.round((hours || 0) * 60);
-  if (totalMin === 0) return "0 mnt";
-  if (totalMin < 60) return `${totalMin} mnt`;
+  const minUnit = lang === "en" ? "min" : "mnt";
+  const hrUnit = lang === "en" ? "h" : "j";
+  const mUnit = "m";
+  const hrFullUnit = lang === "en" ? (hours >= 2 ? "hours" : "hour") : "jam";
+  if (totalMin === 0) return `0 ${minUnit}`;
+  if (totalMin < 60) return `${totalMin} ${minUnit}`;
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  return m > 0 ? `${h}j ${m}m (${totalMin} mnt)` : `${h} jam (${totalMin} mnt)`;
+  return m > 0 ? `${h}${hrUnit} ${m}${mUnit} (${totalMin} ${minUnit})` : `${h} ${hrFullUnit} (${totalMin} ${minUnit})`;
 }
 
 function formatMinutesOnly(hours: number, lang: string = "id"): string {
   const totalMin = Math.round((hours || 0) * 60);
   return `${totalMin} ${lang === "en" ? "min" : "mnt"}`;
+}
+
+function formatWeekLabel(
+  wk: { isCurrentWeek: boolean; startDate?: string; endDate?: string; weekLabel?: string },
+  lang: string
+): string {
+  if (wk.isCurrentWeek) {
+    return lang === "en" ? "This Week" : "Minggu Ini";
+  }
+  if (!wk.startDate || !wk.endDate) {
+    if (lang === "en" && wk.weekLabel) {
+      return wk.weekLabel
+        .replace("Mei", "May")
+        .replace("Agu", "Aug")
+        .replace("Okt", "Oct")
+        .replace("Des", "Dec");
+    }
+    return wk.weekLabel || "";
+  }
+  const start = new Date(wk.startDate + "T00:00:00Z");
+  const end = new Date(wk.endDate + "T00:00:00Z");
+  const startDay = start.getUTCDate();
+  const endDay = end.getUTCDate();
+  const startMonth = start.toLocaleDateString(lang === "en" ? "en-US" : "id-ID", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  const endMonth = end.toLocaleDateString(lang === "en" ? "en-US" : "id-ID", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  if (startMonth === endMonth) {
+    return `${startDay}–${endDay} ${startMonth}`;
+  }
+  return `${startDay} ${startMonth} – ${endDay} ${endMonth}`;
+}
+
+function formatWeekRange(
+  wk: { startDate?: string; endDate?: string; weekRange?: string },
+  lang: string
+): string {
+  if (!wk.startDate || !wk.endDate) {
+    if (lang === "en" && wk.weekRange) {
+      return wk.weekRange
+        .replace("Mei", "May")
+        .replace("Agu", "Aug")
+        .replace("Okt", "Oct")
+        .replace("Des", "Dec");
+    }
+    return wk.weekRange || "";
+  }
+  const start = new Date(wk.startDate + "T00:00:00Z");
+  const end = new Date(wk.endDate + "T00:00:00Z");
+  const startDay = start.getUTCDate();
+  const endDay = end.getUTCDate();
+  const startMonth = start.toLocaleDateString(lang === "en" ? "en-US" : "id-ID", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  const endMonth = end.toLocaleDateString(lang === "en" ? "en-US" : "id-ID", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${end.getUTCFullYear()}`;
+}
+
+function getClassificationInfo(
+  classification: WeeklyZoneData["classification"],
+  lang: string,
+  greyZonePct: number = 0,
+  highIntensityPct: number = 0
+) {
+  if (lang === "en") {
+    switch (classification) {
+      case "grey_zone_trap":
+        return {
+          label: "Grey Zone Trap (Excessive Z3)",
+          badgeText: "Excessive in Z3",
+          description: `${greyZonePct}% of total volume spent in Zone 3 (Tempo). Unless intentional (e.g. Marathon Pace), this causes excessive fatigue on easy days without optimal aerobic adaptations.`,
+          tacticalAdvice: "Ensure easy runs stay strictly in Zone 2 (conversational pace). If this week specifically included planned Marathon Pace work, this proportion is expected.",
+        };
+      case "threshold_heavy":
+        return {
+          label: "Threshold Heavy (High Stress)",
+          badgeText: "High Stress",
+          description: `High intensity reached ${highIntensityPct}%. Sympathetic nervous system strain is significantly elevated.`,
+          tacticalAdvice: "Dial back hard intervals next week and prioritize Zone 1 easy jogging to restore glycogen stores and normalize stress hormones.",
+        };
+      case "base_building":
+        return {
+          label: "Pure Aerobic Base",
+          badgeText: "Aerobic Base",
+          description: "Pure aerobic base building (>88% in Zone 1/2).",
+          tacticalAdvice: "Excellent mitochondrial foundation. Add 1 session of strides / short pickups to maintain leg turnover.",
+        };
+      case "pyramidal":
+        return {
+          label: "Pyramidal Model",
+          badgeText: "Pyramidal",
+          description: "Pyramidal distribution: dominant Zone 1-2 foundation, followed by controlled Zone 3 tempo, and a touch of Zone 4-5.",
+          tacticalAdvice: "Ideal model for half and full marathon preparation. Ensure easy recovery runs don't creep up in pace.",
+        };
+      case "polarized":
+      default:
+        return {
+          label: "Polarized (80/20)",
+          badgeText: "Polarized (80/20)",
+          description: "Perfect polarized distribution: majority easy aerobic volume with measured high-intensity work.",
+          tacticalAdvice: "Superb training execution! Easy days are kept strictly in Zone 1/2, free from grey zone fatigue.",
+        };
+    }
+  }
+
+  // Indonesian fallback
+  switch (classification) {
+    case "grey_zone_trap":
+      return {
+        label: "Grey Zone Trap (Kebablasan Z3)",
+        badgeText: "Kebablasan di Z3",
+        description: `Sebanyak ${greyZonePct}% waktu dihabiskan di Zona 3 (Tempo). Jika bukan sesi terencana (seperti Marathon Pace), porsi ini memicu kelelahan berlebih pada lari santai.`,
+        tacticalAdvice: "Pastikan lari santai tetap di Zona 2 (bisa berbicara lancar). Jika minggu ini memang ada jadwal Marathon Pace Run, porsi ini wajar.",
+      };
+    case "threshold_heavy":
+      return {
+        label: "Threshold Heavy (High Stress)",
+        badgeText: "High Stress",
+        description: `Intensitas tinggi mencapai ${highIntensityPct}%. Beban sistem saraf simpatik tinggi.`,
+        tacticalAdvice: "Kurangi interval keras minggu depan dan perbanyak easy jog Zona 1 untuk memulihkan cadangan glikogen dan hormon stres.",
+      };
+    case "base_building":
+      return {
+        label: "Pure Aerobic Base",
+        badgeText: "Aerobic Base",
+        description: "Latihan murni aerobik fondasi dasar (>88% Zona 1/2).",
+        tacticalAdvice: "Fondasi mitokondria yang sangat bagus. Tambahkan 1 sesi strides / short pickups untuk menjaga turnover kaki.",
+      };
+    case "pyramidal":
+      return {
+        label: "Pyramidal Model",
+        badgeText: "Pyramidal",
+        description: "Distribusi piramid: porsi Zone 1-2 dominan, disusul Zone 3 tempo terukur, dan sedikit Zone 4-5.",
+        tacticalAdvice: "Model ideal untuk persiapan maraton/ultra. Jaga agar lari mudah tidak ikut terbawa kencang.",
+      };
+    case "polarized":
+    default:
+      return {
+        label: "Polarized (80/20)",
+        badgeText: "Polarized (80/20)",
+        description: "Distribusi terpolarisasi sempurna: mayoritas aerobik ringan & porsi intensitas tinggi terukur.",
+        tacticalAdvice: "Eksekusi latihan sangat solid! Hari santai benar-benar santai di Zona 1/2, bebas dari kelelahan grey zone.",
+      };
+  }
 }
 
 export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps> = ({
@@ -63,25 +218,55 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
 
   const rawWeeks = progression?.weeks || [];
 
-  // Filter weeks by user selected range and augment with exact integer minutes
+  // Filter weeks by user selected range and augment with exact integer minutes and localized content
   const chartData = useMemo(() => {
     if (!rawWeeks.length) return [];
     const sliced = rawWeeks.slice(-selectedWeeksCount);
     // Reverse so the most recent week is at the top of the horizontal bar chart
-    return [...sliced].reverse().map((wk) => ({
-      ...wk,
-      lowIntensityMinutes: Math.round(wk.lowIntensityHours * 60),
-      greyZoneMinutes: Math.round(wk.greyZoneHours * 60),
-      highIntensityMinutes: Math.round(wk.highIntensityHours * 60),
-      z1Minutes: Math.round(wk.z1Hours * 60),
-      z2Minutes: Math.round(wk.z2Hours * 60),
-      z3Minutes: Math.round(wk.z3Hours * 60),
-      z4Minutes: Math.round(wk.z4Hours * 60),
-      z5Minutes: Math.round(wk.z5Hours * 60),
-    }));
-  }, [rawWeeks, selectedWeeksCount]);
+    return [...sliced].reverse().map((wk) => {
+      const localizedLabel = formatWeekLabel(wk, language);
+      const localizedRange = formatWeekRange(wk, language);
+      const classInfo = getClassificationInfo(
+        wk.classification,
+        language,
+        wk.greyZonePct,
+        wk.highIntensityPct
+      );
+
+      return {
+        ...wk,
+        weekLabel: localizedLabel,
+        weekRange: localizedRange,
+        classificationLabel: classInfo.label,
+        classificationDescription: classInfo.description,
+        statusBadge: {
+          ...wk.statusBadge,
+          text: classInfo.badgeText,
+        },
+        tacticalAdvice: classInfo.tacticalAdvice,
+        lowIntensityMinutes: Math.round(wk.lowIntensityHours * 60),
+        greyZoneMinutes: Math.round(wk.greyZoneHours * 60),
+        highIntensityMinutes: Math.round(wk.highIntensityHours * 60),
+        z1Minutes: Math.round(wk.z1Hours * 60),
+        z2Minutes: Math.round(wk.z2Hours * 60),
+        z3Minutes: Math.round(wk.z3Hours * 60),
+        z4Minutes: Math.round(wk.z4Hours * 60),
+        z5Minutes: Math.round(wk.z5Hours * 60),
+      };
+    });
+  }, [rawWeeks, selectedWeeksCount, language]);
 
   const currentWeek = progression?.currentWeek || rawWeeks[rawWeeks.length - 1] || null;
+  const currentWeekInfo = useMemo(() => {
+    if (!currentWeek) return null;
+    return getClassificationInfo(
+      currentWeek.classification,
+      language,
+      currentWeek.greyZonePct,
+      currentWeek.highIntensityPct
+    );
+  }, [currentWeek, language]);
+  const currentWeekLabel = currentWeek ? formatWeekLabel(currentWeek, language) : "";
 
   if (!progression || rawWeeks.length === 0) {
     return (
@@ -136,7 +321,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
             <Clock className="h-3 w-3" /> Total Volume:
           </span>
           <span className="font-black text-zinc-950">
-            {formatDurationReadable(data.totalHours)} ({data.activityCount} sesi)
+            {formatDurationReadable(data.totalHours, language)} ({data.activityCount} {language === "en" ? "sessions" : "sesi"})
           </span>
         </div>
 
@@ -148,7 +333,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 Low (Z1-2 Easy):
               </span>
               <span className="font-black text-zinc-950">
-                {formatDurationReadable(data.lowIntensityHours)} • {data.lowIntensityPct}%
+                {formatDurationReadable(data.lowIntensityHours, language)} • {data.lowIntensityPct}%
               </span>
             </div>
             <div className="flex items-center justify-between font-mono text-[11px]">
@@ -157,7 +342,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 Zone 3 (Tempo / SS):
               </span>
               <span className="font-black text-zinc-950">
-                {formatDurationReadable(data.greyZoneHours)} • {data.greyZonePct}%
+                {formatDurationReadable(data.greyZoneHours, language)} • {data.greyZonePct}%
               </span>
             </div>
             <div className="flex items-center justify-between font-mono text-[11px]">
@@ -166,7 +351,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 High (Z4-5 Hard):
               </span>
               <span className="font-black text-zinc-950">
-                {formatDurationReadable(data.highIntensityHours)} • {data.highIntensityPct}%
+                {formatDurationReadable(data.highIntensityHours, language)} • {data.highIntensityPct}%
               </span>
             </div>
           </div>
@@ -176,31 +361,31 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
               <span className="flex items-center gap-1 text-blue-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-blue-500" /> Z1 Recovery:
               </span>
-              <span>{formatMinutesOnly(data.z1Hours)} ({data.z1Pct}%)</span>
+              <span>{formatMinutesOnly(data.z1Hours, language)} ({data.z1Pct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-emerald-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" /> Z2 Aerobic Base:
               </span>
-              <span>{formatMinutesOnly(data.z2Hours)} ({data.z2Pct}%)</span>
+              <span>{formatMinutesOnly(data.z2Hours, language)} ({data.z2Pct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-amber-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-amber-400" /> Z3 Tempo/Grey:
               </span>
-              <span>{formatMinutesOnly(data.z3Hours)} ({data.z3Pct}%)</span>
+              <span>{formatMinutesOnly(data.z3Hours, language)} ({data.z3Pct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-orange-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-orange-500" /> Z4 Threshold:
               </span>
-              <span>{formatMinutesOnly(data.z4Hours)} ({data.z4Pct}%)</span>
+              <span>{formatMinutesOnly(data.z4Hours, language)} ({data.z4Pct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-rose-600 font-bold">
                 <span className="h-2 w-2 rounded-full bg-rose-500" /> Z5 VO2Max:
               </span>
-              <span>{formatMinutesOnly(data.z5Hours)} ({data.z5Pct}%)</span>
+              <span>{formatMinutesOnly(data.z5Hours, language)} ({data.z5Pct}%)</span>
             </div>
           </div>
         )}
@@ -332,11 +517,17 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex flex-col justify-between group min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black font-mono text-zinc-500 uppercase">
-                Status Minggu Ini ({currentWeek.weekLabel})
+                {language === "en"
+                  ? `Current Week Status (${currentWeekLabel})`
+                  : `Status Minggu Ini (${currentWeekLabel})`}
               </span>
               <div
                 className="cursor-pointer text-zinc-400 hover:text-zinc-950 transition-colors"
-                title={`${currentWeek.classificationLabel}\n${currentWeek.classificationDescription}\n\n💡 Saran Coach: ${currentWeek.tacticalAdvice}`}
+                title={`${currentWeekInfo?.label || currentWeek.classificationLabel}\n${
+                  currentWeekInfo?.description || currentWeek.classificationDescription
+                }\n\n💡 ${language === "en" ? "Coach Advice" : "Saran Coach"}: ${
+                  currentWeekInfo?.tacticalAdvice || currentWeek.tacticalAdvice
+                }`}
               >
                 <Info className="h-3.5 w-3.5 stroke-[2.5]" />
               </div>
@@ -349,14 +540,14 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   color: currentWeek.statusBadge.textColor,
                 }}
               >
-                {currentWeek.statusBadge.text}
+                {currentWeekInfo?.badgeText || currentWeek.statusBadge.text}
               </span>
             </div>
             <p
               className="text-[11px] text-zinc-700 font-medium leading-snug"
-              title={currentWeek.classificationDescription}
+              title={currentWeekInfo?.description || currentWeek.classificationDescription}
             >
-              {currentWeek.classificationDescription}
+              {currentWeekInfo?.description || currentWeek.classificationDescription}
             </p>
           </div>
 
@@ -373,11 +564,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 {currentWeek.lowIntensityPct}%
               </span>
               <span className="text-xs font-mono font-bold text-emerald-800 break-words">
-                ({formatDurationReadable(currentWeek.lowIntensityHours)})
+                ({formatDurationReadable(currentWeek.lowIntensityHours, language)})
               </span>
             </div>
             <p className="text-[10px] text-emerald-700 font-medium mt-0.5">
-              Pondasi mitokondria & aerobic base
+              {language === "en"
+                ? "Mitochondrial density & aerobic base foundation"
+                : "Pondasi mitokondria & aerobic base"}
             </p>
           </div>
 
@@ -405,9 +598,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 }`}
               >
                 {currentWeek.classification === "grey_zone_trap"
-                  ? "⚠️ Kebablasan Z3"
+                  ? language === "en"
+                    ? "⚠️ Excessive Z3"
+                    : "⚠️ Kebablasan Z3"
                   : currentWeek.classification === "pyramidal"
                   ? "Pyramidal (Tempo/MP)"
+                  : language === "en"
+                  ? "Controlled (≤15%)"
                   : "Terkontrol (≤15%)"}
               </span>
             </div>
@@ -416,14 +613,20 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 {currentWeek.greyZonePct}%
               </span>
               <span className="text-xs font-mono font-bold text-zinc-700 break-words">
-                ({formatDurationReadable(currentWeek.greyZoneHours)})
+                ({formatDurationReadable(currentWeek.greyZoneHours, language)})
               </span>
             </div>
             <p className="text-[10px] text-zinc-600 font-medium mt-0.5 leading-snug">
               {currentWeek.classification === "grey_zone_trap"
-                ? "Terlalu lelah untuk recovery, risiko kelelahan kronis"
+                ? language === "en"
+                  ? "Too fatigued for recovery, risks chronic overreaching"
+                  : "Terlalu lelah untuk recovery, risiko kelelahan kronis"
                 : currentWeek.classification === "pyramidal"
-                ? "Porsi tempo terencana, baik untuk Half/Full Marathon"
+                ? language === "en"
+                  ? "Planned tempo volume, beneficial for Half/Full Marathon"
+                  : "Porsi tempo terencana, baik untuk Half/Full Marathon"
+                : language === "en"
+                ? "Balanced moderate zone portion maintained"
                 : "Porsi zona moderat terjaga secara seimbang"}
             </p>
           </div>
@@ -441,11 +644,13 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                 {currentWeek.highIntensityPct}%
               </span>
               <span className="text-xs font-mono font-bold text-rose-800 break-words">
-                ({formatDurationReadable(currentWeek.highIntensityHours)})
+                ({formatDurationReadable(currentWeek.highIntensityHours, language)})
               </span>
             </div>
             <p className="text-[10px] text-rose-700 font-medium mt-0.5">
-              Kualitas interval & batas laktat
+              {language === "en"
+                ? "Interval quality & lactate threshold"
+                : "Kualitas interval & batas laktat"}
             </p>
           </div>
         </div>
@@ -704,7 +909,7 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
         </div>
       </div>
 
-      {/* Educational Collapsible: "Kapan Zone 3 Bermanfaat vs Menjadi Jebakan?" */}
+      {/* Educational Collapsible: "Understanding Zone 3" */}
       <div className="border-2 border-zinc-950 rounded-xl bg-amber-50/70 p-4 space-y-3">
         <button
           onClick={() => setShowExplainer(!showExplainer)}
@@ -713,11 +918,21 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
           <div className="flex items-center gap-2">
             <HelpCircle className="h-4 w-4 text-amber-900 stroke-[2.5]" />
             <span className="text-xs font-black text-zinc-950 group-hover:text-orange-600 transition-colors">
-              Memahami Zone 3: Kapan Bermanfaat (Pyramidal / Sweet Spot) vs Kapan Menjadi Jebakan (Grey Zone)?
+              {language === "en"
+                ? "Understanding Zone 3: When is it Beneficial (Pyramidal / Sweet Spot) vs a Trap (Grey Zone)?"
+                : "Memahami Zone 3: Kapan Bermanfaat (Pyramidal / Sweet Spot) vs Kapan Menjadi Jebakan (Grey Zone)?"}
             </span>
           </div>
           <div className="flex items-center gap-1 text-[11px] font-bold text-zinc-600">
-            <span>{showExplainer ? "Sembunyikan" : "Pelajari Sains Distribusi"}</span>
+            <span>
+              {showExplainer
+                ? language === "en"
+                  ? "Hide"
+                  : "Sembunyikan"
+                : language === "en"
+                ? "Learn Distribution Science"
+                : "Pelajari Sains Distribusi"}
+            </span>
             {showExplainer ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
@@ -735,8 +950,9 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   <span>Zone 1 & 2 (≥75% Volume)</span>
                 </div>
                 <p className="text-[11px] text-zinc-600">
-                  Intensitas aerobik murni. Membangun densitas kapiler, mitokondria, dan efisiensi
-                  oksidasi lemak tanpa menumpuk kelelahan otonomik (HRV tetap terjaga).
+                  {language === "en"
+                    ? "Pure aerobic intensity. Builds capillary density, mitochondrial biogenesis, and fat oxidation efficiency without autonomic nervous system strain (HRV preserved)."
+                    : "Intensitas aerobik murni. Membangun densitas kapiler, mitokondria, dan efisiensi oksidasi lemak tanpa menumpuk kelelahan otonomik (HRV tetap terjaga)."}
                 </p>
               </div>
 
@@ -746,7 +962,15 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   <span>Zone 3 (Tempo / Sweet Spot)</span>
                 </div>
                 <p className="text-[11px] text-zinc-600">
-                  Zona moderat di antara LT1 dan LT2. <strong>Sangat bermanfaat</strong> jika terencana untuk Marathon Pace / Sweet Spot (Model Pyramidal). Namun menjadi <em>&ldquo;Junk Miles / Grey Zone&rdquo;</em> jika lari santai (Easy Run) sering kebablasan ke sini tanpa sengaja, memicu kelelahan tanpa adaptasi optimal.
+                  {language === "en" ? (
+                    <>
+                      Moderate zone between LT1 and LT2. <strong>Highly beneficial</strong> when planned for Marathon Pace or Sweet Spot workouts (Pyramidal model). However, it turns into <em>&ldquo;Junk Miles / Grey Zone&rdquo;</em> when easy runs unintentionally drift here, causing unnecessary fatigue without optimal training adaptations.
+                    </>
+                  ) : (
+                    <>
+                      Zona moderat di antara LT1 dan LT2. <strong>Sangat bermanfaat</strong> jika terencana untuk Marathon Pace / Sweet Spot (Model Pyramidal). Namun menjadi <em>&ldquo;Junk Miles / Grey Zone&rdquo;</em> jika lari santai (Easy Run) sering kebablasan ke sini tanpa sengaja, memicu kelelahan tanpa adaptasi optimal.
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -756,14 +980,23 @@ export const WeeklyZoneProgressionCard: React.FC<WeeklyZoneProgressionCardProps>
                   <span>Zone 4 & 5 (5-20% Volume)</span>
                 </div>
                 <p className="text-[11px] text-zinc-600">
-                  Interval di ambang laktat dan VO2Max. Menstimulasi cardiac output maksimal,
-                  kinerja neuromuskular, dan kecepatan lomba.
+                  {language === "en"
+                    ? "Intervals at lactate threshold and VO2Max. Stimulates maximal stroke volume/cardiac output, neuromuscular recruitment, and race-pace economy."
+                    : "Interval di ambang laktat dan VO2Max. Menstimulasi cardiac output maksimal, kinerja neuromuskular, dan kecepatan lomba."}
                 </p>
               </div>
             </div>
 
             <p className="text-[11px] font-mono text-zinc-700 italic bg-amber-100/60 p-2.5 rounded-lg border border-amber-300">
-              💡 <strong>Rekomendasi Coach:</strong> Zone 3 tidak jelek jika terprogram (misal latihan Marathon Pace atau Sweet Spot). Kuncinya adalah niat: saat jadwalnya lari santai (Easy Run), jaga agar tetap di Z1/Z2 (bisa berbicara kalimat lengkap). Simpan tenaga Anda agar sesi interval keras (Z4/Z5) dapat dieksekusi dengan performa 100%!
+              {language === "en" ? (
+                <>
+                  💡 <strong>Coach Recommendation:</strong> Zone 3 is not inherently bad when intentional (such as Marathon Pace or Sweet Spot blocks). The secret is discipline: on easy days, keep it strictly in Zone 1/2 (conversational pace). Save your energy so hard interval days (Z4/Z5) can be crushed at 100% capacity!
+                </>
+              ) : (
+                <>
+                  💡 <strong>Rekomendasi Coach:</strong> Zone 3 tidak jelek jika terprogram (misal latihan Marathon Pace atau Sweet Spot). Kuncinya adalah niat: saat jadwalnya lari santai (Easy Run), jaga agar tetap di Z1/Z2 (bisa berbicara kalimat lengkap). Simpan tenaga Anda agar sesi interval keras (Z4/Z5) dapat dieksekusi dengan performa 100%!
+                </>
+              )}
             </p>
           </div>
         )}
