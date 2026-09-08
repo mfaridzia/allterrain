@@ -9,12 +9,12 @@ import {
   Layers,
   Scale,
   Lock,
-  ArrowLeft,
   ArrowRight,
   Gauge,
   Key,
 } from "lucide-react";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { useTranslation } from "@/lib/i18n/context";
 import { useManualTokenMutation } from "@/lib/queries";
 
@@ -137,24 +137,13 @@ export default function FeaturesPage() {
       <Header />
 
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-8">
-        {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/"
-            aria-label={t("featuresPage.backToHome", "Back to Dashboard")}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-white border-2 border-zinc-950 text-zinc-900 shadow-[2px_2px_0px_0px_#09090b] hover:bg-zinc-100 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4 stroke-[2.5]" />
-          </Link>
-        </div>
-
         {/* Hero Header */}
-        <section className="text-center space-y-3 pt-2">
+        <section className="text-center space-y-3 pt-4">
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-950 leading-tight">
             {t("featuresPage.heroTitle", "Inside the Engine: AllTerrain Methodology")}
           </h1>
 
-          <p className="text-zinc-700 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="text-zinc-700 text-sm sm:text-base max-w-4xl mx-auto leading-relaxed font-medium md:whitespace-nowrap">
             {t(
               "featuresPage.heroSubtitle",
               "Transforming raw COROS wearable telemetry into clear, actionable training science for every run."
@@ -278,6 +267,8 @@ export default function FeaturesPage() {
           )}
         </section>
       </main>
+
+      <Footer />
     </div>
   );
 }

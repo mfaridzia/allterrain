@@ -242,6 +242,12 @@ export const translations = {
       p7Desc:
         "Direct integration via official COROS MCP / API protocols. Your athlete tokens, heart rate data, and GPS telemetry are stored locally in your private encrypted database. No analytics trackers, no third-party data selling, no vendor lock-in.",
     },
+    footer: {
+      features: "Features & Science",
+      privacy: "Privacy Policy",
+      terms: "Terms of Service",
+      disclaimer: "© 2026 ALLTERRAIN. Developed for COROS athletes. Not affiliated with COROS Wearables Inc.",
+    },
   },
   id: {
     common: {
@@ -483,6 +489,12 @@ export const translations = {
       p7Subtitle: "Database Terenkripsi Privat & Telemetri Perangkat Resmi",
       p7Desc:
         "Sinkronisasi langsung melalui protokol resmi COROS MCP / API. Token akun, data detak jantung, dan telemetri GPS Anda tersimpan terenkripsi di database privat Anda. Tidak ada pelacak pihak ketiga, tidak ada penjualan data, data atlet seutuhnya milik Anda.",
+    },
+    footer: {
+      features: "Fitur & Sains",
+      privacy: "Kebijakan Privasi",
+      terms: "Ketentuan Layanan",
+      disclaimer: "© 2026 ALLTERRAIN. Dirancang untuk atlet COROS. Tidak terafiliasi dengan COROS Wearables Inc.",
     },
   },
 } as const;

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { AuthGate } from "@/components/AuthGate";
 import { PmcChart } from "@/components/PmcChart";
 import { AcwrCard } from "@/components/AcwrCard";
@@ -287,6 +288,8 @@ export default function DashboardPage() {
           </>
         )}
       </main>
+
+      <Footer />
 
       {/* Slide-out AI Coach Panel */}
       <AiCoachDrawer
