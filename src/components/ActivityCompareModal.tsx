@@ -33,6 +33,7 @@ import { ActivityItem } from "./ActivityFeed";
 import { useTranslation } from "@/lib/i18n/context";
 import {
   formatPace,
+  formatDurationTime,
   generateActivityComparison,
   ActivityComparisonAnalysis,
 } from "@/lib/analytics";
@@ -130,7 +131,7 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
               <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono font-bold text-zinc-700 flex-wrap">
                 <span>{activityA.distanceKm} km</span>
                 <span>•</span>
-                <span>{activityA.durationMin}m</span>
+                <span>{formatDurationTime(activityA.durationSeconds ?? activityA.durationMin * 60)}</span>
                 <span>•</span>
                 <span className="text-sky-700 font-black">{formatPace(activityA.avgPaceSec)}/km</span>
                 <span>•</span>
@@ -164,7 +165,7 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
               <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono font-bold text-zinc-700 flex-wrap">
                 <span>{activityB.distanceKm} km</span>
                 <span>•</span>
-                <span>{activityB.durationMin}m</span>
+                <span>{formatDurationTime(activityB.durationSeconds ?? activityB.durationMin * 60)}</span>
                 <span>•</span>
                 <span className="text-amber-700 font-black">{formatPace(activityB.avgPaceSec)}/km</span>
                 <span>•</span>

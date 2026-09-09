@@ -2128,5 +2128,34 @@ export function calculateWeeklyZoneProgression(
   };
 }
 
+/**
+ * Formats duration in seconds to standard running clock time:
+ * - < 1 hour: "54:33"
+ * - >= 1 hour: "1:14:25"
+ */
+export function formatDurationTime(totalSeconds: number): string {
+  const sec = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
-
+/**
+ * Formats duration in seconds to compact readable text:
+ * - < 1 hour: "54m 33s"
+ * - >= 1 hour: "1h 14m 25s" (or "1h 14m" if 0s)
+ */
+export function formatDurationReadable(totalSeconds: number): string {
+  const sec = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) {
+    return s > 0 ? `${h}h ${m}m ${s}s` : `${h}h ${m}m`;
+  }
+  return `${m}m ${s}s`;
+}

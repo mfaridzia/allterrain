@@ -25,6 +25,8 @@ import {
   calculateKmEffort,
   calculateGapPace,
   calculateDecouplingAnalysis,
+  formatDurationTime,
+  formatDurationReadable,
 } from "@/lib/analytics";
 import { useTranslation } from "@/lib/i18n/context";
 import { ActivityShareModal } from "./ActivityShareModal";
@@ -36,6 +38,7 @@ export interface ActivityItem {
   sportType: string;
   startTime: number;
   distanceKm: string;
+  durationSeconds?: number;
   durationMin: number;
   avgPaceSec: number;
   avgHr: number;
@@ -289,7 +292,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                     <div className="text-[11px] text-zinc-600 font-mono font-semibold flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
                       <span>{dateStr}</span>
                       <span>•</span>
-                      <span>{act.durationMin}m</span>
+                      <span>{formatDurationTime(act.durationSeconds ?? act.durationMin * 60)}</span>
                       <span>•</span>
                       <span>{formatSpeedOrPace(act)}</span>
                       <span>•</span>
@@ -302,10 +305,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                   <div>
                     {act.sportType === "strength" ? (
                       <div className="text-sm font-black text-purple-700 font-mono">
-                        {act.durationMin}{" "}
-                        <span className="text-[10px] font-normal text-zinc-500">
-                          min
-                        </span>
+                        {formatDurationTime(act.durationSeconds ?? act.durationMin * 60)}
                       </div>
                     ) : (
                       <div className="text-sm font-black text-zinc-950 font-mono">
@@ -578,7 +578,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                     Duration
                   </span>
                   <div className="text-lg font-black text-purple-700 font-mono">
-                    {selectedActivity.durationMin} min
+                    {formatDurationTime(selectedActivity.durationSeconds ?? selectedActivity.durationMin * 60)}
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
@@ -622,7 +622,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
                     Moving Time
                   </span>
                   <div className="text-lg font-black text-zinc-950 font-mono">
-                    {selectedActivity.durationMin} min
+                    {formatDurationTime(selectedActivity.durationSeconds ?? selectedActivity.durationMin * 60)}
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">

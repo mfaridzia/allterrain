@@ -34,6 +34,8 @@ import {
   calculateKmEffort,
   calculateGapPace,
   calculateDecouplingAnalysis,
+  formatDurationTime,
+  formatDurationReadable,
 } from "@/lib/analytics";
 import { ActivityItem } from "@/components/ActivityFeed";
 import { Header } from "@/components/Header";
@@ -715,7 +717,7 @@ export default function ActivitiesPage() {
                           )}
                         </div>
                         <p className="text-[11px] font-mono font-medium text-zinc-600">
-                          {dateStr} • {act.durationMin} mins
+                          {dateStr} • {formatDurationTime(act.durationSeconds ?? act.durationMin * 60)}
                         </p>
                       </div>
                     </div>
@@ -727,7 +729,7 @@ export default function ActivitiesPage() {
                         {act.sportType === "strength" || act.sportType === "gym" ? (
                           <>
                             <div className="font-black text-purple-700 text-sm">
-                              {act.durationMin} <span className="text-[10px] font-normal text-zinc-500">min</span>
+                              {formatDurationTime(act.durationSeconds ?? act.durationMin * 60)}
                             </div>
                             <div className="text-[10px] text-zinc-600 font-sans font-bold">Gym Duration</div>
                           </>
@@ -944,7 +946,9 @@ export default function ActivitiesPage() {
               </div>
               <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                 <span className="text-[11px] text-zinc-700 font-sans font-bold block">Duration</span>
-                <span className="text-xl font-black text-zinc-950">{selectedActivity.durationMin} m</span>
+                <span className="text-xl font-black text-zinc-950 font-mono">
+                  {formatDurationTime(selectedActivity.durationSeconds ?? selectedActivity.durationMin * 60)}
+                </span>
               </div>
               <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                 <span className="text-[11px] text-zinc-700 font-sans font-bold block">

@@ -18,7 +18,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { ActivityItem } from "./ActivityFeed";
-import { formatPace, calculateKmEffort, calculateDecouplingAnalysis } from "@/lib/analytics";
+import { formatPace, calculateKmEffort, calculateDecouplingAnalysis, formatDurationTime } from "@/lib/analytics";
 import { toPng } from "html-to-image";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -701,8 +701,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                       Duration
                     </span>
                     <span className="text-lg font-black font-mono leading-none">
-                      {activity.durationMin}
-                      <span className="text-[10px] ml-0.5 font-normal text-zinc-400">min</span>
+                      {formatDurationTime(activity.durationSeconds ?? activity.durationMin * 60)}
                     </span>
                   </div>
 
@@ -795,8 +794,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                       Duration
                     </span>
                     <span className="text-base font-black font-mono leading-none">
-                      {activity.durationMin}
-                      <span className="text-[10px] ml-0.5 font-normal text-zinc-400">min</span>
+                      {formatDurationTime(activity.durationSeconds ?? activity.durationMin * 60)}
                     </span>
                   </div>
                 </div>
