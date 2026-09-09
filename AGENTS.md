@@ -10,9 +10,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ---
 
-# Mandatory Agent Documentation Protocol
+# Agent Documentation Protocol
 
-Whenever you make modifications, additions, or refinements to this codebase:
-1. **Architecture & Features:** Any changes related to system architecture, routing topology, data flow, database models, sports science formulas, or feature logic MUST be immediately updated in [`ARCHITECTURE.md`](./ARCHITECTURE.md).
-2. **Design System & UI Components:** Any changes related to visual design, neo-brutalist styling tokens, colors, typography, layout cards, modals, or shared UI components MUST be immediately updated in [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md).
+Only update [`ARCHITECTURE.md`](./ARCHITECTURE.md) and [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md) if a change is **major, structural, or important** to document. Do NOT update them for trivial tweaks, minor text/copy adjustments, or small non-breaking bug fixes.
+
+1. **Architecture & Features:** Update [`ARCHITECTURE.md`](./ARCHITECTURE.md) ONLY for major architectural shifts, new core features, new routes, database schema modifications, new sports science formulas, or significant data pipeline changes.
+2. **Design System & UI Components:** Update [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md) ONLY for major design system updates, new shared UI components, new visual styling tokens, or significant structural layout additions.
 
