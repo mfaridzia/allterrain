@@ -22,6 +22,10 @@ import {
   SlidersHorizontal,
   Flame,
   Gauge,
+  Terminal,
+  FileText,
+  Flag,
+  Sparkle,
 } from "lucide-react";
 import { ActivityItem } from "./ActivityFeed";
 import {
@@ -43,7 +47,15 @@ interface LatLng {
   lng: number;
 }
 
-export type ShareTemplateId = "cockpit" | "minimal" | "mountain" | "photo";
+export type ShareTemplateId =
+  | "cockpit"
+  | "minimal"
+  | "mountain"
+  | "terminal"
+  | "trademark"
+  | "bib"
+  | "journal"
+  | "poster";
 
 /**
  * Convert authentic GPS coordinates (lat/lng) into normalized SVG coordinates (x, y)
@@ -203,13 +215,16 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
   const isTrail = activity.sportType === "trail_run" || activity.elevationGain > 200;
   const decoupling = calculateDecouplingAnalysis(activity);
 
-  const formattedDate = new Date(activity.startTime).toLocaleDateString("en-US", {
+  const activityDate = new Date(activity.startTime);
+  const dayName = activityDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+  const dayNameFull = activityDate.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
+  const formattedDate = activityDate.toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
 
-  const formattedTime = new Date(activity.startTime).toLocaleTimeString("en-US", {
+  const formattedTime = activityDate.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -217,8 +232,8 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
   // Calculate route or heart rate visual dimensions
   const svgWidth = aspectRatio === "9:16" ? 312 : 340;
   const svgHeight = aspectRatio === "9:16"
-    ? template === "minimal" ? 220 : template === "mountain" ? 240 : 250
-    : 150;
+    ? template === "minimal" || template === "trademark" ? 220 : template === "mountain" ? 240 : 250
+    : 140;
 
   const [gpsPoints, setGpsPoints] = useState<LatLng[] | null>(null);
   const [isLoadingGps, setIsLoadingGps] = useState(false);
@@ -274,7 +289,6 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
     reader.onload = () => {
       if (typeof reader.result === "string") {
         setBgImage(reader.result);
-        setTemplate("photo");
       }
     };
     reader.readAsDataURL(file);
@@ -284,9 +298,6 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
     setBgImage(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
-    }
-    if (template === "photo") {
-      setTemplate("cockpit");
     }
   };
 
@@ -357,7 +368,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
       : "--"
     : `${formatPace(activity.avgPaceSec)} /km`;
 
-  const isDarkCanvas = bgImage || template === "photo" || theme === "dark";
+  const isDarkCanvas = bgImage || theme === "dark";
 
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -374,8 +385,8 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
               </h2>
               <p className="text-[10px] sm:text-[11px] font-medium text-zinc-500 truncate">
                 {language === "en"
-                  ? "Pick from 4 curated styles or overlay your own running photo"
-                  : "Pilih 4 gaya visual atau pasang foto lari kamu sebagai latar belakang"}
+                  ? "Pick from 8 curated styles or overlay onto your running photo"
+                  : "Pilih 8 gaya visual unik atau pasang foto lari kamu"}
               </p>
             </div>
           </div>
@@ -388,70 +399,118 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
         </div>
 
         {/* Template Presets Selector */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase font-black tracking-wider text-zinc-500">
-              {language === "en" ? "Design Template:" : "Pilihan Template:"}
+              {language === "en" ? "Style & Tags Presets:" : "Pilihan Style & Tag:"}
             </span>
             {bgImage && (
               <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Custom Photo Active
+                Custom Photo
               </span>
             )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+
+          {/* Group 1: Telemetry Layouts */}
+          <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => setTemplate("cockpit")}
-              className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border-2 text-xs font-black transition-all ${
+              className={`py-1.5 px-2.5 rounded-xl border-2 text-xs font-black transition-all flex items-center gap-1.5 ${
                 template === "cockpit"
                   ? "bg-zinc-950 text-white border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
                   : "bg-[#FAF9F5] border-zinc-300 text-zinc-700 hover:border-zinc-950"
               }`}
             >
-              <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+              <SlidersHorizontal className="h-3.5 w-3.5" />
               <span>Cockpit</span>
             </button>
 
             <button
               onClick={() => setTemplate("minimal")}
-              className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border-2 text-xs font-black transition-all ${
+              className={`py-1.5 px-2.5 rounded-xl border-2 text-xs font-black transition-all flex items-center gap-1.5 ${
                 template === "minimal"
                   ? "bg-zinc-950 text-white border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
                   : "bg-[#FAF9F5] border-zinc-300 text-zinc-700 hover:border-zinc-950"
               }`}
             >
-              <Zap className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+              <Zap className="h-3.5 w-3.5 text-amber-500" />
               <span>Minimal</span>
             </button>
 
             <button
               onClick={() => setTemplate("mountain")}
-              className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border-2 text-xs font-black transition-all ${
+              className={`py-1.5 px-2.5 rounded-xl border-2 text-xs font-black transition-all flex items-center gap-1.5 ${
                 template === "mountain"
                   ? "bg-zinc-950 text-white border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
                   : "bg-[#FAF9F5] border-zinc-300 text-zinc-700 hover:border-zinc-950"
               }`}
             >
-              <Mountain className="h-3.5 w-3.5 shrink-0 text-cyan-500" />
+              <Mountain className="h-3.5 w-3.5 text-cyan-500" />
               <span>Mountain</span>
             </button>
+          </div>
 
+          {/* Group 2: Aesthetic / Creative Tags */}
+          <div className="flex flex-wrap gap-1.5 pt-1 border-t border-zinc-100">
             <button
-              onClick={() => {
-                setTemplate("photo");
-                if (!bgImage) {
-                  fileInputRef.current?.click();
-                }
-              }}
-              className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border-2 text-xs font-black transition-all ${
-                template === "photo"
-                  ? "bg-orange-500 text-zinc-950 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
+              onClick={() => setTemplate("terminal")}
+              className={`py-1.5 px-2.5 rounded-xl border-2 text-xs font-black transition-all flex items-center gap-1.5 ${
+                template === "terminal"
+                  ? "bg-zinc-950 text-emerald-400 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
                   : "bg-[#FAF9F5] border-zinc-300 text-zinc-700 hover:border-zinc-950"
               }`}
             >
-              <Camera className="h-3.5 w-3.5 shrink-0" />
-              <span>Photo</span>
+              <Terminal className="h-3.5 w-3.5 text-emerald-500" />
+              <span>JSON 200</span>
+            </button>
+
+            <button
+              onClick={() => setTemplate("trademark")}
+              className={`py-1.5 px-2.5 rounded-xl border-2 text-xs font-black transition-all flex items-center gap-1.5 ${
+                template === "trademark"
+                  ? "bg-zinc-950 text-white border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
+                  : "bg-[#FAF9F5] border-zinc-300 text-zinc-700 hover:border-zinc-950"
+              }`}
+            >
+              <span className="font-mono text-xs font-black">KM®</span>
+              <span>Streetwear</span>
+            </button>
+
+            <button
+              onClick={() => setTemplate("bib")}
+              className={`py-1.5 px-2.5 rounded-xl border-2 text-xs font-black transition-all flex items-center gap-1.5 ${
+                template === "bib"
+                  ? "bg-zinc-950 text-white border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
+                  : "bg-[#FAF9F5] border-zinc-300 text-zinc-700 hover:border-zinc-950"
+              }`}
+            >
+              <Flag className="h-3.5 w-3.5 text-orange-500" />
+              <span>Finish Arch</span>
+            </button>
+
+            <button
+              onClick={() => setTemplate("journal")}
+              className={`py-1.5 px-2.5 rounded-xl border-2 text-xs font-black transition-all flex items-center gap-1.5 ${
+                template === "journal"
+                  ? "bg-amber-300 text-zinc-950 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
+                  : "bg-[#FAF9F5] border-zinc-300 text-zinc-700 hover:border-zinc-950"
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5 text-amber-600" />
+              <span>Highlighter</span>
+            </button>
+
+            <button
+              onClick={() => setTemplate("poster")}
+              className={`py-1.5 px-2.5 rounded-xl border-2 text-xs font-black transition-all flex items-center gap-1.5 ${
+                template === "poster"
+                  ? "bg-rose-600 text-white border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
+                  : "bg-[#FAF9F5] border-zinc-300 text-zinc-700 hover:border-zinc-950"
+              }`}
+            >
+              <span className="text-[10px] font-mono font-black text-rose-500">POSTER</span>
+              <span>Condensed</span>
             </button>
           </div>
         </div>
@@ -465,52 +524,50 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
           className="hidden"
         />
 
-        {(template === "photo" || bgImage) && (
-          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-orange-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] text-xs">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-zinc-950 text-zinc-950 font-bold hover:bg-zinc-100 shadow-sm"
-              >
-                <Upload className="h-3 w-3 text-orange-600" />
-                <span>{bgImage ? (language === "en" ? "Change Photo" : "Ganti Foto") : (language === "en" ? "Upload Photo" : "Upload Foto")}</span>
-              </button>
-
-              {bgImage && (
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 border border-rose-400 text-rose-700 font-bold hover:bg-rose-100"
-                  title="Remove Photo"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  <span className="text-[10px]">Hapus</span>
-                </button>
-              )}
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-orange-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] text-xs">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-zinc-950 text-zinc-950 font-bold hover:bg-zinc-100 shadow-sm"
+            >
+              <Camera className="h-3.5 w-3.5 text-orange-600" />
+              <span>{bgImage ? (language === "en" ? "Change Photo" : "Ganti Foto") : (language === "en" ? "Upload Photo" : "Pasang Foto Latar")}</span>
+            </button>
 
             {bgImage && (
-              <div className="flex items-center gap-1 text-[11px] font-mono">
-                <span className="text-zinc-600 font-bold">Dim:</span>
-                {(["subtle", "balanced", "deep"] as const).map((dim) => (
-                  <button
-                    key={dim}
-                    type="button"
-                    onClick={() => setOverlayDim(dim)}
-                    className={`px-2 py-0.5 rounded capitalize font-bold ${
-                      overlayDim === dim
-                        ? "bg-zinc-950 text-white"
-                        : "bg-white text-zinc-700 border border-zinc-300"
-                    }`}
-                  >
-                    {dim}
-                  </button>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 border border-rose-400 text-rose-700 font-bold hover:bg-rose-100"
+                title="Remove Photo"
+              >
+                <Trash2 className="h-3 w-3" />
+                <span className="text-[10px]">Hapus</span>
+              </button>
             )}
           </div>
-        )}
+
+          {bgImage && (
+            <div className="flex items-center gap-1 text-[11px] font-mono">
+              <span className="text-zinc-600 font-bold">Dim:</span>
+              {(["subtle", "balanced", "deep"] as const).map((dim) => (
+                <button
+                  key={dim}
+                  type="button"
+                  onClick={() => setOverlayDim(dim)}
+                  className={`px-2 py-0.5 rounded capitalize font-bold ${
+                    overlayDim === dim
+                      ? "bg-zinc-950 text-white"
+                      : "bg-white text-zinc-700 border border-zinc-300"
+                  }`}
+                >
+                  {dim}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Customization Toolbar: Ratio & Theme */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 bg-[#FAF9F5] p-2 sm:p-2.5 rounded-2xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
@@ -604,16 +661,14 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                   <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-0 pointer-events-none" />
                 </>
               ) : theme === "dark" ? (
-                /* Ambient Glow in dark mode */
                 <div className="absolute top-0 right-0 w-44 h-44 bg-orange-600/10 blur-3xl pointer-events-none rounded-full" />
               ) : null}
 
               {/* ========================================================= */}
-              {/* TEMPLATE 1: COCKPIT (The Classic Telemetry Grid)         */}
+              {/* 1. COCKPIT TEMPLATE (Classic Telemetry Grid)             */}
               {/* ========================================================= */}
               {template === "cockpit" && (
                 <>
-                  {/* Top Brand & Activity Header */}
                   <div className="relative z-10 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -678,7 +733,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Center Visual Art: Route Map Line OR Heart Rate Waveform */}
+                  {/* Center Visual Art */}
                   <div
                     className={`relative z-10 flex-1 my-2 flex items-center justify-center rounded-2xl border ${
                       isDarkCanvas
@@ -686,24 +741,7 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                         : "bg-white border-zinc-300"
                     } overflow-hidden`}
                   >
-                    <div
-                      className="absolute inset-0 opacity-15 pointer-events-none"
-                      style={{
-                        backgroundImage: isDarkCanvas
-                          ? "radial-gradient(#ffffff 1px, transparent 1px)"
-                          : "radial-gradient(#09090b 1px, transparent 1px)",
-                        backgroundSize: "16px 16px",
-                      }}
-                    />
-
-                    {isLoadingGps ? (
-                      <div className="relative w-full h-full flex flex-col items-center justify-center p-4 gap-2.5">
-                        <div className="h-6 w-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase font-semibold animate-pulse">
-                          Syncing COROS GPS Track...
-                        </span>
-                      </div>
-                    ) : realRouteData ? (
+                    {realRouteData ? (
                       <div className="relative w-full h-full flex items-center justify-center p-2">
                         <svg
                           width="100%"
@@ -711,78 +749,22 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                           className="overflow-visible"
                         >
-                          <defs>
-                            <linearGradient id="routeGradCockpit" x1="0%" y1="0%" x2="100%" y2="100%">
-                              <stop
-                                offset="0%"
-                                stopColor={isBike ? "#10B981" : isTrail ? "#06B6D4" : "#F97316"}
-                              />
-                              <stop
-                                offset="100%"
-                                stopColor={isBike ? "#34D399" : isTrail ? "#22D3EE" : "#FF5500"}
-                              />
-                            </linearGradient>
-                          </defs>
-
-                          {isDarkCanvas && (
-                            <path
-                              d={realRouteData.pathD}
-                              fill="none"
-                              stroke={isBike ? "#10B981" : isTrail ? "#06B6D4" : "#FF5500"}
-                              strokeWidth="8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              opacity="0.25"
-                              style={{ filter: "blur(4px)" }}
-                            />
-                          )}
-
                           <path
                             d={realRouteData.pathD}
                             fill="none"
-                            stroke={
-                              isDarkCanvas
-                                ? "url(#routeGradCockpit)"
-                                : isBike
-                                ? "#059669"
-                                : isTrail
-                                ? "#0891B2"
-                                : "#EA580C"
-                            }
+                            stroke={isDarkCanvas ? "#FF5500" : "#EA580C"}
                             strokeWidth="4"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           />
-
-                          <circle
-                            cx={realRouteData.startPoint.x}
-                            cy={realRouteData.startPoint.y}
-                            r="4.5"
-                            fill="#10B981"
-                            stroke="#FFFFFF"
-                            strokeWidth="2"
-                          />
-
-                          <circle
-                            cx={realRouteData.endPoint.x}
-                            cy={realRouteData.endPoint.y}
-                            r="5"
-                            fill="#F97316"
-                            stroke="#FFFFFF"
-                            strokeWidth="2"
-                          />
+                          <circle cx={realRouteData.startPoint.x} cy={realRouteData.startPoint.y} r="4.5" fill="#10B981" stroke="#FFFFFF" strokeWidth="2" />
+                          <circle cx={realRouteData.endPoint.x} cy={realRouteData.endPoint.y} r="5" fill="#F97316" stroke="#FFFFFF" strokeWidth="2" />
                         </svg>
 
                         <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[8px] font-mono font-bold">
-                          <span className="flex items-center gap-1 text-emerald-500">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            START
-                          </span>
+                          <span className="text-emerald-500">● START</span>
                           <span className="text-zinc-500">•</span>
-                          <span className="flex items-center gap-1 text-orange-500">
-                            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                            FINISH
-                          </span>
+                          <span className="text-orange-500">● FINISH</span>
                         </div>
 
                         {activity.elevationGain > 0 && (
@@ -794,104 +776,33 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                       </div>
                     ) : hrWaveData ? (
                       <div className="relative w-full h-full flex flex-col items-center justify-center p-2">
-                        <svg
-                          width="100%"
-                          height="100%"
-                          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                          className="overflow-visible"
-                        >
-                          <defs>
-                            <linearGradient id="hrGradCockpit" x1="0%" y1="0%" x2="100%" y2="100%">
-                              <stop offset="0%" stopColor="#EF4444" stopOpacity="0.4" />
-                              <stop offset="60%" stopColor="#A855F7" stopOpacity="0.15" />
-                              <stop offset="100%" stopColor="#A855F7" stopOpacity="0.0" />
-                            </linearGradient>
-                            <linearGradient id="hrStrokeCockpit" x1="0%" y1="0%" x2="100%" y2="0%">
-                              <stop offset="0%" stopColor="#A855F7" />
-                              <stop offset="50%" stopColor="#F97316" />
-                              <stop offset="100%" stopColor="#EF4444" />
-                            </linearGradient>
-                          </defs>
-
-                          <path d={hrWaveData.areaD} fill="url(#hrGradCockpit)" />
-                          <path
-                            d={hrWaveData.lineD}
-                            fill="none"
-                            stroke="url(#hrStrokeCockpit)"
-                            strokeWidth="3.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <circle
-                            cx={hrWaveData.highestPt.x}
-                            cy={hrWaveData.highestPt.y}
-                            r="4"
-                            fill="#EF4444"
-                            stroke="#FFFFFF"
-                            strokeWidth="2"
-                          />
+                        <svg width="100%" height="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="overflow-visible">
+                          <path d={hrWaveData.areaD} fill="rgba(239, 68, 68, 0.2)" />
+                          <path d={hrWaveData.lineD} fill="none" stroke="#EF4444" strokeWidth="3" strokeLinecap="round" />
+                          <circle cx={hrWaveData.highestPt.x} cy={hrWaveData.highestPt.y} r="4" fill="#EF4444" stroke="#FFF" strokeWidth="2" />
                         </svg>
                       </div>
                     ) : null}
                   </div>
 
-                  {/* Bottom Metric Badges */}
+                  {/* Bottom Metrics */}
                   <div className="relative z-10 space-y-2">
                     <div className="grid grid-cols-3 gap-2">
-                      <div
-                        className={`p-2.5 rounded-xl border ${
-                          isDarkCanvas
-                            ? "bg-zinc-900/80 border-zinc-800"
-                            : "bg-white border-zinc-300"
-                        }`}
-                      >
-                        <span className="text-[9px] font-bold block text-zinc-400 uppercase">
-                          Distance
-                        </span>
-                        <span className="text-lg font-black font-mono leading-none">
-                          {activity.distanceKm}
-                          <span className="text-[10px] ml-0.5 font-normal text-zinc-400">km</span>
-                        </span>
+                      <div className={`p-2.5 rounded-xl border ${isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"}`}>
+                        <span className="text-[9px] font-bold block text-zinc-400 uppercase">Distance</span>
+                        <span className="text-lg font-black font-mono leading-none">{activity.distanceKm}<span className="text-[10px] ml-0.5 font-normal text-zinc-400">km</span></span>
                       </div>
-
-                      <div
-                        className={`p-2.5 rounded-xl border ${
-                          isDarkCanvas
-                            ? "bg-zinc-900/80 border-zinc-800"
-                            : "bg-white border-zinc-300"
-                        }`}
-                      >
-                        <span className="text-[9px] font-bold block text-zinc-400 uppercase">
-                          {isBike ? "Avg Speed" : "Avg Pace"}
-                        </span>
-                        <span className="text-base font-black font-mono text-orange-500 leading-none">
-                          {speedOrPace}
-                        </span>
+                      <div className={`p-2.5 rounded-xl border ${isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"}`}>
+                        <span className="text-[9px] font-bold block text-zinc-400 uppercase">{isBike ? "Speed" : "Pace"}</span>
+                        <span className="text-base font-black font-mono text-orange-500 leading-none">{speedOrPace}</span>
                       </div>
-
-                      <div
-                        className={`p-2.5 rounded-xl border ${
-                          isDarkCanvas
-                            ? "bg-zinc-900/80 border-zinc-800"
-                            : "bg-white border-zinc-300"
-                        }`}
-                      >
-                        <span className="text-[9px] font-bold block text-zinc-400 uppercase">
-                          Duration
-                        </span>
-                        <span className="text-base font-black font-mono leading-none">
-                          {durationFormatted}
-                        </span>
+                      <div className={`p-2.5 rounded-xl border ${isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"}`}>
+                        <span className="text-[9px] font-bold block text-zinc-400 uppercase">Duration</span>
+                        <span className="text-base font-black font-mono leading-none">{durationFormatted}</span>
                       </div>
                     </div>
 
-                    <div
-                      className={`flex items-center justify-between text-[10px] font-mono px-1.5 pt-1.5 border-t ${
-                        isDarkCanvas
-                          ? "text-zinc-400 border-zinc-800/80"
-                          : "text-zinc-600 border-zinc-200"
-                      }`}
-                    >
+                    <div className={`flex items-center justify-between text-[10px] font-mono px-1.5 pt-1.5 border-t ${isDarkCanvas ? "text-zinc-400 border-zinc-800/80" : "text-zinc-600 border-zinc-200"}`}>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <Heart className="h-3 w-3 text-rose-500 fill-current shrink-0" />
                         <span>Avg {activity.avgHr} bpm</span>
@@ -906,11 +817,10 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
               )}
 
               {/* ========================================================= */}
-              {/* TEMPLATE 2: MINIMAL (Big Numbers & Sleek Modern Accent)   */}
+              {/* 2. MINIMAL TEMPLATE (Hero Bold Numbers)                   */}
               {/* ========================================================= */}
               {template === "minimal" && (
                 <>
-                  {/* Top Minimal Brand Bar */}
                   <div className="relative z-10 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-black font-sans tracking-widest text-orange-500">▲</span>
@@ -921,80 +831,28 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                     </span>
                   </div>
 
-                  {/* Hero Metric Section */}
                   <div className="relative z-10 my-auto text-center space-y-1 py-3">
-                    <div className="inline-block">
-                      <div className="text-6xl sm:text-7xl font-black font-mono tracking-tighter leading-none flex items-baseline justify-center">
-                        <span>{activity.distanceKm}</span>
-                        <span className="text-xl sm:text-2xl font-black text-orange-500 ml-1.5 font-sans">KM</span>
-                      </div>
+                    <div className="text-6xl sm:text-7xl font-black font-mono tracking-tighter leading-none flex items-baseline justify-center">
+                      <span>{activity.distanceKm}</span>
+                      <span className="text-xl sm:text-2xl font-black text-orange-500 ml-1.5 font-sans">KM</span>
                     </div>
-
                     <h3 className="text-sm sm:text-base font-black tracking-tight line-clamp-1 opacity-90">
                       {activity.name}
                     </h3>
                   </div>
 
-                  {/* Flowing GPS Line in Center */}
                   <div className="relative z-10 flex-1 my-1 flex items-center justify-center overflow-hidden">
-                    {realRouteData ? (
-                      <svg
-                        width="100%"
-                        height="100%"
-                        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                        className="overflow-visible opacity-90"
-                      >
-                        <path
-                          d={realRouteData.pathD}
-                          fill="none"
-                          stroke={isDarkCanvas ? "#FF5500" : "#EA580C"}
-                          strokeWidth="3.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          style={{
-                            filter: isDarkCanvas ? "drop-shadow(0 0 8px rgba(255, 85, 0, 0.4))" : "none",
-                          }}
-                        />
-                        <circle
-                          cx={realRouteData.startPoint.x}
-                          cy={realRouteData.startPoint.y}
-                          r="4"
-                          fill="#10B981"
-                        />
-                        <circle
-                          cx={realRouteData.endPoint.x}
-                          cy={realRouteData.endPoint.y}
-                          r="4"
-                          fill="#FF5500"
-                        />
+                    {realRouteData && (
+                      <svg width="100%" height="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="overflow-visible opacity-90">
+                        <path d={realRouteData.pathD} fill="none" stroke={isDarkCanvas ? "#FF5500" : "#EA580C"} strokeWidth="3.5" strokeLinecap="round" />
+                        <circle cx={realRouteData.startPoint.x} cy={realRouteData.startPoint.y} r="4" fill="#10B981" />
+                        <circle cx={realRouteData.endPoint.x} cy={realRouteData.endPoint.y} r="4" fill="#FF5500" />
                       </svg>
-                    ) : hrWaveData ? (
-                      <svg
-                        width="100%"
-                        height="100%"
-                        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                        className="overflow-visible opacity-80"
-                      >
-                        <path
-                          d={hrWaveData.lineD}
-                          fill="none"
-                          stroke="#EF4444"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    ) : null}
+                    )}
                   </div>
 
-                  {/* Clean Bottom Metric Strip */}
                   <div className="relative z-10">
-                    <div
-                      className={`p-3 rounded-2xl border flex items-center justify-around font-mono text-center ${
-                        isDarkCanvas
-                          ? "bg-zinc-900/80 border-zinc-800 backdrop-blur-md"
-                          : "bg-white border-zinc-300 shadow-sm"
-                      }`}
-                    >
+                    <div className={`p-3 rounded-2xl border flex items-center justify-around font-mono text-center ${isDarkCanvas ? "bg-zinc-900/80 border-zinc-800 backdrop-blur-md" : "bg-white border-zinc-300 shadow-sm"}`}>
                       <div>
                         <span className="text-[9px] font-bold text-zinc-400 block uppercase">Pace</span>
                         <span className="text-sm font-black text-orange-500">{speedOrPace}</span>
@@ -1007,28 +865,18 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                       <div className="h-6 w-px bg-zinc-700/40" />
                       <div>
                         <span className="text-[9px] font-bold text-zinc-400 block uppercase">HR</span>
-                        <span className="text-sm font-black text-rose-500">{activity.avgHr} <span className="text-[9px] font-normal">bpm</span></span>
+                        <span className="text-sm font-black text-rose-500">{activity.avgHr} bpm</span>
                       </div>
-                      {activity.elevationGain > 0 && (
-                        <>
-                          <div className="h-6 w-px bg-zinc-700/40" />
-                          <div>
-                            <span className="text-[9px] font-bold text-zinc-400 block uppercase">Gain</span>
-                            <span className="text-sm font-black text-emerald-500">+{activity.elevationGain}m</span>
-                          </div>
-                        </>
-                      )}
                     </div>
                   </div>
                 </>
               )}
 
               {/* ========================================================= */}
-              {/* TEMPLATE 3: MOUNTAIN (Trail & Elevation Vert Beast)       */}
+              {/* 3. MOUNTAIN TEMPLATE (Trail & Vert Beast)                */}
               {/* ========================================================= */}
               {template === "mountain" && (
                 <>
-                  {/* Top Mountain Header */}
                   <div className="relative z-10 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-xs font-black tracking-widest text-cyan-500">
@@ -1040,15 +888,8 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                       </span>
                     </div>
 
-                    {/* Dual Vert Highlights */}
                     <div className="grid grid-cols-2 gap-2 pt-1">
-                      <div
-                        className={`p-2.5 rounded-xl border ${
-                          isDarkCanvas
-                            ? "bg-zinc-900/80 border-cyan-500/30"
-                            : "bg-white border-cyan-600/30"
-                        }`}
-                      >
+                      <div className={`p-2.5 rounded-xl border ${isDarkCanvas ? "bg-zinc-900/80 border-cyan-500/30" : "bg-white border-cyan-600/30"}`}>
                         <span className="text-[9px] font-bold text-cyan-400 uppercase flex items-center gap-1">
                           <ArrowUpRight className="h-3 w-3 stroke-[3]" />
                           Elevation Gain
@@ -1058,16 +899,10 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                         </div>
                       </div>
 
-                      <div
-                        className={`p-2.5 rounded-xl border ${
-                          isDarkCanvas
-                            ? "bg-zinc-900/80 border-zinc-800"
-                            : "bg-white border-zinc-300"
-                        }`}
-                      >
+                      <div className={`p-2.5 rounded-xl border ${isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"}`}>
                         <span className="text-[9px] font-bold text-zinc-400 uppercase flex items-center gap-1">
                           <Gauge className="h-3 w-3" />
-                          VAM Climb Rate
+                          VAM Speed
                         </span>
                         <div className="text-2xl font-black font-mono leading-tight mt-0.5">
                           {activity.vam || Math.round(activity.elevationGain / ((activity.durationSeconds || 3600) / 3600))} <span className="text-xs font-normal text-zinc-400">m/h</span>
@@ -1076,81 +911,26 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Route Map with Topo Vibe */}
-                  <div
-                    className={`relative z-10 flex-1 my-2 flex items-center justify-center rounded-2xl border ${
-                      isDarkCanvas
-                        ? "bg-zinc-900/50 border-cyan-500/20"
-                        : "bg-cyan-50/50 border-cyan-200"
-                    } overflow-hidden`}
-                  >
-                    {realRouteData ? (
-                      <div className="relative w-full h-full flex items-center justify-center p-2">
-                        <svg
-                          width="100%"
-                          height="100%"
-                          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                          className="overflow-visible"
-                        >
-                          <defs>
-                            <linearGradient id="routeGradMountain" x1="0%" y1="0%" x2="100%" y2="100%">
-                              <stop offset="0%" stopColor="#10B981" />
-                              <stop offset="50%" stopColor="#06B6D4" />
-                              <stop offset="100%" stopColor="#F97316" />
-                            </linearGradient>
-                          </defs>
-
-                          <path
-                            d={realRouteData.pathD}
-                            fill="none"
-                            stroke="url(#routeGradMountain)"
-                            strokeWidth="4.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            style={{
-                              filter: isDarkCanvas ? "drop-shadow(0 0 6px rgba(6, 182, 212, 0.4))" : "none",
-                            }}
-                          />
-                          <circle cx={realRouteData.startPoint.x} cy={realRouteData.startPoint.y} r="5" fill="#10B981" />
-                          <circle cx={realRouteData.endPoint.x} cy={realRouteData.endPoint.y} r="5" fill="#F97316" />
-                        </svg>
-
-                        <div className="absolute bottom-2 left-3 text-[9px] font-mono text-zinc-400 font-bold flex items-center gap-2">
-                          <span>Loss: -{activity.elevationLoss}m</span>
-                          <span>•</span>
-                          <span>Km-Effort: {calculateKmEffort(parseFloat(activity.distanceKm) || 0, activity.elevationGain)} km</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center p-4 text-xs font-mono text-zinc-400">
-                        Mountain Telemetry Ready
-                      </div>
+                  <div className={`relative z-10 flex-1 my-2 flex items-center justify-center rounded-2xl border ${isDarkCanvas ? "bg-zinc-900/50 border-cyan-500/20" : "bg-cyan-50/50 border-cyan-200"} overflow-hidden`}>
+                    {realRouteData && (
+                      <svg width="100%" height="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="overflow-visible">
+                        <path d={realRouteData.pathD} fill="none" stroke="#06B6D4" strokeWidth="4" strokeLinecap="round" />
+                        <circle cx={realRouteData.startPoint.x} cy={realRouteData.startPoint.y} r="5" fill="#10B981" />
+                        <circle cx={realRouteData.endPoint.x} cy={realRouteData.endPoint.y} r="5" fill="#F97316" />
+                      </svg>
                     )}
                   </div>
 
-                  {/* Bottom Stats */}
                   <div className="relative z-10 grid grid-cols-3 gap-2">
-                    <div
-                      className={`p-2 rounded-xl border text-center ${
-                        isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"
-                      }`}
-                    >
+                    <div className={`p-2 rounded-xl border text-center ${isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"}`}>
                       <span className="text-[8px] font-bold text-zinc-400 block uppercase">Distance</span>
                       <span className="text-base font-black font-mono">{activity.distanceKm} km</span>
                     </div>
-                    <div
-                      className={`p-2 rounded-xl border text-center ${
-                        isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"
-                      }`}
-                    >
+                    <div className={`p-2 rounded-xl border text-center ${isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"}`}>
                       <span className="text-[8px] font-bold text-zinc-400 block uppercase">Time</span>
                       <span className="text-base font-black font-mono">{durationFormatted}</span>
                     </div>
-                    <div
-                      className={`p-2 rounded-xl border text-center ${
-                        isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"
-                      }`}
-                    >
+                    <div className={`p-2 rounded-xl border text-center ${isDarkCanvas ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-300"}`}>
                       <span className="text-[8px] font-bold text-zinc-400 block uppercase">Pace</span>
                       <span className="text-base font-black font-mono text-cyan-400">{speedOrPace}</span>
                     </div>
@@ -1159,107 +939,284 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
               )}
 
               {/* ========================================================= */}
-              {/* TEMPLATE 4: PHOTO CANVAS (Photo Overlay + Glassmorphism) */}
+              {/* 4. TERMINAL TEMPLATE (JSON Hacker / Dev Telemetry)         */}
               {/* ========================================================= */}
-              {template === "photo" && (
+              {template === "terminal" && (
                 <>
-                  {/* Top Glass Brand Pill */}
                   <div className="relative z-10 flex items-center justify-between">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white">
-                      <span className="text-xs font-black text-orange-400">▲LT</span>
-                      <span className="text-[10px] font-black tracking-widest">ALLTERRAIN</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-emerald-400 font-mono">▲LT:~$</span>
+                      <span className="text-xs font-mono font-bold text-zinc-300">curl /api/workout/latest</span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-white/90 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
-                      {formattedDate}
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                      HTTP 200 OK
                     </span>
                   </div>
 
-                  {/* Empty Photo Upload Hint (if user hasn't selected an image yet) */}
-                  {!bgImage ? (
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="relative z-10 my-auto p-6 rounded-2xl border-2 border-dashed border-white/40 hover:border-orange-400 bg-black/40 backdrop-blur-md text-center cursor-pointer transition-all space-y-2 group"
-                    >
-                      <Camera className="h-8 w-8 mx-auto text-orange-400 group-hover:scale-110 transition-transform" />
-                      <div className="text-sm font-black text-white">
-                        {language === "en" ? "Tap to Upload Running Photo" : "Sentuh untuk Unggah Foto Lari"}
+                  {/* Code Editor Window */}
+                  <div className="relative z-10 flex-1 my-3 p-4 rounded-2xl bg-[#0F1117]/95 border-2 border-zinc-800 font-mono text-xs shadow-2xl flex flex-col justify-between overflow-hidden">
+                    {/* Window Controls */}
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800 text-[10px] text-zinc-500">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F56]" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#27C93F]" />
                       </div>
-                      <p className="text-[11px] text-zinc-300 font-medium">
-                        {language === "en" ? "Overlay telemetry right onto your training memory" : "Tempelkan data latihan langsung di atas foto kamu"}
+                      <span>allterrain-run.json</span>
+                    </div>
+
+                    {/* JSON Body */}
+                    <div className="space-y-1 py-2 leading-relaxed text-zinc-300">
+                      <div><span className="text-zinc-600">&#123;</span></div>
+                      <div className="pl-4">
+                        <span className="text-sky-400">&quot;activity&quot;</span>: <span className="text-emerald-400">&quot;{activity.name}&quot;</span>,
+                      </div>
+                      <div className="pl-4">
+                        <span className="text-sky-400">&quot;distance_km&quot;</span>: <span className="text-amber-400 font-bold">{activity.distanceKm}</span>,
+                      </div>
+                      <div className="pl-4">
+                        <span className="text-sky-400">&quot;avg_pace&quot;</span>: <span className="text-emerald-400">&quot;{speedOrPace}&quot;</span>,
+                      </div>
+                      <div className="pl-4">
+                        <span className="text-sky-400">&quot;moving_time&quot;</span>: <span className="text-emerald-400">&quot;{durationFormatted}&quot;</span>,
+                      </div>
+                      <div className="pl-4">
+                        <span className="text-sky-400">&quot;avg_hr&quot;</span>: <span className="text-amber-400 font-bold">{activity.avgHr}</span>,
+                      </div>
+                      <div className="pl-4">
+                        <span className="text-sky-400">&quot;training_load&quot;</span>: <span className="text-amber-400 font-bold">{activity.trainingLoad}</span>,
+                      </div>
+                      <div className="pl-4">
+                        <span className="text-sky-400">&quot;day&quot;</span>: <span className="text-emerald-400">&quot;{dayNameFull}&quot;</span>
+                      </div>
+                      <div><span className="text-zinc-600">&#125;</span></div>
+                    </div>
+
+                    {/* Route Line overlay in bottom corner of terminal */}
+                    {realRouteData && (
+                      <div className="h-16 w-full flex items-center justify-end pr-2 pt-1 opacity-70">
+                        <svg width="120" height="50" viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="overflow-visible">
+                          <path d={realRouteData.pathD} fill="none" stroke="#10B981" strokeWidth="4" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-zinc-400 px-1">
+                    <span>// ALLTERRAIN TELEMETRY ENGINE</span>
+                    <span>{formattedDate}</span>
+                  </div>
+                </>
+              )}
+
+              {/* ========================================================= */}
+              {/* 5. TRADEMARK TEMPLATE (Streetwear 10.03 KM®)               */}
+              {/* ========================================================= */}
+              {template === "trademark" && (
+                <>
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div className="text-[10px] font-black tracking-widest uppercase font-mono">
+                      ALLTERRAIN LABS™
+                    </div>
+                    <span className="text-[9px] font-mono text-zinc-400">
+                      REF: {activity.id.slice(-6).toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Center Hero: 10.03 KM® */}
+                  <div className="relative z-10 my-auto space-y-3">
+                    <div>
+                      <div className="text-5xl sm:text-6xl font-black font-sans tracking-tight leading-none flex items-baseline">
+                        <span>{activity.distanceKm}</span>
+                        <span className="text-3xl sm:text-4xl font-black ml-1">KM</span>
+                        <span className="text-base sm:text-lg font-mono font-bold align-super ml-0.5 text-orange-500">®</span>
+                      </div>
+                      <div className="text-xs sm:text-sm font-mono uppercase tracking-widest text-zinc-400 mt-1">
+                        &quot;{activity.name.toUpperCase()}&quot;
+                      </div>
+                    </div>
+
+                    {/* Route Line clean stroke */}
+                    {realRouteData && (
+                      <div className="py-2">
+                        <svg width="100%" height="80" viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="overflow-visible opacity-90">
+                          <path d={realRouteData.pathD} fill="none" stroke={isDarkCanvas ? "#FFFFFF" : "#09090B"} strokeWidth="4" strokeLinecap="round" />
+                          <circle cx={realRouteData.startPoint.x} cy={realRouteData.startPoint.y} r="4.5" fill="#10B981" />
+                          <circle cx={realRouteData.endPoint.x} cy={realRouteData.endPoint.y} r="5" fill="#F97316" />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* Industrial Spec Lines */}
+                    <div className="space-y-1 text-xs font-mono font-bold border-t-2 border-current pt-2.5">
+                      <div className="flex justify-between">
+                        <span>AVERAGE PACE</span>
+                        <span className="text-orange-500">{speedOrPace}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>ELAPSED TIME</span>
+                        <span>{durationFormatted}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>HEART RATE</span>
+                        <span>{activity.avgHr} BPM</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 flex items-center justify-between text-[8px] font-mono tracking-wider opacity-60">
+                    <span>DESIGNED FOR ALLTERRAIN RUNNING COMMUNITY</span>
+                    <span>{formattedDate}</span>
+                  </div>
+                </>
+              )}
+
+              {/* ========================================================= */}
+              {/* 6. BIB TEMPLATE (Race Bib / Finish Line Arch)              */}
+              {/* ========================================================= */}
+              {template === "bib" && (
+                <>
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black tracking-wider">
+                      <span>▲LT</span>
+                      <span>//</span>
+                      <span>RACE DAY</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold">{formattedDate}</span>
+                  </div>
+
+                  {/* The Finish Line Arch Block */}
+                  <div className="relative z-10 my-auto rounded-2xl overflow-hidden border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b]">
+                    {/* Top Black Bar: FINISH */}
+                    <div className="bg-zinc-950 text-white text-center py-2 text-xs sm:text-sm font-black tracking-widest uppercase flex items-center justify-center gap-2">
+                      <Flag className="h-4 w-4 text-orange-500" />
+                      <span>FINISH LINE</span>
+                    </div>
+
+                    {/* Center White Bar: 10.03 KM */}
+                    <div className="bg-white text-zinc-950 text-center py-6 sm:py-8 px-4">
+                      <div className="text-5xl sm:text-6xl font-black font-mono tracking-tight leading-none">
+                        {activity.distanceKm} <span className="text-2xl font-sans text-orange-600">KM</span>
+                      </div>
+                      <p className="text-xs font-bold text-zinc-600 mt-2 font-mono truncate">
+                        {activity.name}
                       </p>
                     </div>
-                  ) : (
-                    /* Floating Glowing Route Line over Photo */
-                    <div className="relative z-10 flex-1 my-2 flex items-center justify-center">
-                      {realRouteData && (
-                        <svg
-                          width="100%"
-                          height="100%"
-                          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                          className="overflow-visible"
-                        >
-                          <path
-                            d={realRouteData.pathD}
-                            fill="none"
-                            stroke="#FF5500"
-                            strokeWidth="5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            style={{ filter: "drop-shadow(0 0 10px rgba(255, 85, 0, 0.8))" }}
-                          />
-                          <path
-                            d={realRouteData.pathD}
-                            fill="none"
-                            stroke="#FFFFFF"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <circle cx={realRouteData.startPoint.x} cy={realRouteData.startPoint.y} r="5" fill="#10B981" stroke="#FFFFFF" strokeWidth="1.5" />
-                          <circle cx={realRouteData.endPoint.x} cy={realRouteData.endPoint.y} r="5" fill="#FF5500" stroke="#FFFFFF" strokeWidth="1.5" />
-                        </svg>
-                      )}
-                    </div>
-                  )}
 
-                  {/* Floating Glassmorphic HUD Card at Bottom */}
-                  <div className="relative z-10">
-                    <div className="p-4 rounded-2xl bg-black/65 backdrop-blur-xl border border-white/20 text-white space-y-2.5 shadow-2xl">
-                      <div className="flex items-baseline justify-between">
-                        <div>
-                          <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider block">
-                            Distance
-                          </span>
-                          <div className="text-3xl sm:text-4xl font-black font-mono tracking-tight leading-none text-white">
-                            {activity.distanceKm} <span className="text-base text-orange-400 font-sans">KM</span>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider block">
-                            {isBike ? "Speed" : "Pace"}
-                          </span>
-                          <div className="text-lg font-black font-mono text-orange-400">
-                            {speedOrPace}
-                          </div>
-                        </div>
+                    {/* Bottom Black Bar: Duration & Pace */}
+                    <div className="bg-zinc-950 text-white p-3 font-mono text-center grid grid-cols-3 gap-1 text-xs border-t-2 border-zinc-950">
+                      <div>
+                        <span className="text-[9px] text-zinc-400 block">TIME</span>
+                        <span className="font-black text-sm">{durationFormatted}</span>
                       </div>
-
-                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10 text-center font-mono text-xs">
-                        <div>
-                          <span className="text-[8px] font-bold text-zinc-400 uppercase block">Time</span>
-                          <span className="font-bold text-white">{durationFormatted}</span>
-                        </div>
-                        <div>
-                          <span className="text-[8px] font-bold text-zinc-400 uppercase block">Heart Rate</span>
-                          <span className="font-bold text-rose-400">{activity.avgHr} bpm</span>
-                        </div>
-                        <div>
-                          <span className="text-[8px] font-bold text-zinc-400 uppercase block">Gain</span>
-                          <span className="font-bold text-emerald-400">+{activity.elevationGain}m</span>
-                        </div>
+                      <div>
+                        <span className="text-[9px] text-zinc-400 block">PACE</span>
+                        <span className="font-black text-sm text-orange-400">{speedOrPace}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-zinc-400 block">AVG HR</span>
+                        <span className="font-black text-sm text-rose-400">{activity.avgHr}</span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Route Line Silhouette below Arch */}
+                  <div className="relative z-10 flex items-center justify-center h-16 overflow-hidden">
+                    {realRouteData && (
+                      <svg width="100%" height="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="overflow-visible opacity-70">
+                        <path d={realRouteData.pathD} fill="none" stroke={isDarkCanvas ? "#FF5500" : "#09090B"} strokeWidth="3" strokeLinecap="round" />
+                      </svg>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ========================================================= */}
+              {/* 7. JOURNAL TEMPLATE (Editorial & Highlighter)             */}
+              {/* ========================================================= */}
+              {template === "journal" && (
+                <>
+                  <div className="relative z-10 flex items-center justify-between border-b-2 border-current pb-2">
+                    <span className="font-serif italic font-black text-base sm:text-lg">The Running Dispatch</span>
+                    <span className="font-mono text-[10px] uppercase font-bold">{dayName}, {formattedDate}</span>
+                  </div>
+
+                  {/* Editorial Text with Highlight Marks */}
+                  <div className="relative z-10 my-auto p-4 sm:p-5 rounded-2xl bg-white/90 text-zinc-950 border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-3 font-serif">
+                    <p className="text-base sm:text-lg leading-relaxed">
+                      Completed{" "}
+                      <mark className="bg-amber-300 text-zinc-950 px-1.5 py-0.5 rounded font-black font-mono not-italic text-lg">
+                        {activity.distanceKm} km
+                      </mark>
+                      , averaging a{" "}
+                      <mark className="bg-amber-300 text-zinc-950 px-1.5 py-0.5 rounded font-black font-mono not-italic text-lg">
+                        {speedOrPace}
+                      </mark>{" "}
+                      effort across {durationFormatted} of steady running.
+                    </p>
+
+                    <p className="text-xs text-zinc-600 font-sans leading-relaxed border-t border-zinc-200 pt-2 font-medium">
+                      Workout registered a cardiovascular intensity of{" "}
+                      <strong className="text-zinc-950 font-mono">{activity.avgHr} bpm</strong> with{" "}
+                      <strong className="text-zinc-950 font-mono">{activity.trainingLoad} Training Load</strong>.
+                    </p>
+
+                    <div className="pt-1 flex items-center justify-between text-[10px] font-mono text-zinc-500 font-bold uppercase">
+                      <span>— ALLTERRAIN ATHLETIC DEPT.</span>
+                      <span>COROS EVOLAB</span>
+                    </div>
+                  </div>
+
+                  {/* Route Accent */}
+                  <div className="relative z-10 flex items-center justify-center h-16">
+                    {realRouteData && (
+                      <svg width="100%" height="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="overflow-visible opacity-60">
+                        <path d={realRouteData.pathD} fill="none" stroke="#D97706" strokeWidth="3" strokeLinecap="round" />
+                      </svg>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ========================================================= */}
+              {/* 8. POSTER TEMPLATE (Condensed Gig Poster)                 */}
+              {/* ========================================================= */}
+              {template === "poster" && (
+                <>
+                  <div className="relative z-10 flex items-center justify-between text-[10px] font-mono font-bold tracking-widest">
+                    <span className="text-rose-500">▲ ALLTERRAIN // ISSUE #{activity.id.slice(-4)}</span>
+                    <span>{formattedTime}</span>
+                  </div>
+
+                  {/* Giant Condensed Text Stack */}
+                  <div className="relative z-10 my-auto text-center space-y-0.5 font-black uppercase tracking-tight">
+                    <div className="text-2xl sm:text-3xl text-rose-500 leading-none font-mono">
+                      {dayNameFull}
+                    </div>
+                    <div className="text-xl sm:text-2xl leading-none truncate opacity-90 font-sans">
+                      {activity.name}
+                    </div>
+                    <div className="text-6xl sm:text-7xl font-mono tracking-tighter leading-none py-2 text-current">
+                      {activity.distanceKm}KM
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-mono leading-none text-orange-500">
+                      {speedOrPace}
+                    </div>
+                    <div className="text-3xl sm:text-4xl font-mono leading-none pt-1">
+                      {durationFormatted}
+                    </div>
+                    <div className="text-sm font-mono text-zinc-400 pt-1">
+                      HEART RATE {activity.avgHr} BPM • LOAD {activity.trainingLoad}
+                    </div>
+                  </div>
+
+                  {/* Route Outline footer */}
+                  <div className="relative z-10 flex items-center justify-center h-14">
+                    {realRouteData && (
+                      <svg width="100%" height="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="overflow-visible opacity-50">
+                        <path d={realRouteData.pathD} fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    )}
                   </div>
                 </>
               )}
