@@ -14,7 +14,7 @@ import { TrainingReadinessCard } from "@/components/TrainingReadinessCard";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { WeeklyZoneProgressionCard } from "@/components/WeeklyZoneProgressionCard";
 import dynamic from "next/dynamic";
-import { Trophy, Mountain, RefreshCw, AlertCircle, Sparkles, Layers } from "lucide-react";
+import { Trophy, Mountain, RefreshCw, AlertCircle, CheckCircle2, Layers } from "lucide-react";
 import { useDashboardData, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -116,7 +116,7 @@ export default function DashboardPage() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {syncMessage && (
           <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-amber-100 border-2 border-zinc-950 text-xs font-bold text-amber-950 shadow-[3px_3px_0px_0px_#09090b]">
-            <Sparkles className="h-4 w-4 text-orange-600 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
             <span>{syncMessage}</span>
           </div>
         )}

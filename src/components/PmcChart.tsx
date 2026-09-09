@@ -25,7 +25,6 @@ import {
   Crosshair,
   Sliders,
   SlidersHorizontal,
-  Sparkles,
   Flag,
   ArrowRight,
   RotateCcw,

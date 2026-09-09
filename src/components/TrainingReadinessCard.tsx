@@ -117,47 +117,62 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
           </div>
 
           {/* Detailed Metric Badges */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-zinc-300/80">
-            <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20">
-              <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
-                <Clock className="h-3 w-3 text-zinc-950" />
-                <span>{t("readiness.duration", "Duration")}</span>
-              </div>
-              <p className="text-xs font-black text-zinc-950 mt-1 font-mono">
-                {suggestion.durationMinutes}
-              </p>
-            </div>
+          {(() => {
+            const hrMatch = suggestion.heartRateGuide.match(/^(.*?)\s*\((.*?)\)$/);
+            const hrMain = hrMatch ? hrMatch[1].trim() : suggestion.heartRateGuide;
+            const hrSub = hrMatch ? hrMatch[2].trim() : null;
 
-            <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20">
-              <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
-                <Zap className="h-3 w-3 text-amber-500" />
-                <span>{t("readiness.suggestedLoad", "Target Load")}</span>
-              </div>
-              <p className="text-xs font-black text-zinc-950 mt-1 font-mono">
-                {suggestion.targetLoad}
-              </p>
-            </div>
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-zinc-300/80 items-stretch">
+                <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20 flex flex-col justify-between">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
+                    <Clock className="h-3 w-3 text-zinc-950 shrink-0" />
+                    <span>{t("readiness.duration", "Duration")}</span>
+                  </div>
+                  <p className="text-xs font-black text-zinc-950 mt-1 font-mono">
+                    {suggestion.durationMinutes}
+                  </p>
+                </div>
 
-            <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20">
-              <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
-                <Activity className="h-3 w-3 text-blue-500" />
-                <span>{t("readiness.intensity", "Intensity")}</span>
-              </div>
-              <p className="text-[11px] font-black text-zinc-950 mt-1 truncate" title={suggestion.intensityZone}>
-                {suggestion.intensityZone}
-              </p>
-            </div>
+                <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20 flex flex-col justify-between">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
+                    <Zap className="h-3 w-3 text-amber-500 shrink-0" />
+                    <span>{t("readiness.suggestedLoad", "Target Load")}</span>
+                  </div>
+                  <p className="text-xs font-black text-zinc-950 mt-1 font-mono">
+                    {suggestion.targetLoad}
+                  </p>
+                </div>
 
-            <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20">
-              <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
-                <Heart className="h-3 w-3 text-rose-500" />
-                <span>{t("readiness.hrTarget", "HR Target")}</span>
+                <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20 flex flex-col justify-between">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
+                    <Activity className="h-3 w-3 text-blue-500 shrink-0" />
+                    <span>{t("readiness.intensity", "Intensity")}</span>
+                  </div>
+                  <p className="text-[11px] font-black text-zinc-950 mt-1 leading-tight line-clamp-2" title={suggestion.intensityZone}>
+                    {suggestion.intensityZone}
+                  </p>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20 flex flex-col justify-between">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
+                    <Heart className="h-3 w-3 text-rose-500 shrink-0" />
+                    <span>{t("readiness.hrTarget", "HR Target")}</span>
+                  </div>
+                  <div className="mt-1 space-y-0.5" title={suggestion.heartRateGuide}>
+                    <p className="text-[11px] font-black text-zinc-950 leading-tight">
+                      {hrMain}
+                    </p>
+                    {hrSub && (
+                      <p className="text-[10px] font-mono font-bold text-zinc-500 leading-tight">
+                        {hrSub}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <p className="text-[11px] font-black text-zinc-950 mt-1 font-mono truncate" title={suggestion.heartRateGuide}>
-                {suggestion.heartRateGuide}
-              </p>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* Right Column (5 cols): Safety Governor & Diagnostic Factors */}

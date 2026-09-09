@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Sparkles, Info, ExternalLink } from "lucide-react";
+import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Info, ExternalLink } from "lucide-react";
 import { useAppSettings, useUpdateSettingsMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -245,7 +245,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <label className="text-xs font-black text-zinc-900 flex items-center gap-1.5 truncate">
-                <Sparkles className="h-3.5 w-3.5 text-orange-600 stroke-[2.5] shrink-0" />
+                <Cpu className="h-3.5 w-3.5 text-orange-600 stroke-[2.5] shrink-0" />
                 <span>{t("settingsModal.modelName", "AI Model")}</span>
                 {dynamicModels[provider] && (
                   <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-300">

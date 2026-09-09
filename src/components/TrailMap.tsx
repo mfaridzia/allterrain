@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Layers, MapPin, Mountain, Sparkles, Navigation } from "lucide-react";
+import { Layers, MapPin, Mountain, Navigation } from "lucide-react";
 
 export interface MapPoint {
   lat: number;
@@ -375,7 +375,7 @@ export const TrailMap: React.FC<TrailMapProps> = ({
       <div className="absolute bottom-3 left-3 right-3 z-20 pointer-events-none">
         <div className="bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono pointer-events-auto">
           <div className="flex items-center gap-1.5 font-sans text-zinc-950 font-black text-[11px]">
-            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            <Mountain className="h-3.5 w-3.5 text-zinc-950 stroke-[2.5]" />
             <span>Kecuraman Jalur:</span>
           </div>
 

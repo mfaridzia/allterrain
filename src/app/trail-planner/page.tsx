@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   ShieldAlert,
-  Sparkles,
+  Route,
   Droplets,
   Zap,
   ShieldCheck,
@@ -1487,7 +1487,7 @@ export default function TrailPlannerPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b] hover:bg-[#F3F0E6] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50"
                 title="Muat Rute Demo Rinjani 100 60K"
               >
-                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                <Route className="h-3.5 w-3.5 text-amber-500" />
                 <span className="hidden lg:inline">Demo Rinjani 60K</span>
               </button>
             )}
@@ -1569,7 +1569,7 @@ export default function TrailPlannerPage() {
                   disabled={isUploading}
                   className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 text-sm font-black border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50"
                 >
-                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  <Route className="h-4 w-4 text-amber-500" />
                   <span>{language === "en" ? "Try Demo: Rinjani 100 — 60K" : "Coba Demo: Rinjani 100 — 60K"}</span>
                 </button>
               </div>

@@ -7,7 +7,6 @@ import {
   Copy,
   Check,
   Share2,
-  Sparkles,
   Mountain,
   Bike,
   Footprints,

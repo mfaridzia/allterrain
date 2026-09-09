@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BatteryCharging, Sparkles } from "lucide-react";
+import { BatteryCharging, Zap } from "lucide-react";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -68,7 +68,7 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
         </div>
 
         <span className={`self-start sm:self-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black shrink-0 whitespace-nowrap ${readinessColor}`}>
-          <Sparkles className="h-3 w-3 stroke-[2.5]" />
+          <Zap className="h-3 w-3 stroke-[2.5]" />
           <span>{readiness}</span>
         </span>
       </div>

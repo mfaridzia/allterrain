@@ -9,7 +9,8 @@ import {
   Clock,
   Gauge,
   AlertCircle,
-  Sparkles,
+  Calculator,
+  Lightbulb,
   Apple,
   Droplets,
   Zap,
@@ -318,7 +319,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
       <div className="p-5 sm:p-6 rounded-2xl bg-white border-2 border-zinc-950 space-y-5 shadow-[4px_4px_0px_0px_#09090b]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-cyan-600 stroke-[2.5]" />
+            <Calculator className="h-4 w-4 text-cyan-600 stroke-[2.5]" />
             <h4 className="text-sm font-black text-zinc-950">Custom Trail Race Finish Estimator & ITRA Calculator</h4>
           </div>
           <span className="text-[11px] text-zinc-600 font-mono font-bold">
@@ -522,7 +523,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
 
           {/* Coaching Methodology Tip */}
           <div className="p-3 rounded-xl bg-white border-2 border-zinc-950 text-[11px] text-zinc-800 leading-relaxed flex items-start gap-2.5 shadow-[1.5px_1.5px_0px_0px_#09090b] font-medium">
-            <Sparkles className="h-4 w-4 text-amber-600 stroke-[2.5] shrink-0 mt-0.5" />
+            <Lightbulb className="h-4 w-4 text-amber-600 stroke-[2.5] shrink-0 mt-0.5" />
             <span>{prepTargets.methodologyTip}</span>
           </div>
         </div>
@@ -640,7 +641,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
 
         {/* Executive Summary Alert */}
         <div className="p-3.5 rounded-xl bg-amber-50 border-2 border-zinc-950 text-xs text-zinc-800 leading-relaxed font-medium flex items-start gap-2.5 shadow-[2px_2px_0px_0px_#09090b]">
-          <Sparkles className="h-4 w-4 text-amber-600 stroke-[2.5] shrink-0 mt-0.5" />
+          <Compass className="h-4 w-4 text-amber-600 stroke-[2.5] shrink-0 mt-0.5" />
           <div>
             <strong className="font-black text-zinc-950">
               {language === "en" ? "Tactical Guideline: " : "Pedoman Taktis: "}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { HelpCircle, Info, Sparkles, BookOpen } from "lucide-react";
+import { HelpCircle, Info, Target, BookOpen } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 
 export type MetricTerm =
@@ -525,7 +525,7 @@ export const MetricTooltip: React.FC<MetricTooltipProps> = ({
             {/* Sweet Spot */}
             <div className="p-2 rounded-lg bg-zinc-900/90 border border-zinc-800/80 space-y-0.5 text-[10px]">
               <div className="flex items-center gap-1 text-emerald-400 font-bold">
-                <Sparkles className="h-3 w-3 shrink-0" />
+                <Target className="h-3 w-3 shrink-0" />
                 <span>{language === "en" ? "Sweet Spot / Optimal Range:" : "Sweet Spot / Target Ideal:"}</span>
               </div>
               <p className="text-zinc-300 font-mono leading-normal">{data.sweetSpot}</p>
