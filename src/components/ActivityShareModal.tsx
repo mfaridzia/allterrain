@@ -26,6 +26,9 @@ import {
   FileText,
   Flag,
   Sparkle,
+  Move,
+  ZoomIn,
+  RotateCcw,
 } from "lucide-react";
 import { ActivityItem } from "./ActivityFeed";
 import {
@@ -282,6 +285,83 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
     );
   }, [activity.avgHr, activity.maxHr, activity.durationMin, svgWidth, svgHeight]);
 
+  // Photo positioning and scale
+  const [photoPos, setPhotoPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [photoScale, setPhotoScale] = useState<number>(1);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({
+    startX: 0,
+    startY: 0,
+    initX: 0,
+    initY: 0,
+  });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!bgImage) return;
+    e.preventDefault();
+    setIsDraggingPhoto(true);
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: photoPos.x,
+      initY: photoPos.y,
+    };
+  };
+
+  useEffect(() => {
+    if (!isDraggingPhoto) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStartRef.current.startX;
+      const dy = e.clientY - dragStartRef.current.startY;
+      setPhotoPos({
+        x: Math.round(dragStartRef.current.initX + dx),
+        y: Math.round(dragStartRef.current.initY + dy),
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingPhoto(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDraggingPhoto]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!bgImage || e.touches.length === 0) return;
+    setIsDraggingPhoto(true);
+    dragStartRef.current = {
+      startX: e.touches[0].clientX,
+      startY: e.touches[0].clientY,
+      initX: photoPos.x,
+      initY: photoPos.y,
+    };
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingPhoto || e.touches.length === 0) return;
+    const dx = e.touches[0].clientX - dragStartRef.current.startX;
+    const dy = e.touches[0].clientY - dragStartRef.current.startY;
+    setPhotoPos({
+      x: Math.round(dragStartRef.current.initX + dx),
+      y: Math.round(dragStartRef.current.initY + dy),
+    });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDraggingPhoto(false);
+  };
+
+  const handleResetPhotoPosition = () => {
+    setPhotoPos({ x: 0, y: 0 });
+    setPhotoScale(1);
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -289,6 +369,8 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
     reader.onload = () => {
       if (typeof reader.result === "string") {
         setBgImage(reader.result);
+        setPhotoPos({ x: 0, y: 0 });
+        setPhotoScale(1);
       }
     };
     reader.readAsDataURL(file);
@@ -296,6 +378,8 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
 
   const handleRemoveImage = () => {
     setBgImage(null);
+    setPhotoPos({ x: 0, y: 0 });
+    setPhotoScale(1);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -567,6 +651,48 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
               ))}
             </div>
           )}
+
+          {/* Secondary Strip: Zoom & Pan Controls */}
+          {bgImage && (
+            <div className="w-full pt-2 mt-0.5 border-t border-orange-200/70 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-[11px] font-mono text-zinc-600">
+                  <Move className="w-3.5 h-3.5 text-orange-600" />
+                  <span className="font-semibold">Drag preview foto untuk geser</span>
+                </div>
+                {(photoPos.x !== 0 || photoPos.y !== 0 || photoScale !== 1) && (
+                  <button
+                    type="button"
+                    onClick={handleResetPhotoPosition}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-300 text-[10px] font-mono font-bold shadow-xs transition-colors"
+                    title="Reset posisi dan zoom foto"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5 text-orange-600" />
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                <span className="text-zinc-600 font-bold flex items-center gap-1">
+                  <ZoomIn className="w-3 h-3 text-zinc-500" />
+                  Zoom:
+                </span>
+                <input
+                  type="range"
+                  min="1"
+                  max="2.5"
+                  step="0.05"
+                  value={photoScale}
+                  onChange={(e) => setPhotoScale(parseFloat(e.target.value))}
+                  className="w-20 sm:w-24 h-1.5 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                />
+                <span className="w-9 text-right font-black text-zinc-800">
+                  {Math.round(photoScale * 100)}%
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Customization Toolbar: Ratio & Theme */}
@@ -626,8 +752,28 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
 
         {/* Live Card Preview Box */}
         <div className="w-full flex justify-center items-center py-2 bg-zinc-200/60 rounded-2xl p-2 sm:p-4 overflow-x-auto max-w-full">
-          {/* Card Presentation Frame */}
-          <div className="rounded-2xl overflow-hidden shadow-[4px_4px_0px_0px_#09090b] border-2 border-zinc-950 shrink-0">
+          {/* Card Presentation Frame with Mouse & Touch Drag Support */}
+          <div
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className={`relative rounded-2xl overflow-hidden shadow-[4px_4px_0px_0px_#09090b] border-2 border-zinc-950 shrink-0 group ${
+              bgImage
+                ? isDraggingPhoto
+                  ? "cursor-grabbing select-none"
+                  : "cursor-grab"
+                : ""
+            }`}
+          >
+            {/* Helpful floating hint pill (Outside cardRef so NOT included in PNG export) */}
+            {bgImage && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-black/60 backdrop-blur-md text-white/90 text-[10px] font-mono font-medium px-2.5 py-1 rounded-full border border-white/20 shadow-md flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                <Move className="w-3 h-3 text-orange-400" />
+                <span>Drag foto untuk atur posisi</span>
+              </div>
+            )}
+
             {/* TARGET CAPTURE ELEMENT */}
             <div
               ref={cardRef}
@@ -643,11 +789,18 @@ export const ActivityShareModal: React.FC<ActivityShareModalProps> = ({
               {/* Optional Custom Runner Photo Background */}
               {bgImage ? (
                 <>
-                  <img
-                    src={bgImage}
-                    alt="Workout background"
-                    className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
-                  />
+                  <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                    <img
+                      src={bgImage}
+                      alt="Workout background"
+                      style={{
+                        transform: `translate3d(${photoPos.x}px, ${photoPos.y}px, 0) scale(${photoScale})`,
+                        transformOrigin: "center center",
+                      }}
+                      className="w-full h-full object-cover select-none pointer-events-none"
+                      draggable={false}
+                    />
+                  </div>
                   <div
                     className={`absolute inset-0 z-0 pointer-events-none ${
                       overlayDim === "subtle"
