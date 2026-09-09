@@ -187,8 +187,9 @@ For charts (Bannister PMC, Altimetry Profile, HR Distributions):
 </span>
 ```
 
-### 6.5 Responsive Universal Footer Links
-Navigation links in the footer must be grouped semantically into sub-containers (e.g. Product Links vs Legal Links) with an internal bullet divider and a responsive inter-group divider (`hidden sm:inline`). This prevents awkward bullet wrapping or orphaned bullet points on mobile viewports.
+### 6.5 Responsive Universal Footer Links & Legal Notice
+- **Semantic Link Sub-grouping:** Navigation links in the footer must be grouped semantically into sub-containers (e.g. Product Links vs Legal Links) with an internal bullet divider and a responsive inter-group divider (`hidden sm:inline`). This prevents awkward bullet wrapping or orphaned bullet points on mobile viewports.
+- **Single-Line Legal Disclaimer:** The copyright and trademark disclaimer (`footer.disclaimer`) uses `max-w-none sm:whitespace-nowrap` to ensure it renders as a clean, unified single line on desktop/laptop displays without prematurely breaking "COROS Wearables Inc." onto an orphaned second line, while allowing natural wrapping on narrow mobile devices.
 
 ---
 

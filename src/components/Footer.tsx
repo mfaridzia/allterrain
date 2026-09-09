@@ -40,7 +40,7 @@ export const Footer: React.FC = () => {
           </div>
         </nav>
 
-        <p className="text-[11px] sm:text-xs font-medium text-zinc-500 max-w-lg mx-auto leading-relaxed px-2">
+        <p className="text-[11px] sm:text-xs font-medium text-zinc-500 max-w-none mx-auto leading-relaxed px-2 sm:whitespace-nowrap">
           {t(
             "footer.disclaimer",
             "© 2026 ALLTERRAIN. Developed for the COROS user community. Not affiliated with COROS Wearables Inc."
