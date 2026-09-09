@@ -167,7 +167,8 @@ Supports comprehensive telemetry across major endurance and fitness disciplines:
   - When disconnected (`!isConnected`), `/api/analytics/dashboard` returns empty sets (`activities: []`, `pmcSeries: []`).
   - Attempting to visit protected routes (`/activities`, `/trail-planner`) triggers an immediate redirect to `/`.
   - The Header automatically hides all internal navigation links, AI Coach trigger, Settings button, and Online/Offline badges, leaving only the clean brand mark.
-  - The landing page renders a secure `<AuthGate />` locking all telemetry until reconnected.
+  - The landing page renders a secure `<AuthGate />` locking all telemetry until reconnected, accompanied by the public universal footer.
+  - Upon successful authentication (`isConnected === true`), the public footer is intentionally omitted from the athletic dashboard shell (`!isConnected && <Footer />`) to eliminate visual noise and maintain an uncluttered telemetry instrument view.
 
 ### 3.12 Public Information Architecture & Transparent Methodology (`/features`)
 - **Unauthenticated Public Route:** Serves a comprehensive breakdown of all 7 core sports science engines without requiring COROS OAuth credentials.

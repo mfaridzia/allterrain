@@ -289,7 +289,7 @@ export default function DashboardPage() {
         )}
       </main>
 
-      <Footer />
+      {!isConnected && <Footer />}
 
       {/* Slide-out AI Coach Panel */}
       <AiCoachDrawer
