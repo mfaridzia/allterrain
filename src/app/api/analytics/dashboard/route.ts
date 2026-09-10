@@ -9,7 +9,6 @@ import {
   calculatePmcSeries,
   calculateTrainingReadiness,
   calculateWeeklyZoneProgression,
-  calculatePersonalRecords,
   PmcPoint,
 } from "@/lib/analytics";
 
@@ -60,7 +59,6 @@ export async function GET(req: NextRequest) {
     dailyRes,
     actRes,
     evolabJson,
-    customPrsJson,
     targetRaceDistStr,
     targetRaceElevStr,
     weeklyVertTargetStr,
@@ -75,7 +73,6 @@ export async function GET(req: NextRequest) {
       args: [athleteId],
     }),
     getSetting("coros_evolab_cache", "", athleteId),
-    getSetting("custom_personal_records", "", athleteId),
     getSetting("trail_target_race_dist", "36", athleteId),
     getSetting("trail_target_race_elev", "2200", athleteId),
     getSetting("trail_weekly_vert_target", "1000", athleteId),
@@ -214,15 +211,6 @@ export async function GET(req: NextRequest) {
     try {
       const parsed = JSON.parse(evolabJson);
       racePredictor = { ...racePredictor, ...parsed };
-    } catch {}
-  }
-
-  // Calculate Personal Records (PRs / All-Time Best Efforts) across 5K, 10K, HM, FM from activities
-  let personalRecords = calculatePersonalRecords(activities);
-  if (customPrsJson) {
-    try {
-      const customPrs = JSON.parse(customPrsJson);
-      personalRecords = { ...personalRecords, ...customPrs };
     } catch {}
   }
 
@@ -442,7 +430,6 @@ export async function GET(req: NextRequest) {
       trainingTier,
     },
     racePredictor,
-    personalRecords,
     pmcSeries: corosModeData.pmcSeries,
     activities: activities.map((a) => ({
       id: String(a.id),
