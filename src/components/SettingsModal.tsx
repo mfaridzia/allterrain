@@ -333,34 +333,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       : "Anthropic Claude: Model Claude 3.5 Sonnet, 3.7 Sonnet & Haiku",
                 },
               ].map((p) => (
-                <div key={p.id} className="relative group">
-                  <button
-                    type="button"
-                    title={p.tooltip}
-                    onClick={() => {
-                      setProvider(p.id);
-                      setModelName(p.defModel);
-                      setIsCustomModel(false);
-                      setFetchError(null);
-                    }}
-                    className={`w-full p-2.5 rounded-xl text-left transition-all min-w-0 flex items-center justify-between gap-2 cursor-pointer ${
-                      provider === p.id
-                        ? "border-2 border-zinc-950 bg-orange-100 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
-                        : "border-2 border-zinc-200 bg-[#FAF9F5] text-zinc-700 hover:border-zinc-950 hover:bg-zinc-50"
-                    }`}
-                  >
-                    <div className="text-xs font-black truncate" title={p.tooltip}>
-                      {p.label}
-                    </div>
-                    <div className="shrink-0">{getProviderBadge(p.id)}</div>
-                  </button>
-
-                  {/* Neobrutalist Floating Tooltip on Hover */}
-                  <div className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-50 hidden group-hover:flex items-center px-2.5 py-1 bg-zinc-950 text-white text-[10.5px] font-mono font-bold rounded-lg whitespace-nowrap shadow-[2px_2px_0px_0px_#09090b] border border-zinc-700">
-                    <span>{p.tooltip}</span>
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-950" />
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  key={p.id}
+                  title={p.tooltip}
+                  onClick={() => {
+                    setProvider(p.id);
+                    setModelName(p.defModel);
+                    setIsCustomModel(false);
+                    setFetchError(null);
+                  }}
+                  className={`p-2.5 rounded-xl text-left transition-all min-w-0 flex items-center justify-between gap-2 cursor-pointer ${
+                    provider === p.id
+                      ? "border-2 border-zinc-950 bg-orange-100 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
+                      : "border-2 border-zinc-200 bg-[#FAF9F5] text-zinc-700 hover:border-zinc-950 hover:bg-zinc-50"
+                  }`}
+                >
+                  <div className="text-xs font-black truncate">{p.label}</div>
+                  <div className="shrink-0">{getProviderBadge(p.id)}</div>
+                </button>
               ))}
             </div>
           </div>
