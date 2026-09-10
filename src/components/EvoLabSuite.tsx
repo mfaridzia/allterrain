@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Trophy, Timer, Flame, Award, Medal, ArrowUpRight, CheckCircle2, Sparkles, Footprints } from "lucide-react";
-import { formatPace, PersonalRecordItem, PersonalRecordsMap } from "@/lib/analytics";
+import { Trophy, Timer, Flame, Award, Medal, CheckCircle2 } from "lucide-react";
+import { formatPace, PersonalRecordsMap } from "@/lib/analytics";
 import { useTranslation } from "@/lib/i18n/context";
 
 interface EvoLabProps {
@@ -100,11 +100,11 @@ export const EvoLabSuite: React.FC<EvoLabProps> = ({ racePredictor, personalReco
   const loggedPrCount = standardDistances.filter((d) => d.pr !== null).length;
 
   return (
-    <div className="space-y-6">
+    <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 sm:p-6 space-y-7 shadow-[4px_4px_0px_0px_#09090b]">
       {/* ========================================================================= */}
-      {/* CARD 1: COROS EVOLAB RACE PREDICTOR                                       */}
+      {/* SECTION 1: COROS EVOLAB RACE PREDICTOR                                    */}
       {/* ========================================================================= */}
-      <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 sm:p-6 space-y-5 shadow-[4px_4px_0px_0px_#09090b]">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -174,9 +174,9 @@ export const EvoLabSuite: React.FC<EvoLabProps> = ({ racePredictor, personalReco
       </div>
 
       {/* ========================================================================= */}
-      {/* CARD 2: ALL-TIME PERSONAL RECORDS (PR) HALL OF FAME                        */}
+      {/* SECTION 2: ALL-TIME PERSONAL RECORDS (PR) HALL OF FAME                    */}
       {/* ========================================================================= */}
-      <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 sm:p-6 space-y-5 shadow-[4px_4px_0px_0px_#09090b]">
+      <div className="pt-6 border-t-2 border-zinc-200/80 space-y-5">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
