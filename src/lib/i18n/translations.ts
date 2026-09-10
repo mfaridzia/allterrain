@@ -113,6 +113,7 @@ export const translations = {
       lowIntensity: "Low Intensity (Z1-Z2)",
       greyZone: "Grey Zone (Z3 Tempo)",
       highIntensity: "High Intensity (Z4-Z5)",
+      weeklyZoneTrend: "Weekly Zone Hours Trend",
     },
     readiness: {
       title: "Training Readiness & Suggestion",
@@ -361,6 +362,7 @@ export const translations = {
       lowIntensity: "Intensitas Rendah (Z1-Z2 Santai)",
       greyZone: "Grey Zone (Z3 Tempo)",
       highIntensity: "Intensitas Tinggi (Z4-Z5 Keras)",
+      weeklyZoneTrend: "Tren Jam per Zona (Weekly)",
     },
     readiness: {
       title: "Training Readiness & Saran Latihan",

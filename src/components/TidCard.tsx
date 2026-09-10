@@ -3,6 +3,7 @@
 import React from "react";
 import { PieChart, Heart, CheckCircle, AlertTriangle, Layers } from "lucide-react";
 import { MetricTooltip } from "@/components/MetricTooltip";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface TidCardProps {
   z1z2Pct: number;
@@ -21,6 +22,7 @@ export const TidCard: React.FC<TidCardProps> = ({
   avgDecoupling,
   onOpenZonesTab,
 }) => {
+  const { language, t } = useTranslation();
   const isDecouplingSolid = avgDecoupling <= 5.0;
 
   return (
@@ -130,7 +132,7 @@ export const TidCard: React.FC<TidCardProps> = ({
       >
         <span className="flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5 text-violet-700 stroke-[2.5]" />
-          <span>Tren Jam per Zona (Weekly)</span>
+          <span>{t("tid.weeklyZoneTrend", language === "en" ? "Weekly Zone Hours Trend" : "Tren Jam per Zona (Weekly)")}</span>
         </span>
         <span className="text-zinc-600 font-bold group-hover:text-zinc-950 group-hover:translate-x-0.5 transition-transform">→</span>
       </button>
