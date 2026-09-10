@@ -83,10 +83,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const saving = updateSettingsMutation.isPending;
 
   const getProviderBadge = (pId: string) => {
-    if (pId === "deepseek" && (serverProvidedKeys.deepseek || configuredKeys.deepseek)) {
+    if (pId === "groq" && (serverProvidedKeys.groq || configuredKeys.groq)) {
       return (
         <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-400 font-mono">
-          {serverProvidedKeys.deepseek
+          {serverProvidedKeys.groq
             ? t("settingsModal.serverDefaultBadge", "Server Ready")
             : t("settingsModal.apiKeyStored", "✓ Stored")}
         </span>
@@ -206,7 +206,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             <p className="text-[11px] leading-relaxed text-zinc-700 font-medium">
               {t(
                 "settingsModal.byokDescription",
-                "AllTerrain provides DeepSeek for free out-of-the-box (server default). To unlock other models (Groq, Claude, OpenAI, Gemini), please connect your personal API keys."
+                "AllTerrain provides Groq for free out-of-the-box (server default). To unlock other models (DeepSeek, Claude, OpenAI, Gemini), please connect your personal API keys."
               )}
             </p>
           </div>
@@ -363,11 +363,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               }
               className="w-full px-3.5 py-2 text-xs rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-zinc-950 placeholder-zinc-500 focus:outline-none focus:bg-white font-mono shadow-[1.5px_1.5px_0px_0px_#09090b]"
             />
-            {provider === "deepseek" && serverProvidedKeys.deepseek && !configuredKeys.deepseek && (
+            {provider === "groq" && serverProvidedKeys.groq && !configuredKeys.groq && (
               <p className="text-[10px] text-emerald-800 font-medium font-mono">
                 {t(
-                  "settingsModal.deepseekServerReadyNotice",
-                  "DeepSeek is active via server default. Enter an API key only if you want to use your personal quota."
+                  "settingsModal.groqServerReadyNotice",
+                  "Groq is active via server default. Enter an API key only if you want to use your personal quota."
                 )}
               </p>
             )}

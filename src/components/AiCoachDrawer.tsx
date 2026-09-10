@@ -29,13 +29,15 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
   const { language, t } = useTranslation();
   const { data: settingsData } = useAppSettings();
 
-  const activeProvider = settingsData?.aiProvider || "deepseek";
+  const activeProvider = settingsData?.aiProvider || "groq";
   const configuredKeys = settingsData?.configuredKeys || {};
   const serverProvidedKeys = settingsData?.serverProvidedKeys || {};
   const isMissingKey = !configuredKeys[activeProvider];
 
   const getProviderDisplayName = (pId: string) => {
     switch (pId) {
+      case "groq":
+        return "Groq";
       case "gemini":
         return "Gemini";
       case "deepseek":

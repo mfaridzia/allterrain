@@ -247,11 +247,8 @@ export async function runCoachStream(
     } else if (process.env.ANTHROPIC_API_KEY) {
       provider = "claude";
     } else {
-      provider = "deepseek";
+      provider = "groq";
     }
-  } else if (provider === "gemini" && !process.env.GEMINI_API_KEY && process.env.DEEPSEEK_API_KEY) {
-    // If set to gemini default but only DEEPSEEK_API_KEY is configured in env
-    provider = "deepseek";
   }
 
   const apiKey = await getSetting(`${provider}_api_key`, "", athleteId);
