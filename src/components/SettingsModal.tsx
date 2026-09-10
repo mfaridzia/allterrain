@@ -18,40 +18,108 @@ const PROVIDER_KEY_PORTALS: Record<string, { url: string; label: string }> = {
   claude: { url: "https://console.anthropic.com/settings/keys", label: "Get Claude Key" },
 };
 
-const CURATED_MODELS: Record<string, { id: string; label: string }[]> = {
-  groq: [
-    { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B (Flagship • Sangat Cerdas & Super Cepat)" },
-    { id: "qwen/qwen3.6-27b", label: "Qwen 3.6 27B (Responsif & Cepat)" },
-    { id: "openai/gpt-oss-20b", label: "GPT-OSS 20B (Ringan & Cepat)" },
-  ],
-  gemini: [
-    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Rekomendasi • Cepat & Irit)" },
-    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Penalaran & Analisis Mendalam)" },
-    { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash (Legacy Fast)" },
-    { id: "gemini-1.5-pro", label: "Gemini 1.5 Pro (Legacy Deep)" },
-  ],
-  deepseek: [
-    { id: "deepseek-chat", label: "DeepSeek V3 (deepseek-chat • Default)" },
-    { id: "deepseek-reasoner", label: "DeepSeek R1 (deepseek-reasoner • Penalaran)" },
-  ],
-  openai: [
-    { id: "gpt-4o-mini", label: "GPT-4o Mini (Rekomendasi • Cepat & Hemat)" },
-    { id: "gpt-4o", label: "GPT-4o (Omni Flagship)" },
-    { id: "o3-mini", label: "o3-mini (Reasoning Cepat)" },
-    { id: "o1", label: "o1 (Deep Reasoning)" },
-  ],
-  claude: [
-    { id: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet (Rekomendasi Utama)" },
-    { id: "claude-3-7-sonnet-20250219", label: "Claude 3.7 Sonnet (Hybrid Reasoning Terbaru)" },
-    { id: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (Paling Cepat & Ringan)" },
-    { id: "claude-3-opus-20240229", label: "Claude 3 Opus" },
-  ],
-};
+function getCuratedModels(language?: string): Record<string, { id: string; label: string }[]> {
+  const isEn = language === "en";
+  return {
+    groq: [
+      {
+        id: "openai/gpt-oss-120b",
+        label: isEn
+          ? "GPT-OSS 120B (Recommended • Flagship & Ultra-Fast)"
+          : "GPT-OSS 120B (Rekomendasi • Sangat Cerdas & Super Cepat)",
+      },
+      {
+        id: "qwen/qwen3.6-27b",
+        label: isEn ? "Qwen 3.6 27B (Fast & Responsive)" : "Qwen 3.6 27B (Responsif & Cepat)",
+      },
+      {
+        id: "openai/gpt-oss-20b",
+        label: isEn ? "GPT-OSS 20B (Lightweight & Fast)" : "GPT-OSS 20B (Ringan & Cepat)",
+      },
+    ],
+    gemini: [
+      {
+        id: "gemini-2.5-flash",
+        label: isEn
+          ? "Gemini 2.5 Flash (Recommended • Fast & Efficient)"
+          : "Gemini 2.5 Flash (Rekomendasi • Cepat & Irit)",
+      },
+      {
+        id: "gemini-2.5-pro",
+        label: isEn
+          ? "Gemini 2.5 Pro (Deep Reasoning & Analysis)"
+          : "Gemini 2.5 Pro (Penalaran & Analisis Mendalam)",
+      },
+      {
+        id: "gemini-1.5-flash",
+        label: isEn ? "Gemini 1.5 Flash (Legacy Fast)" : "Gemini 1.5 Flash (Legacy Fast)",
+      },
+      {
+        id: "gemini-1.5-pro",
+        label: isEn ? "Gemini 1.5 Pro (Legacy Deep)" : "Gemini 1.5 Pro (Legacy Deep)",
+      },
+    ],
+    deepseek: [
+      {
+        id: "deepseek-chat",
+        label: isEn ? "DeepSeek V3 (deepseek-chat • Default)" : "DeepSeek V3 (deepseek-chat • Default)",
+      },
+      {
+        id: "deepseek-reasoner",
+        label: isEn
+          ? "DeepSeek R1 (deepseek-reasoner • Deep Reasoning)"
+          : "DeepSeek R1 (deepseek-reasoner • Penalaran Mendalam)",
+      },
+    ],
+    openai: [
+      {
+        id: "gpt-4o-mini",
+        label: isEn
+          ? "GPT-4o Mini (Recommended • Fast & Cost-Effective)"
+          : "GPT-4o Mini (Rekomendasi • Cepat & Hemat)",
+      },
+      {
+        id: "gpt-4o",
+        label: isEn ? "GPT-4o (Omni Flagship)" : "GPT-4o (Omni Flagship)",
+      },
+      {
+        id: "o3-mini",
+        label: isEn ? "o3-mini (Fast Reasoning)" : "o3-mini (Reasoning Cepat)",
+      },
+      {
+        id: "o1",
+        label: isEn ? "o1 (Deep Reasoning)" : "o1 (Deep Reasoning)",
+      },
+    ],
+    claude: [
+      {
+        id: "claude-3-5-sonnet-20241022",
+        label: isEn ? "Claude 3.5 Sonnet (Top Recommendation)" : "Claude 3.5 Sonnet (Rekomendasi Utama)",
+      },
+      {
+        id: "claude-3-7-sonnet-20250219",
+        label: isEn
+          ? "Claude 3.7 Sonnet (Latest Hybrid Reasoning)"
+          : "Claude 3.7 Sonnet (Hybrid Reasoning Terbaru)",
+      },
+      {
+        id: "claude-3-5-haiku-20241022",
+        label: isEn ? "Claude 3.5 Haiku (Fastest & Lightweight)" : "Claude 3.5 Haiku (Paling Cepat & Ringan)",
+      },
+      {
+        id: "claude-3-opus-20240229",
+        label: isEn ? "Claude 3 Opus" : "Claude 3 Opus",
+      },
+    ],
+  };
+}
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const { t } = useTranslation();
+  const { language, t } = useTranslation();
   const { data: settingsData } = useAppSettings();
   const updateSettingsMutation = useUpdateSettingsMutation();
+
+  const curatedModels = getCuratedModels(language);
 
   const [provider, setProvider] = useState<string>("gemini");
   const [modelName, setModelName] = useState<string>("gemini-2.5-flash");
@@ -68,13 +136,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       if (settingsData.aiProvider) setProvider(settingsData.aiProvider);
       if (settingsData.aiModelName) {
         setModelName(settingsData.aiModelName);
-        const models = dynamicModels[settingsData.aiProvider] || CURATED_MODELS[settingsData.aiProvider] || [];
+        const models = dynamicModels[settingsData.aiProvider] || curatedModels[settingsData.aiProvider] || [];
         if (!models.some((m) => m.id === settingsData.aiModelName)) {
           setIsCustomModel(true);
         }
       }
     }
-  }, [settingsData]);
+  }, [settingsData, language]);
 
   if (!isOpen) return null;
 
@@ -175,7 +243,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   };
 
-  const displayModels = dynamicModels[provider] || CURATED_MODELS[provider] || [];
+  const displayModels = dynamicModels[provider] || curatedModels[provider] || [];
 
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
@@ -219,32 +287,80 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
-                { id: "groq", label: "Groq (Free & Fast)", defModel: "openai/gpt-oss-120b" },
-                { id: "gemini", label: "Google Gemini", defModel: "gemini-2.5-flash" },
-                { id: "deepseek", label: "DeepSeek", defModel: "deepseek-chat" },
-                { id: "openai", label: "OpenAI", defModel: "gpt-4o-mini" },
-                { id: "claude", label: "Anthropic Claude", defModel: "claude-3-5-sonnet-20241022" },
+                {
+                  id: "groq",
+                  label: "Groq (Free & Fast)",
+                  defModel: "openai/gpt-oss-120b",
+                  tooltip:
+                    language === "en"
+                      ? "Groq: Ultra-fast LPU inference (Free Tier default)"
+                      : "Groq: Inferensi super cepat dengan chip LPU (Server Default Gratis)",
+                },
+                {
+                  id: "gemini",
+                  label: "Google Gemini",
+                  defModel: "gemini-2.5-flash",
+                  tooltip:
+                    language === "en"
+                      ? "Google Gemini: 1,500 free requests per day via AI Studio"
+                      : "Google Gemini: Gratis 1.500 request per hari via AI Studio",
+                },
+                {
+                  id: "deepseek",
+                  label: "DeepSeek",
+                  defModel: "deepseek-chat",
+                  tooltip:
+                    language === "en"
+                      ? "DeepSeek: V3 & R1 models (BYOK personal API key)"
+                      : "DeepSeek: Model V3 & R1 (Gunakan API key pribadi)",
+                },
+                {
+                  id: "openai",
+                  label: "OpenAI",
+                  defModel: "gpt-4o-mini",
+                  tooltip:
+                    language === "en"
+                      ? "OpenAI: GPT-4o, GPT-4o-mini & o3-mini models"
+                      : "OpenAI: Model GPT-4o, GPT-4o-mini & o3-mini",
+                },
+                {
+                  id: "claude",
+                  label: "Anthropic Claude",
+                  defModel: "claude-3-5-sonnet-20241022",
+                  tooltip:
+                    language === "en"
+                      ? "Anthropic Claude: Claude 3.5 Sonnet, 3.7 Sonnet & Haiku"
+                      : "Anthropic Claude: Model Claude 3.5 Sonnet, 3.7 Sonnet & Haiku",
+                },
               ].map((p) => (
-                <button
-                  type="button"
-                  key={p.id}
-                  onClick={() => {
-                    setProvider(p.id);
-                    setModelName(p.defModel);
-                    setIsCustomModel(false);
-                    setFetchError(null);
-                  }}
-                  className={`p-2.5 rounded-xl text-left transition-all min-w-0 flex items-center justify-between gap-2 ${
-                    provider === p.id
-                      ? "border-2 border-zinc-950 bg-orange-100 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
-                      : "border-2 border-zinc-200 bg-[#FAF9F5] text-zinc-700 hover:border-zinc-950"
-                  }`}
-                >
-                  <div className="text-xs font-black truncate">{p.label}</div>
-                  <div className="shrink-0">
-                    {getProviderBadge(p.id)}
+                <div key={p.id} className="relative group">
+                  <button
+                    type="button"
+                    title={p.tooltip}
+                    onClick={() => {
+                      setProvider(p.id);
+                      setModelName(p.defModel);
+                      setIsCustomModel(false);
+                      setFetchError(null);
+                    }}
+                    className={`w-full p-2.5 rounded-xl text-left transition-all min-w-0 flex items-center justify-between gap-2 cursor-pointer ${
+                      provider === p.id
+                        ? "border-2 border-zinc-950 bg-orange-100 text-zinc-950 shadow-[2px_2px_0px_0px_#09090b]"
+                        : "border-2 border-zinc-200 bg-[#FAF9F5] text-zinc-700 hover:border-zinc-950 hover:bg-zinc-50"
+                    }`}
+                  >
+                    <div className="text-xs font-black truncate" title={p.tooltip}>
+                      {p.label}
+                    </div>
+                    <div className="shrink-0">{getProviderBadge(p.id)}</div>
+                  </button>
+
+                  {/* Neobrutalist Floating Tooltip on Hover */}
+                  <div className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-50 hidden group-hover:flex items-center px-2.5 py-1 bg-zinc-950 text-white text-[10.5px] font-mono font-bold rounded-lg whitespace-nowrap shadow-[2px_2px_0px_0px_#09090b] border border-zinc-700">
+                    <span>{p.tooltip}</span>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-950" />
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
