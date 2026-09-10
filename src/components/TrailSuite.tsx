@@ -246,10 +246,14 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
       gradientPct: pt.gradientPct,
       runVam: pt.runVam,
       hikeVam: pt.hikeVam,
+      glycogenSavings: pt.glycogenSavingsPct,
       savingsPct: pt.glycogenSavingsPct,
       runPace: pt.runPaceStr,
       hikePace: pt.hikePaceStr,
+      gapPace: pt.gapPaceStr,
+      optimalStrategy: pt.optimalStrategy,
       strategy: pt.strategyLabel,
+      tacticalTip: pt.tacticalTip,
     }));
   }, [efficiencyAnalysis]);
 
@@ -991,7 +995,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={chartData}
-                margin={{ top: 10, right: 15, left: -15, bottom: 5 }}
+                margin={{ top: 10, right: 15, left: 10, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
                 <XAxis
@@ -1000,6 +1004,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                   interval={0}
                 />
                 <YAxis
+                  width={65}
                   tick={{ fontSize: 11, fontWeight: 700, fill: "#27272a" }}
                   unit=" m/h"
                   domain={[0, "auto"]}
@@ -1024,14 +1029,18 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                           <div className="text-cyan-700 font-bold">
                             GAP Pace: {data.gapPace}
                           </div>
-                          <div className="text-zinc-600 text-[10px] pt-1 border-t border-zinc-200">
-                            {data.glycogenSavings > 0
+                          <div className="text-zinc-700 text-[10px] font-semibold pt-1 border-t border-zinc-200">
+                            {data.optimalStrategy === "power_hike" || data.optimalStrategy === "poles_mandatory"
                               ? language === "en"
-                                ? `🔥 Power-hiking saves ~${data.glycogenSavings}% glycogen`
-                                : `🔥 Power-hiking hemat ~${data.glycogenSavings}% glikogen`
+                                ? `🔥 Power-hiking is faster & saves ~${data.glycogenSavings}% glycogen`
+                                : `🔥 Power-hiking lebih cepat & hemat ~${data.glycogenSavings}% glikogen`
+                              : data.optimalStrategy === "transition"
+                              ? language === "en"
+                                ? `⚖️ Transition Zone: Hike saves ~${data.glycogenSavings}% glycogen (similar VAM)`
+                                : `⚖️ Zona Transisi: Hike hemat ~${data.glycogenSavings}% glikogen (VAM setara)`
                               : language === "en"
-                                ? "⚡ Running is mechanically more optimal"
-                                : "⚡ Lari lebih efisien secara mekanis"}
+                              ? "⚡ Running is mechanically more optimal (elastic recoil)"
+                              : "⚡ Lari lebih efisien secara mekanis (recoil elastis)"}
                           </div>
                         </div>
                       );
