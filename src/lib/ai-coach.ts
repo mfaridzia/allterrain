@@ -171,6 +171,15 @@ export function normalizeModelName(provider: string, userModel?: string): string
     return "deepseek-chat";
   }
 
+  if (p === "groq") {
+    if (!raw) return "llama-3.3-70b-versatile";
+    if (raw.includes("r1") || raw.includes("deepseek")) return "deepseek-r1-distill-llama-70b";
+    if (raw.includes("mixtral")) return "mixtral-8x7b-32768";
+    if (raw.includes("gemma")) return "gemma2-9b-it";
+    if (raw.includes("llama")) return "llama-3.3-70b-versatile";
+    return userModel?.trim() || "llama-3.3-70b-versatile";
+  }
+
   if (p === "gemini") {
     if (!raw) return "gemini-2.5-flash";
     if (raw.includes("flash")) return raw.includes("2.5") ? "gemini-2.5-flash" : "gemini-1.5-flash";
@@ -195,6 +204,13 @@ export function getAiModelInstance(provider: string, apiKey: string, modelName?:
     case "anthropic": {
       const anthropic = createAnthropic({ apiKey: apiKey || process.env.ANTHROPIC_API_KEY });
       return anthropic(normalizedModel);
+    }
+    case "groq": {
+      const groq = createOpenAI({
+        baseURL: "https://api.groq.com/openai/v1",
+        apiKey: apiKey || process.env.GROQ_API_KEY,
+      });
+      return groq(normalizedModel);
     }
     case "deepseek": {
       const deepseek = createOpenAI({
@@ -222,6 +238,8 @@ export async function runCoachStream(
   if (!provider) {
     if (process.env.AI_PROVIDER) {
       provider = process.env.AI_PROVIDER;
+    } else if (process.env.GROQ_API_KEY) {
+      provider = "groq";
     } else if (process.env.DEEPSEEK_API_KEY) {
       provider = "deepseek";
     } else if (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
@@ -241,7 +259,8 @@ export async function runCoachStream(
   const apiKey = await getSetting(`${provider}_api_key`, "", athleteId);
   let modelName = await getSetting("ai_model_name", "", athleteId);
   if (!modelName) {
-    if (provider === "deepseek") modelName = "deepseek-chat";
+    if (provider === "groq") modelName = "llama-3.3-70b-versatile";
+    else if (provider === "deepseek") modelName = "deepseek-chat";
     else if (provider === "openai") modelName = "gpt-4o-mini";
     else if (provider === "claude") modelName = "claude-3-5-sonnet-20241022";
     else modelName = "gemini-2.5-flash";

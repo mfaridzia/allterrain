@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       else if (provider === "openai") apiKey = process.env.OPENAI_API_KEY || "";
       else if (provider === "claude" || provider === "anthropic") apiKey = process.env.ANTHROPIC_API_KEY || "";
       else if (provider === "deepseek") apiKey = process.env.DEEPSEEK_API_KEY || "";
+      else if (provider === "groq") apiKey = process.env.GROQ_API_KEY || "";
     }
 
     if (!apiKey) {
@@ -162,6 +163,39 @@ export async function POST(req: NextRequest) {
           id: m.id,
           label: m.id === "deepseek-chat" ? "DeepSeek V3 Chat (deepseek-chat)" : m.id === "deepseek-reasoner" ? "DeepSeek R1 Reasoner (deepseek-reasoner)" : m.id,
         }));
+        break;
+      }
+
+      case "groq": {
+        const res = await fetch("https://api.groq.com/openai/v1/models", {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+        if (!res.ok) {
+          const err = await res.text();
+          return NextResponse.json(
+            { success: false, error: `Groq API error (${res.status}): ${err}` },
+            { status: res.status }
+          );
+        }
+        const data = await res.json();
+        const rawList = Array.isArray(data.data) ? data.data : [];
+        models = rawList
+          .filter((m: any) => {
+            const id = String(m.id || "").toLowerCase();
+            return (
+              id.includes("llama") ||
+              id.includes("deepseek") ||
+              id.includes("mixtral") ||
+              id.includes("gemma") ||
+              id.includes("qwen")
+            );
+          })
+          .map((m: any) => ({
+            id: m.id,
+            label: `${m.id}${m.owned_by ? ` (${m.owned_by})` : ""}`,
+          }));
         break;
       }
 

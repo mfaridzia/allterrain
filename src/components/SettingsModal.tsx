@@ -11,6 +11,7 @@ interface SettingsModalProps {
 }
 
 const PROVIDER_KEY_PORTALS: Record<string, { url: string; label: string }> = {
+  groq: { url: "https://console.groq.com/keys", label: "Get Groq Key" },
   gemini: { url: "https://aistudio.google.com/app/apikey", label: "Get Gemini Key" },
   deepseek: { url: "https://platform.deepseek.com/api_keys", label: "Get DeepSeek Key" },
   openai: { url: "https://platform.openai.com/api-keys", label: "Get OpenAI Key" },
@@ -18,6 +19,12 @@ const PROVIDER_KEY_PORTALS: Record<string, { url: string; label: string }> = {
 };
 
 const CURATED_MODELS: Record<string, { id: string; label: string }[]> = {
+  groq: [
+    { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B (Rekomendasi • Sangat Pintar & Super Cepat)" },
+    { id: "deepseek-r1-distill-llama-70b", label: "DeepSeek R1 Distill 70B (Penalaran Mendalam)" },
+    { id: "mixtral-8x7b-32768", label: "Mixtral 8x7B (Konteks Panjang)" },
+    { id: "gemma2-9b-it", label: "Gemma 2 9B (Ringan & Cepat)" },
+  ],
   gemini: [
     { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Rekomendasi • Cepat & Irit)" },
     { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Penalaran & Analisis Mendalam)" },
@@ -152,6 +159,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       };
 
       if (apiKey.trim()) {
+        if (provider === "groq") payload.groqApiKey = apiKey.trim();
         if (provider === "gemini") payload.geminiApiKey = apiKey.trim();
         if (provider === "openai") payload.openaiApiKey = apiKey.trim();
         if (provider === "claude") payload.claudeApiKey = apiKey.trim();
@@ -199,7 +207,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             <p className="text-[11px] leading-relaxed text-zinc-700 font-medium">
               {t(
                 "settingsModal.byokDescription",
-                "AllTerrain provides DeepSeek for free out-of-the-box (server default). To unlock other models (Claude, OpenAI, Gemini), please connect your personal API keys."
+                "AllTerrain provides DeepSeek for free out-of-the-box (server default). To unlock other models (Groq, Claude, OpenAI, Gemini), please connect your personal API keys."
               )}
             </p>
           </div>
@@ -212,6 +220,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
+                { id: "groq", label: "Groq (Free & Fast)", defModel: "llama-3.3-70b-versatile" },
                 { id: "gemini", label: "Google Gemini", defModel: "gemini-2.5-flash" },
                 { id: "deepseek", label: "DeepSeek", defModel: "deepseek-chat" },
                 { id: "openai", label: "OpenAI", defModel: "gpt-4o-mini" },

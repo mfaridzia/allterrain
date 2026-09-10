@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
     openAiKey,
     claudeKey,
     deepseekKey,
+    groqKey,
     trailTargetRaceDistStr,
     trailTargetRaceElevStr,
     trailWeeklyVertTargetStr,
@@ -27,6 +28,7 @@ export async function GET(req: NextRequest) {
     getSetting("openai_api_key", "", athleteId),
     getSetting("claude_api_key", "", athleteId),
     getSetting("deepseek_api_key", "", athleteId),
+    getSetting("groq_api_key", "", athleteId),
     getSetting("trail_target_race_dist", "36", athleteId),
     getSetting("trail_target_race_elev", "2200", athleteId),
     getSetting("trail_weekly_vert_target", "1000", athleteId),
@@ -37,6 +39,7 @@ export async function GET(req: NextRequest) {
   const hasOpenAiKey = !!openAiKey || !!process.env.OPENAI_API_KEY;
   const hasClaudeKey = !!claudeKey || !!process.env.ANTHROPIC_API_KEY;
   const hasDeepseekKey = !!deepseekKey || !!process.env.DEEPSEEK_API_KEY;
+  const hasGroqKey = !!groqKey || !!process.env.GROQ_API_KEY;
 
   return NextResponse.json({
     aiProvider,
@@ -46,12 +49,14 @@ export async function GET(req: NextRequest) {
       openai: hasOpenAiKey,
       claude: hasClaudeKey,
       deepseek: hasDeepseekKey,
+      groq: hasGroqKey,
     },
     serverProvidedKeys: {
       gemini: !geminiKey && !!process.env.GEMINI_API_KEY,
       openai: !openAiKey && !!process.env.OPENAI_API_KEY,
       claude: !claudeKey && !!process.env.ANTHROPIC_API_KEY,
       deepseek: !deepseekKey && !!process.env.DEEPSEEK_API_KEY,
+      groq: !groqKey && !!process.env.GROQ_API_KEY,
     },
     trailSettings: {
       targetRaceDist: Number(trailTargetRaceDistStr),
@@ -84,6 +89,9 @@ export async function POST(req: NextRequest) {
     }
     if (body.deepseekApiKey) {
       await setSetting("deepseek_api_key", body.deepseekApiKey, athleteId);
+    }
+    if (body.groqApiKey) {
+      await setSetting("groq_api_key", body.groqApiKey, athleteId);
     }
     if (body.trailTargetRaceDist !== undefined) {
       await setSetting("trail_target_race_dist", body.trailTargetRaceDist.toString(), athleteId);
