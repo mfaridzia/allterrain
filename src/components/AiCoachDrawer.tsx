@@ -4,6 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { Bot, Send, X, User, AlertCircle, RefreshCw, Key, Settings as SettingsIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 import { useAppSettings } from "@/lib/queries";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 interface Message {
   id: string;
@@ -254,13 +257,84 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
               </div>
             )}
             <div
-              className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed whitespace-pre-wrap break-words min-w-0 border-2 border-zinc-950 ${
+              className={`max-w-[92%] sm:max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed break-words min-w-0 border-2 border-zinc-950 ${
                 m.role === "user"
-                  ? "bg-orange-500 text-white font-semibold shadow-[2px_2px_0px_0px_#09090b] rounded-br-none"
+                  ? "bg-orange-500 text-white font-semibold shadow-[2px_2px_0px_0px_#09090b] rounded-br-none whitespace-pre-wrap"
                   : "bg-white text-zinc-900 font-medium shadow-[2px_2px_0px_0px_#09090b] rounded-tl-none"
               }`}
             >
-              {m.content || (loading ? <span className="animate-pulse font-bold text-zinc-600">{language === "en" ? "Analyzing athlete metrics..." : "Menganalisis data fisiologis atlet..."}</span> : "")}
+              {m.role === "user" ? (
+                m.content
+              ) : m.content ? (
+                <div className="prose prose-xs max-w-none text-zinc-900 leading-relaxed min-w-0">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw]}
+                    components={{
+                      table: ({ node, ...props }) => (
+                        <div className="my-2.5 overflow-x-auto rounded-xl border-2 border-zinc-950 bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b]">
+                          <table className="w-full text-left text-[11px] border-collapse min-w-[320px]" {...props} />
+                        </div>
+                      ),
+                      thead: ({ node, ...props }) => (
+                        <thead className="bg-orange-100 border-b-2 border-zinc-950 font-black text-zinc-950 uppercase tracking-wider text-[10px]" {...props} />
+                      ),
+                      th: ({ node, ...props }) => (
+                        <th className="px-2.5 py-1.5 font-black border-r border-zinc-950/20 last:border-r-0" {...props} />
+                      ),
+                      td: ({ node, ...props }) => (
+                        <td className="px-2.5 py-1.5 border-t border-zinc-950/15 border-r border-zinc-950/15 last:border-r-0 text-zinc-800 font-medium" {...props} />
+                      ),
+                      h1: ({ node, ...props }) => (
+                        <h1 className="text-sm font-black text-zinc-950 mt-3 mb-1.5 tracking-tight border-b-2 border-zinc-200 pb-1" {...props} />
+                      ),
+                      h2: ({ node, ...props }) => (
+                        <h2 className="text-xs font-black text-zinc-950 mt-3 mb-1.5 tracking-tight uppercase border-l-2 border-orange-500 pl-1.5" {...props} />
+                      ),
+                      h3: ({ node, ...props }) => (
+                        <h3 className="text-xs font-black text-zinc-900 mt-2.5 mb-1" {...props} />
+                      ),
+                      p: ({ node, ...props }) => (
+                        <p className="mb-2 last:mb-0 leading-relaxed" {...props} />
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />
+                      ),
+                      ol: ({ node, ...props }) => (
+                        <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li className="leading-relaxed" {...props} />
+                      ),
+                      strong: ({ node, ...props }) => (
+                        <strong className="font-black text-zinc-950" {...props} />
+                      ),
+                      hr: ({ node, ...props }) => (
+                        <hr className="my-3 border-zinc-300 border-dashed" {...props} />
+                      ),
+                      blockquote: ({ node, ...props }) => (
+                        <blockquote className="border-l-3 border-orange-500 pl-2.5 my-2.5 italic text-zinc-800 bg-orange-50/70 py-1.5 rounded-r-lg text-[11px] font-medium border border-orange-200" {...props} />
+                      ),
+                      code: ({ node, inline, ...props }: any) =>
+                        inline ? (
+                          <code className="px-1 py-0.5 rounded bg-zinc-100 border border-zinc-300 font-mono text-[10px] text-orange-700 font-bold" {...props} />
+                        ) : (
+                          <pre className="p-2.5 rounded-lg bg-zinc-900 text-zinc-100 font-mono text-[10.5px] overflow-x-auto my-2 border border-zinc-950">
+                            <code {...props} />
+                          </pre>
+                        ),
+                    }}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
+                </div>
+              ) : loading ? (
+                <span className="animate-pulse font-bold text-zinc-600">
+                  {language === "en" ? "Analyzing athlete metrics..." : "Menganalisis data fisiologis atlet..."}
+                </span>
+              ) : (
+                ""
+              )}
             </div>
             {m.role === "user" && (
               <div className="h-6 w-6 rounded-md bg-zinc-950 border-2 border-zinc-950 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-[1px_1px_0px_0px_#09090b]">
