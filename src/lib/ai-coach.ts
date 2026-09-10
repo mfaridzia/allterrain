@@ -254,7 +254,8 @@ export async function runCoachStream(
   const apiKey = await getSetting(`${provider}_api_key`, "", athleteId);
   let modelName = await getSetting("ai_model_name", "", athleteId);
   if (!modelName) {
-    if (provider === "groq") modelName = "openai/gpt-oss-120b";
+    if (process.env.AI_MODEL_NAME) modelName = process.env.AI_MODEL_NAME;
+    else if (provider === "groq") modelName = "openai/gpt-oss-120b";
     else if (provider === "deepseek") modelName = "deepseek-chat";
     else if (provider === "openai") modelName = "gpt-4o-mini";
     else if (provider === "claude") modelName = "claude-3-5-sonnet-20241022";

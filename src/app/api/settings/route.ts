@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
 
   const defaultProvider = process.env.AI_PROVIDER || (process.env.GROQ_API_KEY ? "groq" : "groq");
-  const defaultModel = defaultProvider === "groq" ? "openai/gpt-oss-120b" : defaultProvider === "deepseek" ? "deepseek-chat" : "gemini-2.5-flash";
+  const defaultModel = process.env.AI_MODEL_NAME || (defaultProvider === "groq" ? "openai/gpt-oss-120b" : defaultProvider === "deepseek" ? "deepseek-chat" : "gemini-2.5-flash");
 
   // Parallel fetch to eliminate async waterfall (Vercel Best Practice: async-parallel)
   const [
