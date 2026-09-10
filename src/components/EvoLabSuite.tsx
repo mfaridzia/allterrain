@@ -241,12 +241,16 @@ export const EvoLabSuite: React.FC<EvoLabProps> = ({ racePredictor, personalReco
                     </p>
                   </div>
                 ) : (
-                  <div className="py-2 space-y-1">
-                    <div className="text-xl font-bold font-mono text-zinc-400 italic">
+                  <div className="space-y-1">
+                    <div className="text-2xl sm:text-3xl font-black font-mono text-zinc-300 tracking-tight leading-none">
                       --:--
                     </div>
-                    <p className="text-[11px] text-zinc-400 font-medium">
-                      {language === "en" ? "No qualifying run recorded yet" : "Belum ada sesi lari di jarak ini"}
+                    <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500">
+                      <span className="font-bold">{language === "en" ? "Target Pace" : "Target Pace"}</span>
+                      <span className="font-bold text-zinc-700">{r.predictorPace}/km</span>
+                    </div>
+                    <p className="text-[10.5px] font-mono text-zinc-400 truncate pt-0.5">
+                      {language === "en" ? "No verified run logged yet" : "Belum ada sesi lari di jarak ini"}
                     </p>
                   </div>
                 )}
@@ -271,8 +275,9 @@ export const EvoLabSuite: React.FC<EvoLabProps> = ({ racePredictor, personalReco
                       </div>
                     )
                   ) : (
-                    <div className="px-2 py-1 rounded-lg bg-zinc-100 text-zinc-400 border border-zinc-200 font-mono text-[10px] text-center">
-                      {language === "en" ? "Awaiting your first effort" : "Menunggu sesi perdana"}
+                    <div className="px-2 py-1 rounded-lg bg-orange-50/80 text-orange-900 border border-orange-200 font-mono text-[10px] flex items-center justify-between">
+                      <span className="text-orange-700/80">{language === "en" ? "Benchmark:" : "Target:"}</span>
+                      <span className="font-bold">🎯 {language === "en" ? "Ready for debut" : "Siap debut perdana"}</span>
                     </div>
                   )}
                 </div>
