@@ -44,6 +44,15 @@ function formatDelta(seconds: number): string {
 function formatDateDisplay(dateStr?: string, language?: string): string {
   if (!dateStr) return "";
   try {
+    const parts = dateStr.split("-").map(Number);
+    if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      return d.toLocaleDateString(language === "en" ? "en-US" : "id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    }
     const d = new Date(dateStr);
     return d.toLocaleDateString(language === "en" ? "en-US" : "id-ID", {
       day: "numeric",
