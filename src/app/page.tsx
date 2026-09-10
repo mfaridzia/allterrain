@@ -244,6 +244,7 @@ export default function DashboardPage() {
                       marathonLevel: 68,
                     }
                   }
+                  personalRecords={dashboardData.personalRecords}
                 />
               </div>
 

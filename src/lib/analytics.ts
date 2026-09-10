@@ -2159,3 +2159,84 @@ export function formatDurationReadable(totalSeconds: number): string {
   }
   return `${m}m ${s}s`;
 }
+
+export interface PersonalRecordItem {
+  seconds: number;
+  pace: string;
+  date: string;
+  activityName: string;
+  activityId: string;
+  distanceKm: string;
+  timeFormatted: string;
+}
+
+export interface PersonalRecordsMap {
+  fiveKm: PersonalRecordItem | null;
+  tenKm: PersonalRecordItem | null;
+  halfMarathon: PersonalRecordItem | null;
+  marathon: PersonalRecordItem | null;
+}
+
+/**
+ * Calculates Personal Records (All-Time Best Efforts) across standard road distances (5K, 10K, HM, FM)
+ * from an athlete's recorded running activities.
+ */
+export function calculatePersonalRecords(activities: any[]): PersonalRecordsMap {
+  const categories = [
+    { key: "fiveKm", name: "5K", targetMeters: 5000, minMeters: 4800 },
+    { key: "tenKm", name: "10K", targetMeters: 10000, minMeters: 9800 },
+    { key: "halfMarathon", name: "Half Marathon", targetMeters: 21097.5, minMeters: 20500 },
+    { key: "marathon", name: "Marathon", targetMeters: 42195, minMeters: 40000 },
+  ] as const;
+
+  const prs: PersonalRecordsMap = {
+    fiveKm: null,
+    tenKm: null,
+    halfMarathon: null,
+    marathon: null,
+  };
+
+  for (const cat of categories) {
+    let best: PersonalRecordItem | null = null;
+
+    for (const act of activities) {
+      const sport = String(act.sport_type || act.sportType || "");
+      if (sport.toLowerCase() === "strength") continue;
+
+      const distM = Number(act.distance_meters || act.distanceMeters || (Number(act.distanceKm || 0) * 1000) || 0);
+      const durSec = Number(act.duration_seconds || act.durationSeconds || 0);
+      if (distM < cat.minMeters || durSec <= 0) continue;
+
+      const avgPaceSec = Number(act.avg_pace_sec || act.avgPaceSec || 0) || (durSec / (distM / 1000));
+      if (avgPaceSec <= 0) continue;
+
+      // Estimated time to complete standard target distance at activity average pace
+      const estSeconds = Math.round(avgPaceSec * (cat.targetMeters / 1000));
+
+      if (!best || estSeconds < best.seconds) {
+        const startTime = Number(act.start_time || act.startTime || 0);
+        let dateStr = "";
+        try {
+          if (startTime > 0) {
+            dateStr = new Date(startTime).toISOString().split("T")[0];
+          }
+        } catch {}
+
+        best = {
+          seconds: estSeconds,
+          pace: formatPace(avgPaceSec),
+          date: dateStr,
+          activityName: String(act.name || ""),
+          activityId: String(act.id || act.coros_id || ""),
+          distanceKm: (distM / 1000).toFixed(2),
+          timeFormatted: formatDurationTime(estSeconds),
+        };
+      }
+    }
+
+    prs[cat.key] = best;
+  }
+
+  return prs;
+}
+
