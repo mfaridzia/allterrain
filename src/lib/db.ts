@@ -391,3 +391,14 @@ export async function setSetting(
     });
   }
 }
+
+export async function deleteSetting(
+  key: string,
+  athleteId: string = "athlete_primary"
+): Promise<void> {
+  const db = getDb();
+  await db.execute({
+    sql: `DELETE FROM user_settings WHERE key = ? AND (athlete_id = ? OR athlete_id = 'athlete_primary')`,
+    args: [key, athleteId],
+  });
+}

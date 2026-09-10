@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Info, ExternalLink } from "lucide-react";
+import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Info, ExternalLink, Trash2 } from "lucide-react";
 import { useAppSettings, useUpdateSettingsMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -346,9 +346,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   </a>
                 )}
                 {configuredKeys[provider] && (
-                  <span className="text-[10px] text-emerald-700 font-bold shrink-0">
-                    {t("settingsModal.apiKeyStored", "✓ Stored")}
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[10px] text-emerald-700 font-bold">
+                      {t("settingsModal.apiKeyStored", "✓ Stored")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await updateSettingsMutation.mutateAsync({ clearKey: provider });
+                          setApiKey("");
+                        } catch (e) {
+                          console.error("Failed to clear key:", e);
+                        }
+                      }}
+                      className="inline-flex items-center gap-0.5 text-[10px] text-red-600 hover:text-red-700 font-bold hover:underline cursor-pointer ml-1"
+                      title={t("settingsModal.clearKey", "Hapus Key")}
+                    >
+                      <Trash2 className="h-2.5 w-2.5" />
+                      <span>{t("settingsModal.clearKey", "Hapus")}</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

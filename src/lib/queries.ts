@@ -74,7 +74,7 @@ export function useAppSettings() {
       }
       return res.json();
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 }
 

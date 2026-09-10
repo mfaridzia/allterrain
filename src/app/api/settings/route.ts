@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSetting, setSetting } from "@/lib/db";
+import { getSetting, setSetting, deleteSetting } from "@/lib/db";
 import { getCurrentAthleteId } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
@@ -72,26 +72,34 @@ export async function POST(req: NextRequest) {
     const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
     const body = await req.json();
 
+    if (body.clearKey) {
+      await deleteSetting(`${body.clearKey}_api_key`, athleteId);
+    }
     if (body.aiProvider) {
       await setSetting("ai_provider", body.aiProvider, athleteId);
     }
     if (body.aiModelName) {
       await setSetting("ai_model_name", body.aiModelName, athleteId);
     }
-    if (body.geminiApiKey) {
-      await setSetting("gemini_api_key", body.geminiApiKey, athleteId);
+    if (body.geminiApiKey !== undefined) {
+      if (!body.geminiApiKey) await deleteSetting("gemini_api_key", athleteId);
+      else await setSetting("gemini_api_key", body.geminiApiKey, athleteId);
     }
-    if (body.openaiApiKey) {
-      await setSetting("openai_api_key", body.openaiApiKey, athleteId);
+    if (body.openaiApiKey !== undefined) {
+      if (!body.openaiApiKey) await deleteSetting("openai_api_key", athleteId);
+      else await setSetting("openai_api_key", body.openaiApiKey, athleteId);
     }
-    if (body.claudeApiKey) {
-      await setSetting("claude_api_key", body.claudeApiKey, athleteId);
+    if (body.claudeApiKey !== undefined) {
+      if (!body.claudeApiKey) await deleteSetting("claude_api_key", athleteId);
+      else await setSetting("claude_api_key", body.claudeApiKey, athleteId);
     }
-    if (body.deepseekApiKey) {
-      await setSetting("deepseek_api_key", body.deepseekApiKey, athleteId);
+    if (body.deepseekApiKey !== undefined) {
+      if (!body.deepseekApiKey) await deleteSetting("deepseek_api_key", athleteId);
+      else await setSetting("deepseek_api_key", body.deepseekApiKey, athleteId);
     }
-    if (body.groqApiKey) {
-      await setSetting("groq_api_key", body.groqApiKey, athleteId);
+    if (body.groqApiKey !== undefined) {
+      if (!body.groqApiKey) await deleteSetting("groq_api_key", athleteId);
+      else await setSetting("groq_api_key", body.groqApiKey, athleteId);
     }
     if (body.trailTargetRaceDist !== undefined) {
       await setSetting("trail_target_race_dist", body.trailTargetRaceDist.toString(), athleteId);
