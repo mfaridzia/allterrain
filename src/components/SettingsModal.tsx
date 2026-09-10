@@ -20,10 +20,9 @@ const PROVIDER_KEY_PORTALS: Record<string, { url: string; label: string }> = {
 
 const CURATED_MODELS: Record<string, { id: string; label: string }[]> = {
   groq: [
-    { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B (Rekomendasi • Sangat Pintar & Super Cepat)" },
-    { id: "deepseek-r1-distill-llama-70b", label: "DeepSeek R1 Distill 70B (Penalaran Mendalam)" },
-    { id: "mixtral-8x7b-32768", label: "Mixtral 8x7B (Konteks Panjang)" },
-    { id: "gemma2-9b-it", label: "Gemma 2 9B (Ringan & Cepat)" },
+    { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B (Flagship • Sangat Cerdas & Super Cepat)" },
+    { id: "qwen/qwen3.6-27b", label: "Qwen 3.6 27B (Responsif & Cepat)" },
+    { id: "openai/gpt-oss-20b", label: "GPT-OSS 20B (Ringan & Cepat)" },
   ],
   gemini: [
     { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Rekomendasi • Cepat & Irit)" },
@@ -220,7 +219,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
-                { id: "groq", label: "Groq (Free & Fast)", defModel: "llama-3.3-70b-versatile" },
+                { id: "groq", label: "Groq (Free & Fast)", defModel: "openai/gpt-oss-120b" },
                 { id: "gemini", label: "Google Gemini", defModel: "gemini-2.5-flash" },
                 { id: "deepseek", label: "DeepSeek", defModel: "deepseek-chat" },
                 { id: "openai", label: "OpenAI", defModel: "gpt-4o-mini" },

@@ -172,12 +172,10 @@ export function normalizeModelName(provider: string, userModel?: string): string
   }
 
   if (p === "groq") {
-    if (!raw) return "llama-3.3-70b-versatile";
-    if (raw.includes("r1") || raw.includes("deepseek")) return "deepseek-r1-distill-llama-70b";
-    if (raw.includes("mixtral")) return "mixtral-8x7b-32768";
-    if (raw.includes("gemma")) return "gemma2-9b-it";
-    if (raw.includes("llama")) return "llama-3.3-70b-versatile";
-    return userModel?.trim() || "llama-3.3-70b-versatile";
+    if (!raw || raw.includes("120b") || raw.includes("gpt") || raw.includes("llama")) return "openai/gpt-oss-120b";
+    if (raw.includes("qwen") || raw.includes("27b")) return "qwen/qwen3.6-27b";
+    if (raw.includes("20b")) return "openai/gpt-oss-20b";
+    return userModel?.trim() || "openai/gpt-oss-120b";
   }
 
   if (p === "gemini") {
@@ -210,7 +208,7 @@ export function getAiModelInstance(provider: string, apiKey: string, modelName?:
         baseURL: "https://api.groq.com/openai/v1",
         apiKey: apiKey || process.env.GROQ_API_KEY,
       });
-      return groq(normalizedModel);
+      return groq.chat(normalizedModel);
     }
     case "deepseek": {
       const deepseek = createOpenAI({
@@ -259,7 +257,7 @@ export async function runCoachStream(
   const apiKey = await getSetting(`${provider}_api_key`, "", athleteId);
   let modelName = await getSetting("ai_model_name", "", athleteId);
   if (!modelName) {
-    if (provider === "groq") modelName = "llama-3.3-70b-versatile";
+    if (provider === "groq") modelName = "openai/gpt-oss-120b";
     else if (provider === "deepseek") modelName = "deepseek-chat";
     else if (provider === "openai") modelName = "gpt-4o-mini";
     else if (provider === "claude") modelName = "claude-3-5-sonnet-20241022";
