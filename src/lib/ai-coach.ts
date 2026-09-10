@@ -213,7 +213,7 @@ export function getAiModelInstance(provider: string, apiKey: string, modelName?:
     case "deepseek": {
       const deepseek = createOpenAI({
         baseURL: "https://api.deepseek.com",
-        apiKey: apiKey || process.env.DEEPSEEK_API_KEY,
+        apiKey: apiKey,
       });
       return deepseek(normalizedModel);
     }
@@ -238,8 +238,6 @@ export async function runCoachStream(
       provider = process.env.AI_PROVIDER;
     } else if (process.env.GROQ_API_KEY) {
       provider = "groq";
-    } else if (process.env.DEEPSEEK_API_KEY) {
-      provider = "deepseek";
     } else if (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
       provider = "gemini";
     } else if (process.env.OPENAI_API_KEY) {

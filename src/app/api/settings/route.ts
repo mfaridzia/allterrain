@@ -35,10 +35,10 @@ export async function GET(req: NextRequest) {
     getSetting("trail_training_tier", "finisher", athleteId),
   ]);
 
-  const hasGeminiKey = !!geminiKey || !!process.env.GEMINI_API_KEY;
-  const hasOpenAiKey = !!openAiKey || !!process.env.OPENAI_API_KEY;
-  const hasClaudeKey = !!claudeKey || !!process.env.ANTHROPIC_API_KEY;
-  const hasDeepseekKey = !!deepseekKey || !!process.env.DEEPSEEK_API_KEY;
+  const hasGeminiKey = !!geminiKey;
+  const hasOpenAiKey = !!openAiKey;
+  const hasClaudeKey = !!claudeKey;
+  const hasDeepseekKey = !!deepseekKey;
   const hasGroqKey = !!groqKey || !!process.env.GROQ_API_KEY;
 
   return NextResponse.json({
@@ -52,10 +52,10 @@ export async function GET(req: NextRequest) {
       groq: hasGroqKey,
     },
     serverProvidedKeys: {
-      gemini: !geminiKey && !!process.env.GEMINI_API_KEY,
-      openai: !openAiKey && !!process.env.OPENAI_API_KEY,
-      claude: !claudeKey && !!process.env.ANTHROPIC_API_KEY,
-      deepseek: !deepseekKey && !!process.env.DEEPSEEK_API_KEY,
+      gemini: false,
+      openai: false,
+      claude: false,
+      deepseek: false,
       groq: !groqKey && !!process.env.GROQ_API_KEY,
     },
     trailSettings: {

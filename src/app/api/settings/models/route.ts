@@ -23,7 +23,6 @@ export async function POST(req: NextRequest) {
       if (provider === "gemini") apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
       else if (provider === "openai") apiKey = process.env.OPENAI_API_KEY || "";
       else if (provider === "claude" || provider === "anthropic") apiKey = process.env.ANTHROPIC_API_KEY || "";
-      else if (provider === "deepseek") apiKey = process.env.DEEPSEEK_API_KEY || "";
       else if (provider === "groq") apiKey = process.env.GROQ_API_KEY || "";
     }
 
