@@ -1,12 +1,16 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bot, Send, X, User, AlertCircle, RefreshCw, Key, Settings as SettingsIcon } from "lucide-react";
+import { Bot, Send, X, User, AlertCircle, RefreshCw, Key, Settings as SettingsIcon, Maximize2, Minimize2 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/context";
 import { useAppSettings } from "@/lib/queries";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+
+const DEFAULT_DRAWER_WIDTH = 440;
+const EXPANDED_DRAWER_WIDTH = 760;
+const MIN_DRAWER_WIDTH = 380;
 
 interface Message {
   id: string;
@@ -69,6 +73,63 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Desktop Drawer Width State & Drag Resizing
+  const [width, setWidth] = useState<number>(DEFAULT_DRAWER_WIDTH);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("allterrain_coach_drawer_width");
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= MIN_DRAWER_WIDTH) {
+          setWidth(parsed);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  const isExpanded = width >= 600;
+
+  const toggleExpand = () => {
+    const nextWidth = isExpanded
+      ? DEFAULT_DRAWER_WIDTH
+      : Math.min(EXPANDED_DRAWER_WIDTH, window.innerWidth - 60);
+    setWidth(nextWidth);
+    try {
+      localStorage.setItem("allterrain_coach_drawer_width", String(nextWidth));
+    } catch (e) {}
+  };
+
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const maxWidth = Math.max(MIN_DRAWER_WIDTH, window.innerWidth - 50);
+      const newWidth = Math.min(Math.max(window.innerWidth - e.clientX, MIN_DRAWER_WIDTH), maxWidth);
+      setWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      try {
+        localStorage.setItem("allterrain_coach_drawer_width", String(width));
+      } catch (e) {}
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, width]);
 
   // Dynamically update greeting if user hasn't messaged yet
   useEffect(() => {
@@ -173,7 +234,23 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-[#F6F4EE] border-l-4 border-zinc-950 shadow-[-8px_0px_0px_0px_rgba(9,9,11,0.15)] flex flex-col animate-in slide-in-from-right duration-200">
+    <div
+      style={{
+        width: typeof window !== "undefined" && window.innerWidth >= 640 ? `${width}px` : undefined,
+      }}
+      className={`fixed inset-y-0 right-0 z-50 w-full sm:max-w-[95vw] bg-[#F6F4EE] border-l-4 border-zinc-950 shadow-[-8px_0px_0px_0px_rgba(9,9,11,0.15)] flex flex-col animate-in slide-in-from-right duration-200 ${
+        isDragging ? "select-none transition-none" : "transition-[width] duration-150 ease-out"
+      }`}
+    >
+      {/* Desktop Drag Handle to resize drawer width */}
+      <div
+        onMouseDown={startResizing}
+        className="hidden sm:flex absolute left-0 top-0 bottom-0 w-3 -translate-x-1/2 cursor-ew-resize items-center justify-center group z-30 select-none hover:bg-orange-500/10 active:bg-orange-500/20 transition-colors"
+        title={language === "en" ? "Drag to resize panel" : "Tarik untuk mengatur lebar panel"}
+      >
+        <div className="w-1 h-8 rounded-full bg-zinc-400 group-hover:bg-orange-500 group-active:bg-orange-600 transition-colors" />
+      </div>
+
       {/* Header */}
       <div className="p-4 border-b-2 border-zinc-950 flex items-center justify-between bg-white shadow-[0_2px_0px_0px_#09090b]">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -196,6 +273,24 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0 ml-2">
+          {/* Desktop Expand / Collapse toggle */}
+          <button
+            type="button"
+            onClick={toggleExpand}
+            className="hidden sm:flex p-1.5 rounded-xl border-2 border-zinc-950 bg-white hover:bg-zinc-100 text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-colors cursor-pointer"
+            title={
+              isExpanded
+                ? (language === "en" ? "Collapse panel (Standard view)" : "Perkecil panel (Tampilan standar)")
+                : (language === "en" ? "Expand panel (Wider view)" : "Perlebar panel (Tampilan lebar)")
+            }
+          >
+            {isExpanded ? (
+              <Minimize2 className="h-4 w-4 stroke-[2.5]" />
+            ) : (
+              <Maximize2 className="h-4 w-4 stroke-[2.5]" />
+            )}
+          </button>
+
           {onOpenSettings && (
             <button
               type="button"
@@ -257,10 +352,10 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
               </div>
             )}
             <div
-              className={`max-w-[92%] sm:max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed break-words min-w-0 border-2 border-zinc-950 ${
+              className={`rounded-2xl p-3.5 text-xs leading-relaxed break-words min-w-0 border-2 border-zinc-950 ${
                 m.role === "user"
-                  ? "bg-orange-500 text-white font-semibold shadow-[2px_2px_0px_0px_#09090b] rounded-br-none whitespace-pre-wrap"
-                  : "bg-white text-zinc-900 font-medium shadow-[2px_2px_0px_0px_#09090b] rounded-tl-none"
+                  ? "max-w-[85%] sm:max-w-[78%] bg-orange-500 text-white font-semibold shadow-[2px_2px_0px_0px_#09090b] rounded-br-none whitespace-pre-wrap"
+                  : "max-w-[96%] sm:max-w-[94%] bg-white text-zinc-900 font-medium shadow-[2px_2px_0px_0px_#09090b] rounded-tl-none"
               }`}
             >
               {m.role === "user" ? (
@@ -351,7 +446,7 @@ export const AiCoachDrawer: React.FC<AiCoachDrawerProps> = ({
         <span className="text-[10px] text-zinc-600 uppercase font-black tracking-wider">
           {language === "en" ? "Quick Inquiries:" : "Pertanyaan Cepat:"}
         </span>
-        <div className="flex flex-col gap-1.5">
+        <div className={`grid grid-cols-1 ${isExpanded ? "sm:grid-cols-3" : ""} gap-1.5`}>
           {quickPrompts.map((p, idx) => (
             <button
               key={idx}
