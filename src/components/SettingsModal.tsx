@@ -298,7 +298,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             }`}
           >
             <Cpu className="h-3.5 w-3.5 stroke-[2.5]" />
-            <span className="truncate">{t("settingsModal.tabAiCoach", "AI Coach & Keys")}</span>
+            <span className="truncate">{t("settingsModal.tabAiCoach", "AI Coach")}</span>
           </button>
           <button
             type="button"
@@ -310,7 +310,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             }`}
           >
             <Heart className="h-3.5 w-3.5 text-rose-500 stroke-[2.5]" />
-            <span className="truncate">{t("settingsModal.athletePhysiology", "Athlete Physiology (HR Targets)")}</span>
+            <span className="truncate">{t("settingsModal.tabHrTargets", "HR Targets")}</span>
           </button>
         </div>
 
@@ -563,11 +563,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 <div className="flex items-center justify-between gap-2">
                   <label className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
                     <Heart className="h-4 w-4 text-rose-600 stroke-[2.5]" />
-                    <span>{t("settingsModal.athletePhysiology", "Athlete Physiology (HR Targets)")}</span>
+                    <span>{t("settingsModal.maxHrCardTitle", "Max Heart Rate (HR Max)")}</span>
                   </label>
                   {effectiveMax && (
                     <span className="text-[10px] font-mono font-black text-rose-950 px-2 py-0.5 rounded-md bg-rose-100 border border-zinc-950">
-                      Max HR: {effectiveMax} bpm
+                      HR Max: {effectiveMax} bpm
                     </span>
                   )}
                 </div>
