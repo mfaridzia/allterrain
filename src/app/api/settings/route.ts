@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     trailTargetRaceElevStr,
     trailWeeklyVertTargetStr,
     trailTrainingTier,
+    athleteMaxHrStr,
   ] = await Promise.all([
     getSetting("ai_provider", defaultProvider, athleteId),
     getSetting("ai_model_name", defaultModel, athleteId),
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
     getSetting("trail_target_race_elev", "2200", athleteId),
     getSetting("trail_weekly_vert_target", "1000", athleteId),
     getSetting("trail_training_tier", "finisher", athleteId),
+    getSetting("athlete_max_hr", "", athleteId),
   ]);
 
   const hasGeminiKey = !!geminiKey;
@@ -44,6 +46,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     aiProvider,
     aiModelName,
+    athleteMaxHr: athleteMaxHrStr ? Number(athleteMaxHrStr) : null,
     configuredKeys: {
       gemini: hasGeminiKey,
       openai: hasOpenAiKey,
@@ -112,6 +115,13 @@ export async function POST(req: NextRequest) {
     }
     if (body.trailTrainingTier !== undefined) {
       await setSetting("trail_training_tier", body.trailTrainingTier.toString(), athleteId);
+    }
+    if (body.athleteMaxHr !== undefined) {
+      if (!body.athleteMaxHr) {
+        await deleteSetting("athlete_max_hr", athleteId);
+      } else {
+        await setSetting("athlete_max_hr", String(body.athleteMaxHr), athleteId);
+      }
     }
 
     return NextResponse.json({ success: true });

@@ -1266,6 +1266,7 @@ export interface TrainingReadinessParams {
   hrvStatus?: string;
   sleepHours?: number;
   rampRate?: number;
+  athleteMaxHr?: number;
 }
 
 export interface TrainingReadinessResult {
@@ -1276,6 +1277,7 @@ export interface TrainingReadinessResult {
   badgeBg: string;
   badgeBorder: string;
   textColor: string;
+  athleteMaxHr?: number;
   suggestion: {
     title: string;
     category: "REST" | "RECOVERY" | "BASE" | "TEMPO" | "QUALITY" | "RACE";
@@ -1306,7 +1308,11 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     acwr,
     recoveryScore = 75,
     hrvStatus = "NORMAL",
+    athleteMaxHr,
   } = params;
+
+  // Athlete Max HR baseline (custom override or default ~185 bpm)
+  const maxHr = athleteMaxHr && athleteMaxHr >= 100 && athleteMaxHr <= 240 ? athleteMaxHr : 185;
 
   // Determine whether the prescribed target session applies to today or tomorrow
   // If the athlete has already logged a workout today (todayLoad >= 30), the prescription targets tomorrow.
@@ -1343,6 +1349,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
       badgeBg: "bg-rose-100 text-rose-950",
       badgeBorder: "border-rose-950",
       textColor: "text-rose-600",
+      athleteMaxHr: maxHr,
       suggestion: {
         title: "Complete Rest Day (No Training)",
         category: "REST",
@@ -1375,13 +1382,14 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
       badgeBg: "bg-amber-100 text-amber-950",
       badgeBorder: "border-zinc-950",
       textColor: "text-amber-700",
+      athleteMaxHr: maxHr,
       suggestion: {
         title: "Active Recovery Jog or Rest Day",
         category: "RECOVERY",
         durationMinutes: "20 – 30 mins (or Off)",
         targetLoad: "15 – 25 Load",
         intensityZone: "Zone 1 (Easy Aerobic / Flush)",
-        heartRateGuide: "< 72% Max HR (< 132 bpm)",
+        heartRateGuide: `< 72% Max HR (< ${Math.round(maxHr * 0.72)} bpm)`,
         description: `You absorbed a high workload today (${Math.round(todayLoad)} Load). Prioritize cellular adaptation and glycogen re-synthesis before attempting another intense session.`,
       },
       governor: {
@@ -1405,13 +1413,14 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
       badgeBg: "bg-cyan-100 text-cyan-950",
       badgeBorder: "border-zinc-950",
       textColor: "text-sky-700",
+      athleteMaxHr: maxHr,
       suggestion: {
         title: "Intervals, Threshold, or Race Effort",
         category: "QUALITY",
         durationMinutes: "45 – 70 mins",
         targetLoad: `${Math.round(ctl * 0.9)} – ${Math.round(ctl * 1.3)} Load`,
         intensityZone: "Zone 4 / Zone 5 (Threshold & VO2Max repeats)",
-        heartRateGuide: "> 85% Max HR (155+ bpm)",
+        heartRateGuide: `> 85% Max HR (${Math.round(maxHr * 0.85)}+ bpm)`,
         description:
           "Your autonomic readiness is high, chronic form is fresh (+5 to +25), and acute fatigue is low. Ideal window for track repeats, tempo tests, or peak race efforts.",
       },
@@ -1436,13 +1445,14 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
       badgeBg: "bg-emerald-100 text-emerald-950",
       badgeBorder: "border-zinc-950",
       textColor: "text-emerald-700",
+      athleteMaxHr: maxHr,
       suggestion: {
         title: "Aerobic Base or Tempo Progression",
         category: "TEMPO",
         durationMinutes: "45 – 60 mins",
         targetLoad: `${Math.round(ctl * 0.8)} – ${Math.round(ctl * 1.1)} Load`,
         intensityZone: "Zone 2 Steady or Zone 3 Tempo",
-        heartRateGuide: "72% – 82% Max HR (135 – 150 bpm)",
+        heartRateGuide: `72% – 82% Max HR (${Math.round(maxHr * 0.72)} – ${Math.round(maxHr * 0.82)} bpm)`,
         description:
           "Your fitness building is right in the sweet spot. Fatigue is present but completely sustainable. Good day for steady aerobic mileage or light progressive tempo.",
       },
@@ -1466,13 +1476,14 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     badgeBg: "bg-zinc-100 text-zinc-950",
     badgeBorder: "border-zinc-950",
     textColor: "text-zinc-800",
+    athleteMaxHr: maxHr,
     suggestion: {
       title: "Zone 2 Conversational Endurance",
       category: "BASE",
       durationMinutes: "35 – 50 mins",
       targetLoad: `${Math.round(ctl * 0.6)} – ${Math.round(ctl * 0.85)} Load`,
       intensityZone: "Zone 2 (Aerobic Base)",
-      heartRateGuide: "68% – 78% Max HR (128 – 142 bpm)",
+      heartRateGuide: `68% – 78% Max HR (${Math.round(maxHr * 0.68)} – ${Math.round(maxHr * 0.78)} bpm)`,
       description:
         "Maintain capillary density and fat oxidation with an easy, conversational run. Keep intensity strictly under your Aerobic Threshold (AeT).",
     },

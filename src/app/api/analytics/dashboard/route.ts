@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
     targetRaceElevStr,
     weeklyVertTargetStr,
     trainingTierStr,
+    athleteMaxHrRes,
   ] = await Promise.all([
     db.execute({
       sql: `SELECT * FROM daily_metrics WHERE athlete_id = ? ORDER BY date ASC`,
@@ -77,6 +78,7 @@ export async function GET(req: NextRequest) {
     getSetting("trail_target_race_elev", "2200", athleteId),
     getSetting("trail_weekly_vert_target", "1000", athleteId),
     getSetting("trail_training_tier", "finisher", athleteId),
+    getSetting("athlete_max_hr", "", athleteId),
   ]);
 
   const dailyRows = dailyRes.rows as any[];
@@ -85,6 +87,20 @@ export async function GET(req: NextRequest) {
   const targetRaceElev = Number(targetRaceElevStr || "2200");
   const weeklyVertTarget = Number(weeklyVertTargetStr || "1000");
   const trainingTier = (trainingTierStr || "finisher") as "finisher" | "elite";
+
+  // Athlete Max HR Resolution (Priority: 1. Manual user setting, 2. Max HR from activities, 3. Default 185 bpm)
+  const athleteMaxHrStr = (athleteMaxHrRes || "").trim();
+  let effectiveMaxHr = 185;
+  if (athleteMaxHrStr && !isNaN(Number(athleteMaxHrStr)) && Number(athleteMaxHrStr) >= 100 && Number(athleteMaxHrStr) <= 240) {
+    effectiveMaxHr = Math.round(Number(athleteMaxHrStr));
+  } else if (activities.length > 0) {
+    const activityMaxHrs = activities
+      .map((a) => Number(a.max_hr || 0))
+      .filter((hr) => hr >= 130 && hr <= 230);
+    if (activityMaxHrs.length > 0) {
+      effectiveMaxHr = Math.max(...activityMaxHrs);
+    }
+  }
 
   // 3. Current Summary
   const latestDaily = dailyRows[dailyRows.length - 1] || null;
@@ -301,6 +317,7 @@ export async function GET(req: NextRequest) {
     hrvStatus: String(latestDaily?.hrv_status || "NORMAL"),
     sleepHours: latestDaily?.sleep_duration_seconds ? Number(latestDaily.sleep_duration_seconds) / 3600 : 7.5,
     rampRate,
+    athleteMaxHr: effectiveMaxHr,
   });
 
   const corosModeData = {
@@ -348,6 +365,7 @@ export async function GET(req: NextRequest) {
     hrvStatus: String(latestDaily?.hrv_status || "NORMAL"),
     sleepHours: latestDaily?.sleep_duration_seconds ? Number(latestDaily.sleep_duration_seconds) / 3600 : 7.5,
     rampRate: latestIntervals?.rampRate || 0.6,
+    athleteMaxHr: effectiveMaxHr,
   });
 
   const intervalsModeData = {
@@ -394,13 +412,14 @@ export async function GET(req: NextRequest) {
       aerobicTe: Number(a.aerobic_te || 0),
       anaerobicTe: Number(a.anaerobic_te || 0),
     })),
-    162,
+    Math.round(effectiveMaxHr * 0.85),
     14
   );
 
   return NextResponse.json({
     connected: isConnected,
     hasData: dailyRows.length > 0 || activities.length > 0,
+    athleteMaxHr: effectiveMaxHr,
     modes: {
       coros: corosModeData,
       intervals: intervalsModeData,

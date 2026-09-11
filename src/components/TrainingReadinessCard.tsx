@@ -155,16 +155,26 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-white border border-zinc-950/20 flex flex-col justify-between">
-                  <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
-                    <Heart className="h-3 w-3 text-rose-500 shrink-0" />
-                    <span>{t("readiness.hrTarget", "HR Target")}</span>
+                  <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-zinc-500 uppercase">
+                    <div className="flex items-center gap-1">
+                      <Heart className="h-3 w-3 text-rose-500 shrink-0" />
+                      <span>{t("readiness.hrTarget", "HR Target")}</span>
+                    </div>
+                    {readiness.athleteMaxHr && (
+                      <span
+                        className="text-[9px] font-mono font-bold text-zinc-400"
+                        title={`Calculated using athlete Max HR: ${readiness.athleteMaxHr} bpm`}
+                      >
+                        Max {readiness.athleteMaxHr}
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1 space-y-0.5" title={suggestion.heartRateGuide}>
                     <p className="text-[11px] font-black text-zinc-950 leading-tight">
                       {hrMain}
                     </p>
                     {hrSub && (
-                      <p className="text-[10px] font-mono font-bold text-zinc-500 leading-tight">
+                      <p className="text-[10px] font-mono font-bold text-zinc-600 leading-tight">
                         {hrSub}
                       </p>
                     )}

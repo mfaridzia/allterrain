@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Info, ExternalLink, Trash2 } from "lucide-react";
+import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Info, ExternalLink, Trash2, Heart } from "lucide-react";
 import { useAppSettings, useUpdateSettingsMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -124,6 +124,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [provider, setProvider] = useState<string>("gemini");
   const [modelName, setModelName] = useState<string>("gemini-2.5-flash");
   const [apiKey, setApiKey] = useState<string>("");
+  const [athleteMaxHr, setAthleteMaxHr] = useState<string>("");
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
   const [dynamicModels, setDynamicModels] = useState<Record<string, { id: string; label: string }[]>>({});
@@ -140,6 +141,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         if (!models.some((m) => m.id === settingsData.aiModelName)) {
           setIsCustomModel(true);
         }
+      }
+      if (settingsData.athleteMaxHr) {
+        setAthleteMaxHr(String(settingsData.athleteMaxHr));
+      } else {
+        setAthleteMaxHr("");
       }
     }
   }, [settingsData, language]);
@@ -231,6 +237,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         if (provider === "openai") payload.openaiApiKey = apiKey.trim();
         if (provider === "claude") payload.claudeApiKey = apiKey.trim();
         if (provider === "deepseek") payload.deepseekApiKey = apiKey.trim();
+      }
+
+      if (athleteMaxHr.trim()) {
+        const parsed = parseInt(athleteMaxHr.trim(), 10);
+        if (!isNaN(parsed) && parsed >= 100 && parsed <= 240) {
+          payload.athleteMaxHr = parsed;
+        }
+      } else {
+        payload.athleteMaxHr = null;
       }
 
       await updateSettingsMutation.mutateAsync(payload);
@@ -499,6 +514,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium leading-tight">
               {t("settingsModal.apiKeyNotice", "Your API key is stored securely in your encrypted database and never transmitted to third parties.")}
             </p>
+          </div>
+
+          {/* Athlete Physiology: Custom Max HR */}
+          <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b]">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-black text-zinc-900 flex items-center gap-1.5">
+                <Heart className="h-3.5 w-3.5 text-rose-600 stroke-[2.5]" />
+                {t("settingsModal.athletePhysiology", "Athlete Physiology (HR Targets)")}
+              </label>
+              {athleteMaxHr && Number(athleteMaxHr) >= 100 && Number(athleteMaxHr) <= 240 && (
+                <span className="text-[10px] font-mono font-black text-rose-950 px-2 py-0.5 rounded-md bg-rose-100 border border-zinc-950">
+                  {t("settingsModal.maxHrPreview", "Target Zona 2:")} {Math.round(Number(athleteMaxHr) * 0.68)}–{Math.round(Number(athleteMaxHr) * 0.78)} bpm
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={100}
+                  max={240}
+                  value={athleteMaxHr}
+                  onChange={(e) => setAthleteMaxHr(e.target.value)}
+                  placeholder={t("settingsModal.maxHrPlaceholder", "e.g. 190 (bpm)")}
+                  className="w-full px-3.5 py-2 text-xs rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-bold shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                />
+                {athleteMaxHr && (
+                  <button
+                    type="button"
+                    onClick={() => setAthleteMaxHr("")}
+                    className="px-2.5 py-2 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
+                    title="Reset"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <p className="text-[10.5px] text-zinc-600 leading-relaxed font-medium">
+                {t(
+                  "settingsModal.maxHrHelper",
+                  "Used to calculate your personalized training zone targets. Leave empty to auto-estimate from your COROS activities (Default: ~185 bpm)."
+                )}
+              </p>
+            </div>
           </div>
 
           {savedSuccess && (
