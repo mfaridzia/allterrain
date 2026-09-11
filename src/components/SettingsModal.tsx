@@ -125,6 +125,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [modelName, setModelName] = useState<string>("gemini-2.5-flash");
   const [apiKey, setApiKey] = useState<string>("");
   const [athleteMaxHr, setAthleteMaxHr] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"ai" | "physiology">("ai");
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
   const [dynamicModels, setDynamicModels] = useState<Record<string, { id: string; label: string }[]>>({});
@@ -260,6 +261,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   const displayModels = dynamicModels[provider] || curatedModels[provider] || [];
 
+  const effectiveMax =
+    athleteMaxHr && Number(athleteMaxHr) >= 100 && Number(athleteMaxHr) <= 240
+      ? Number(athleteMaxHr)
+      : null;
+  const calcHr = effectiveMax || 185;
+
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
       <div className="max-w-md w-full rounded-2xl bg-white border-2 border-zinc-950 p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-[6px_6px_0px_0px_#09090b] max-h-[90dvh] overflow-y-auto">
@@ -279,9 +286,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           </button>
         </div>
 
+        {/* Segmented Tab Controls */}
+        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-100 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+          <button
+            type="button"
+            onClick={() => setActiveTab("ai")}
+            className={`py-2 px-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === "ai"
+                ? "bg-zinc-950 text-white shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/70"
+            }`}
+          >
+            <Cpu className="h-3.5 w-3.5 stroke-[2.5]" />
+            <span className="truncate">{t("settingsModal.tabAiCoach", "AI Coach & Keys")}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("physiology")}
+            className={`py-2 px-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === "physiology"
+                ? "bg-zinc-950 text-white shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/70"
+            }`}
+          >
+            <Heart className="h-3.5 w-3.5 text-rose-500 stroke-[2.5]" />
+            <span className="truncate">{t("settingsModal.athletePhysiology", "Athlete Physiology (HR Targets)")}</span>
+          </button>
+        </div>
+
         <form onSubmit={handleSave} className="space-y-4">
-          {/* BYOK Info Banner */}
-          <div className="p-3 rounded-xl bg-amber-50 border-2 border-zinc-950 text-xs text-zinc-900 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
+          {activeTab === "ai" && (
+            <div className="space-y-4">
+              {/* BYOK Info Banner */}
+              <div className="p-3 rounded-xl bg-amber-50 border-2 border-zinc-950 text-xs text-zinc-900 shadow-[2px_2px_0px_0px_#09090b] space-y-1">
             <div className="flex items-center gap-1.5 font-black text-amber-900">
               <Info className="h-4 w-4 stroke-[2.5] text-amber-700 shrink-0" />
               <span>{t("settingsModal.byokBadge", "Bring Your Own Key (BYOK)")}</span>
@@ -515,51 +552,100 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               {t("settingsModal.apiKeyNotice", "Your API key is stored securely in your encrypted database and never transmitted to third parties.")}
             </p>
           </div>
+        </div>
+      )}
 
-          {/* Athlete Physiology: Custom Max HR */}
-          <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b]">
-            <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-black text-zinc-900 flex items-center gap-1.5">
-                <Heart className="h-3.5 w-3.5 text-rose-600 stroke-[2.5]" />
-                {t("settingsModal.athletePhysiology", "Athlete Physiology (HR Targets)")}
-              </label>
-              {athleteMaxHr && Number(athleteMaxHr) >= 100 && Number(athleteMaxHr) <= 240 && (
-                <span className="text-[10px] font-mono font-black text-rose-950 px-2 py-0.5 rounded-md bg-rose-100 border border-zinc-950">
-                  {t("settingsModal.maxHrPreview", "Target Zona 2:")} {Math.round(Number(athleteMaxHr) * 0.68)}–{Math.round(Number(athleteMaxHr) * 0.78)} bpm
-                </span>
-              )}
-            </div>
+          {/* Tab 2: Athlete Physiology */}
+          {activeTab === "physiology" && (
+            <div className="space-y-3.5">
+              {/* Card 1: Custom Max HR input */}
+              <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-3 shadow-[2px_2px_0px_0px_#09090b]">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
+                    <Heart className="h-4 w-4 text-rose-600 stroke-[2.5]" />
+                    <span>{t("settingsModal.athletePhysiology", "Athlete Physiology (HR Targets)")}</span>
+                  </label>
+                  {effectiveMax && (
+                    <span className="text-[10px] font-mono font-black text-rose-950 px-2 py-0.5 rounded-md bg-rose-100 border border-zinc-950">
+                      Max HR: {effectiveMax} bpm
+                    </span>
+                  )}
+                </div>
 
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={100}
-                  max={240}
-                  value={athleteMaxHr}
-                  onChange={(e) => setAthleteMaxHr(e.target.value)}
-                  placeholder={t("settingsModal.maxHrPlaceholder", "e.g. 190 (bpm)")}
-                  className="w-full px-3.5 py-2 text-xs rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-bold shadow-[1.5px_1.5px_0px_0px_#09090b]"
-                />
-                {athleteMaxHr && (
-                  <button
-                    type="button"
-                    onClick={() => setAthleteMaxHr("")}
-                    className="px-2.5 py-2 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
-                    title="Reset"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={100}
+                      max={240}
+                      value={athleteMaxHr}
+                      onChange={(e) => setAthleteMaxHr(e.target.value)}
+                      placeholder={t("settingsModal.maxHrPlaceholder", "e.g. 190 (bpm)")}
+                      className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                    />
+                    {athleteMaxHr && (
+                      <button
+                        type="button"
+                        onClick={() => setAthleteMaxHr("")}
+                        className="px-3 py-2.5 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
+                        title="Reset"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
+                    {t(
+                      "settingsModal.maxHrHelper",
+                      "Used to calculate your personalized training zone targets. Leave empty to auto-estimate from your COROS activities (Default: ~185 bpm)."
+                    )}
+                  </p>
+                </div>
               </div>
-              <p className="text-[10.5px] text-zinc-600 leading-relaxed font-medium">
-                {t(
-                  "settingsModal.maxHrHelper",
-                  "Used to calculate your personalized training zone targets. Leave empty to auto-estimate from your COROS activities (Default: ~185 bpm)."
-                )}
-              </p>
+
+              {/* Card 2: Interactive Zone Preview Breakdown */}
+              <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b]">
+                <div className="flex items-center justify-between text-xs font-black text-zinc-950">
+                  <span>{language === "en" ? "Calculated Training Zones:" : "Kalkulasi Zona Latihan:"}</span>
+                  <span className="text-[10px] font-mono text-zinc-500 font-bold">
+                    {effectiveMax ? `Based on ${effectiveMax} bpm` : (language === "en" ? "Default Baseline (~185 bpm)" : "Estimasi Baseline (~185 bpm)")}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                  <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-950/20 space-y-0.5">
+                    <div className="text-[10px] font-sans font-bold text-emerald-800 uppercase">Zone 1 (Recovery)</div>
+                    <div className="font-black text-emerald-950">&lt; 72% Max HR</div>
+                    <div className="text-[11px] text-emerald-700 font-bold">&lt; {Math.round(calcHr * 0.72)} bpm</div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-950/20 space-y-0.5">
+                    <div className="text-[10px] font-sans font-bold text-blue-800 uppercase">Zone 2 (Aerobic Base)</div>
+                    <div className="font-black text-blue-950">68% – 78% Max HR</div>
+                    <div className="text-[11px] text-blue-700 font-bold">
+                      {Math.round(calcHr * 0.68)} – {Math.round(calcHr * 0.78)} bpm
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-950/20 space-y-0.5">
+                    <div className="text-[10px] font-sans font-bold text-amber-800 uppercase">Zone 3 (Tempo)</div>
+                    <div className="font-black text-amber-950">72% – 82% Max HR</div>
+                    <div className="text-[11px] text-amber-700 font-bold">
+                      {Math.round(calcHr * 0.72)} – {Math.round(calcHr * 0.82)} bpm
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-950/20 space-y-0.5">
+                    <div className="text-[10px] font-sans font-bold text-rose-800 uppercase">Zone 4/5 (Speed)</div>
+                    <div className="font-black text-rose-950">&gt; 85% Max HR</div>
+                    <div className="text-[11px] text-rose-700 font-bold">
+                      {Math.round(calcHr * 0.85)}+ bpm
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           {savedSuccess && (
             <div className="flex items-center gap-2 text-xs text-emerald-950 bg-emerald-100 border-2 border-zinc-950 p-2.5 rounded-xl shadow-[2px_2px_0px_0px_#09090b] font-bold">
