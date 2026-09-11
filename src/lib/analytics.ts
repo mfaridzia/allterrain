@@ -1256,6 +1256,149 @@ export function calculateSegmentLogistics(input: SegmentLogisticsInput): Segment
 // - Kiviniemi & Plews (2007, 2013): Autonomic Nervous System & Recovery Balance
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// ATHLETE HEART RATE ZONE MODELS (Max HR, Karvonen HRR, Joe Friel LTHR)
+// ---------------------------------------------------------------------------
+
+export type HrZoneCalcMethod = "max_hr" | "hrr" | "lthr";
+
+export interface ZoneDetail {
+  zone: 1 | 2 | 3 | 4 | 5;
+  name: string;
+  minBpm: number;
+  maxBpm: number;
+  pctLabel: string;
+}
+
+export interface AthleteHrZones {
+  method: HrZoneCalcMethod;
+  maxHr: number;
+  restingHr: number;
+  lthr: number;
+  z1Max: number;
+  z2Min: number;
+  z2Max: number;
+  z3Min: number;
+  z3Max: number;
+  z4Min: number;
+  z4Max: number;
+  z5Min: number;
+  zones: [ZoneDetail, ZoneDetail, ZoneDetail, ZoneDetail, ZoneDetail];
+}
+
+export function calculateAthleteHrZones(config: {
+  method?: HrZoneCalcMethod;
+  maxHr?: number;
+  restingHr?: number;
+  lthr?: number;
+}): AthleteHrZones {
+  const method = config.method || "max_hr";
+  const maxHr = config.maxHr && config.maxHr >= 100 && config.maxHr <= 240 ? Math.round(config.maxHr) : 185;
+  const restingHr = config.restingHr && config.restingHr >= 30 && config.restingHr <= 100 ? Math.round(config.restingHr) : 48;
+  const lthr = config.lthr && config.lthr >= 100 && config.lthr <= 220 ? Math.round(config.lthr) : Math.round(maxHr * 0.88);
+
+  if (method === "hrr") {
+    // Karvonen HRR Formula: Target = RHR + (% * (MaxHR - RHR))
+    const hrr = Math.max(20, maxHr - restingHr);
+    const z1Max = Math.round(restingHr + 0.59 * hrr);
+    const z2Min = z1Max + 1;
+    const z2Max = Math.round(restingHr + 0.70 * hrr);
+    const z3Min = z2Max + 1;
+    const z3Max = Math.round(restingHr + 0.80 * hrr);
+    const z4Min = z3Max + 1;
+    const z4Max = Math.round(restingHr + 0.90 * hrr);
+    const z5Min = z4Max + 1;
+
+    return {
+      method: "hrr",
+      maxHr,
+      restingHr,
+      lthr,
+      z1Max,
+      z2Min,
+      z2Max,
+      z3Min,
+      z3Max,
+      z4Min,
+      z4Max,
+      z5Min,
+      zones: [
+        { zone: 1, name: "Recovery", minBpm: 0, maxBpm: z1Max, pctLabel: "< 60% HRR" },
+        { zone: 2, name: "Aerobic Base", minBpm: z2Min, maxBpm: z2Max, pctLabel: "60%–70% HRR" },
+        { zone: 3, name: "Tempo / Grey Zone", minBpm: z3Min, maxBpm: z3Max, pctLabel: "70%–80% HRR" },
+        { zone: 4, name: "Threshold", minBpm: z4Min, maxBpm: z4Max, pctLabel: "80%–90% HRR" },
+        { zone: 5, name: "Anaerobic / VO2Max", minBpm: z5Min, maxBpm: maxHr, pctLabel: "> 90% HRR" },
+      ],
+    };
+  }
+
+  if (method === "lthr") {
+    // Joe Friel LTHR Model
+    const z1Max = Math.round(lthr * 0.84);
+    const z2Min = z1Max + 1;
+    const z2Max = Math.round(lthr * 0.89);
+    const z3Min = z2Max + 1;
+    const z3Max = Math.round(lthr * 0.94);
+    const z4Min = z3Max + 1;
+    const z4Max = Math.round(lthr * 0.99);
+    const z5Min = z4Max + 1;
+
+    return {
+      method: "lthr",
+      maxHr,
+      restingHr,
+      lthr,
+      z1Max,
+      z2Min,
+      z2Max,
+      z3Min,
+      z3Max,
+      z4Min,
+      z4Max,
+      z5Min,
+      zones: [
+        { zone: 1, name: "Recovery", minBpm: 0, maxBpm: z1Max, pctLabel: "< 85% LTHR" },
+        { zone: 2, name: "Aerobic Base", minBpm: z2Min, maxBpm: z2Max, pctLabel: "85%–89% LTHR" },
+        { zone: 3, name: "Tempo / Grey Zone", minBpm: z3Min, maxBpm: z3Max, pctLabel: "90%–94% LTHR" },
+        { zone: 4, name: "Threshold", minBpm: z4Min, maxBpm: z4Max, pctLabel: "95%–99% LTHR" },
+        { zone: 5, name: "Anaerobic / VO2Max", minBpm: z5Min, maxBpm: Math.max(maxHr, z5Min + 10), pctLabel: "≥ 100% LTHR" },
+      ],
+    };
+  }
+
+  // Default: % Max HR
+  const z1Max = Math.round(maxHr * 0.67);
+  const z2Min = z1Max + 1;
+  const z2Max = Math.round(maxHr * 0.78);
+  const z3Min = z2Max + 1;
+  const z3Max = Math.round(maxHr * 0.88);
+  const z4Min = z3Max + 1;
+  const z4Max = Math.round(maxHr * 0.95);
+  const z5Min = z4Max + 1;
+
+  return {
+    method: "max_hr",
+    maxHr,
+    restingHr,
+    lthr,
+    z1Max,
+    z2Min,
+    z2Max,
+    z3Min,
+    z3Max,
+    z4Min,
+    z4Max,
+    z5Min,
+    zones: [
+      { zone: 1, name: "Recovery", minBpm: 0, maxBpm: z1Max, pctLabel: "< 68% Max HR" },
+      { zone: 2, name: "Aerobic Base", minBpm: z2Min, maxBpm: z2Max, pctLabel: "68%–78% Max HR" },
+      { zone: 3, name: "Tempo / Grey Zone", minBpm: z3Min, maxBpm: z3Max, pctLabel: "78%–88% Max HR" },
+      { zone: 4, name: "Threshold", minBpm: z4Min, maxBpm: z4Max, pctLabel: "88%–95% Max HR" },
+      { zone: 5, name: "Anaerobic / VO2Max", minBpm: z5Min, maxBpm: maxHr, pctLabel: "> 95% Max HR" },
+    ],
+  };
+}
+
 export interface TrainingReadinessParams {
   ctl: number;
   atl: number;
@@ -1267,6 +1410,7 @@ export interface TrainingReadinessParams {
   sleepHours?: number;
   rampRate?: number;
   athleteMaxHr?: number;
+  athleteHrZones?: AthleteHrZones;
 }
 
 export interface TrainingReadinessResult {
@@ -1278,6 +1422,7 @@ export interface TrainingReadinessResult {
   badgeBorder: string;
   textColor: string;
   athleteMaxHr?: number;
+  athleteHrZones?: AthleteHrZones;
   suggestion: {
     title: string;
     category: "REST" | "RECOVERY" | "BASE" | "TEMPO" | "QUALITY" | "RACE";
@@ -1309,6 +1454,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     recoveryScore = 75,
     hrvStatus = "NORMAL",
     athleteMaxHr,
+    athleteHrZones,
   } = params;
 
   // Athlete Max HR baseline (custom override or default ~185 bpm)
@@ -1350,6 +1496,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
       badgeBorder: "border-rose-950",
       textColor: "text-rose-600",
       athleteMaxHr: maxHr,
+      athleteHrZones,
       suggestion: {
         title: "Complete Rest Day (No Training)",
         category: "REST",
@@ -1383,13 +1530,16 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
       badgeBorder: "border-zinc-950",
       textColor: "text-amber-700",
       athleteMaxHr: maxHr,
+      athleteHrZones,
       suggestion: {
         title: "Active Recovery Jog or Rest Day",
         category: "RECOVERY",
         durationMinutes: "20 – 30 mins (or Off)",
         targetLoad: "15 – 25 Load",
         intensityZone: "Zone 1 (Easy Aerobic / Flush)",
-        heartRateGuide: `< 72% Max HR (< ${Math.round(maxHr * 0.72)} bpm)`,
+        heartRateGuide: athleteHrZones
+          ? `${athleteHrZones.zones[0].pctLabel} (< ${athleteHrZones.z1Max} bpm)`
+          : `< 72% Max HR (< ${Math.round(maxHr * 0.72)} bpm)`,
         description: `You absorbed a high workload today (${Math.round(todayLoad)} Load). Prioritize cellular adaptation and glycogen re-synthesis before attempting another intense session.`,
       },
       governor: {
@@ -1414,13 +1564,16 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
       badgeBorder: "border-zinc-950",
       textColor: "text-sky-700",
       athleteMaxHr: maxHr,
+      athleteHrZones,
       suggestion: {
         title: "Intervals, Threshold, or Race Effort",
         category: "QUALITY",
         durationMinutes: "45 – 70 mins",
         targetLoad: `${Math.round(ctl * 0.9)} – ${Math.round(ctl * 1.3)} Load`,
         intensityZone: "Zone 4 / Zone 5 (Threshold & VO2Max repeats)",
-        heartRateGuide: `> 85% Max HR (${Math.round(maxHr * 0.85)}+ bpm)`,
+        heartRateGuide: athleteHrZones
+          ? `${athleteHrZones.zones[3].pctLabel}+ (${athleteHrZones.z4Min}+ bpm)`
+          : `> 85% Max HR (${Math.round(maxHr * 0.85)}+ bpm)`,
         description:
           "Your autonomic readiness is high, chronic form is fresh (+5 to +25), and acute fatigue is low. Ideal window for track repeats, tempo tests, or peak race efforts.",
       },
@@ -1446,13 +1599,16 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
       badgeBorder: "border-zinc-950",
       textColor: "text-emerald-700",
       athleteMaxHr: maxHr,
+      athleteHrZones,
       suggestion: {
         title: "Aerobic Base or Tempo Progression",
         category: "TEMPO",
         durationMinutes: "45 – 60 mins",
         targetLoad: `${Math.round(ctl * 0.8)} – ${Math.round(ctl * 1.1)} Load`,
         intensityZone: "Zone 2 Steady or Zone 3 Tempo",
-        heartRateGuide: `72% – 82% Max HR (${Math.round(maxHr * 0.72)} – ${Math.round(maxHr * 0.82)} bpm)`,
+        heartRateGuide: athleteHrZones
+          ? `${athleteHrZones.zones[1].pctLabel} / ${athleteHrZones.zones[2].pctLabel} (${athleteHrZones.z2Min} – ${athleteHrZones.z3Max} bpm)`
+          : `72% – 82% Max HR (${Math.round(maxHr * 0.72)} – ${Math.round(maxHr * 0.82)} bpm)`,
         description:
           "Your fitness building is right in the sweet spot. Fatigue is present but completely sustainable. Good day for steady aerobic mileage or light progressive tempo.",
       },
@@ -1477,13 +1633,16 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     badgeBorder: "border-zinc-950",
     textColor: "text-zinc-800",
     athleteMaxHr: maxHr,
+    athleteHrZones,
     suggestion: {
       title: "Zone 2 Conversational Endurance",
       category: "BASE",
       durationMinutes: "35 – 50 mins",
       targetLoad: `${Math.round(ctl * 0.6)} – ${Math.round(ctl * 0.85)} Load`,
       intensityZone: "Zone 2 (Aerobic Base)",
-      heartRateGuide: `68% – 78% Max HR (${Math.round(maxHr * 0.68)} – ${Math.round(maxHr * 0.78)} bpm)`,
+      heartRateGuide: athleteHrZones
+        ? `${athleteHrZones.zones[1].pctLabel} (${athleteHrZones.z2Min} – ${athleteHrZones.z2Max} bpm)`
+        : `68% – 78% Max HR (${Math.round(maxHr * 0.68)} – ${Math.round(maxHr * 0.78)} bpm)`,
       description:
         "Maintain capillary density and fat oxidation with an easy, conversational run. Keep intensity strictly under your Aerobic Threshold (AeT).",
     },
@@ -1735,6 +1894,7 @@ export interface WeeklyZoneProgressionResult {
   };
   zoneThresholds: {
     lthr: number;
+    method?: string;
     z1Max: number;
     z2Max: number;
     z3Max: number;
@@ -1751,6 +1911,7 @@ export function estimateActivityHrZones(params: {
   maxHr?: number;
   aerobicTe?: number;
   anaerobicTe?: number;
+  zones?: AthleteHrZones;
 }): {
   z1: number;
   z2: number;
@@ -1763,19 +1924,24 @@ export function estimateActivityHrZones(params: {
   const maxHr = params.maxHr || (avgHr + 20);
   const anaeroTe = params.anaerobicTe || 0;
 
+  // Use dynamic zones if provided, otherwise fallback to standard cutoffs
+  const z1Max = params.zones?.z1Max ?? 125;
+  const z2Max = params.zones?.z2Max ?? 145;
+  const z3Max = params.zones?.z3Max ?? 158;
+
   let z1Ratio = 0;
   let z2Ratio = 0;
   let z3Ratio = 0;
   let z4Ratio = 0;
   let z5Ratio = 0;
 
-  if (avgHr < 125) {
+  if (avgHr <= z1Max) {
     // Easy recovery
     z1Ratio = 0.85;
     z2Ratio = 0.15;
-  } else if (avgHr <= 145) {
+  } else if (avgHr <= z2Max) {
     // Aerobic base Zone 2
-    if (maxHr > 165) {
+    if (maxHr > z3Max) {
       z1Ratio = 0.15;
       z2Ratio = 0.65;
       z3Ratio = 0.15;
@@ -1785,7 +1951,7 @@ export function estimateActivityHrZones(params: {
       z2Ratio = 0.72;
       z3Ratio = 0.08;
     }
-  } else if (avgHr <= 158) {
+  } else if (avgHr <= z3Max) {
     // Tempo / Grey Zone
     z1Ratio = 0.12;
     z2Ratio = 0.28;
@@ -1794,7 +1960,7 @@ export function estimateActivityHrZones(params: {
     z5Ratio = 0.03;
   } else {
     // Threshold or hard interval workout
-    const highIntensityFraction = Math.min(0.65, 0.35 + (avgHr - 158) * 0.02 + anaeroTe * 0.08);
+    const highIntensityFraction = Math.min(0.65, 0.35 + (avgHr - z3Max) * 0.02 + anaeroTe * 0.08);
     z5Ratio = Math.min(0.25, Math.max(0.05, anaeroTe * 0.10));
     z4Ratio = Math.max(0.15, highIntensityFraction - z5Ratio);
     z3Ratio = 0.15;
@@ -1827,7 +1993,8 @@ export function calculateWeeklyZoneProgression(
     anaerobicTe?: number;
   }>,
   lthr: number = 162,
-  maxWeeks: number = 12
+  maxWeeks: number = 12,
+  zones?: AthleteHrZones
 ): WeeklyZoneProgressionResult {
   if (!activities || activities.length === 0) {
     return {
@@ -1843,11 +2010,12 @@ export function calculateWeeklyZoneProgression(
         verdictLabel: "Belum Ada Data",
       },
       zoneThresholds: {
-        lthr,
-        z1Max: Math.round(lthr * 0.8),
-        z2Max: Math.round(lthr * 0.91),
-        z3Max: Math.round(lthr * 0.98),
-        z4Max: Math.round(lthr * 1.04),
+        lthr: zones?.lthr || lthr,
+        method: zones?.method || "max_hr",
+        z1Max: zones?.z1Max ?? Math.round(lthr * 0.8),
+        z2Max: zones?.z2Max ?? Math.round(lthr * 0.91),
+        z3Max: zones?.z3Max ?? Math.round(lthr * 0.98),
+        z4Max: zones?.z4Max ?? Math.round(lthr * 1.04),
       },
     };
   }
@@ -1945,6 +2113,7 @@ export function calculateWeeklyZoneProgression(
       maxHr: act.maxHr,
       aerobicTe: act.aerobicTe,
       anaerobicTe: act.anaerobicTe,
+      zones,
     });
 
     item.z1 += z.z1;
@@ -2130,11 +2299,12 @@ export function calculateWeeklyZoneProgression(
       verdictLabel,
     },
     zoneThresholds: {
-      lthr,
-      z1Max: Math.round(lthr * 0.8),
-      z2Max: Math.round(lthr * 0.91),
-      z3Max: Math.round(lthr * 0.98),
-      z4Max: Math.round(lthr * 1.04),
+      lthr: zones?.lthr || lthr,
+      method: zones?.method || "max_hr",
+      z1Max: zones?.z1Max ?? Math.round(lthr * 0.8),
+      z2Max: zones?.z2Max ?? Math.round(lthr * 0.91),
+      z3Max: zones?.z3Max ?? Math.round(lthr * 0.98),
+      z4Max: zones?.z4Max ?? Math.round(lthr * 1.04),
     },
   };
 }

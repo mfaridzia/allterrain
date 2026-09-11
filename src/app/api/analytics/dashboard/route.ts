@@ -9,6 +9,9 @@ import {
   calculatePmcSeries,
   calculateTrainingReadiness,
   calculateWeeklyZoneProgression,
+  calculateAthleteHrZones,
+  estimateActivityHrZones,
+  HrZoneCalcMethod,
   PmcPoint,
 } from "@/lib/analytics";
 
@@ -63,7 +66,10 @@ export async function GET(req: NextRequest) {
     targetRaceElevStr,
     weeklyVertTargetStr,
     trainingTierStr,
+    hrZoneCalcMethodRes,
     athleteMaxHrRes,
+    athleteRestingHrRes,
+    athleteLthrRes,
   ] = await Promise.all([
     db.execute({
       sql: `SELECT * FROM daily_metrics WHERE athlete_id = ? ORDER BY date ASC`,
@@ -78,7 +84,10 @@ export async function GET(req: NextRequest) {
     getSetting("trail_target_race_elev", "2200", athleteId),
     getSetting("trail_weekly_vert_target", "1000", athleteId),
     getSetting("trail_training_tier", "finisher", athleteId),
+    getSetting("hr_zone_calc_method", "max_hr", athleteId),
     getSetting("athlete_max_hr", "", athleteId),
+    getSetting("athlete_resting_hr", "", athleteId),
+    getSetting("athlete_lthr", "", athleteId),
   ]);
 
   const dailyRows = dailyRes.rows as any[];
@@ -88,7 +97,7 @@ export async function GET(req: NextRequest) {
   const weeklyVertTarget = Number(weeklyVertTargetStr || "1000");
   const trainingTier = (trainingTierStr || "finisher") as "finisher" | "elite";
 
-  // Athlete Max HR Resolution (Priority: 1. Manual user setting, 2. Max HR from activities, 3. Default 185 bpm)
+  // Athlete HR Zones Resolution (Graceful fallbacks: 1. Manual user settings, 2. Activity / metrics auto-detect, 3. Standard baseline)
   const athleteMaxHrStr = (athleteMaxHrRes || "").trim();
   let effectiveMaxHr = 185;
   if (athleteMaxHrStr && !isNaN(Number(athleteMaxHrStr)) && Number(athleteMaxHrStr) >= 100 && Number(athleteMaxHrStr) <= 240) {
@@ -101,6 +110,30 @@ export async function GET(req: NextRequest) {
       effectiveMaxHr = Math.max(...activityMaxHrs);
     }
   }
+
+  const athleteRestingHrStr = (athleteRestingHrRes || "").trim();
+  let effectiveRestingHr = 48;
+  if (athleteRestingHrStr && !isNaN(Number(athleteRestingHrStr)) && Number(athleteRestingHrStr) >= 30 && Number(athleteRestingHrStr) <= 100) {
+    effectiveRestingHr = Math.round(Number(athleteRestingHrStr));
+  } else if (dailyRows.length > 0) {
+    const lastRhr = Number(dailyRows[dailyRows.length - 1]?.resting_hr || 0);
+    if (lastRhr >= 30 && lastRhr <= 100) effectiveRestingHr = lastRhr;
+  }
+
+  const athleteLthrStr = (athleteLthrRes || "").trim();
+  let effectiveLthr = Math.round(effectiveMaxHr * 0.88);
+  if (athleteLthrStr && !isNaN(Number(athleteLthrStr)) && Number(athleteLthrStr) >= 100 && Number(athleteLthrStr) <= 220) {
+    effectiveLthr = Math.round(Number(athleteLthrStr));
+  }
+
+  const hrZoneCalcMethod = (hrZoneCalcMethodRes || "max_hr") as HrZoneCalcMethod;
+
+  const athleteHrZones = calculateAthleteHrZones({
+    method: hrZoneCalcMethod,
+    maxHr: effectiveMaxHr,
+    restingHr: effectiveRestingHr,
+    lthr: effectiveLthr,
+  });
 
   // 3. Current Summary
   const latestDaily = dailyRows[dailyRows.length - 1] || null;
@@ -155,7 +188,10 @@ export async function GET(req: NextRequest) {
     const dist = Number(act.distance_meters || 0);
     const startTime = Number(act.start_time || 0);
     const dur = Number(act.duration_seconds || 1800);
+    const avgHr = Number(act.avg_hr || 0);
+    const actMaxHr = Number(act.max_hr || 0);
     const aerobicTe = Number(act.aerobic_te || 0);
+    const anaerobicTe = Number(act.anaerobic_te || 0);
     const vam = Number(act.vam_meters_per_hour || 0);
     const decoupling = Number(act.decoupling_pct || 0);
 
@@ -186,19 +222,19 @@ export async function GET(req: NextRequest) {
       totalDecouplingCount++;
     }
 
-    // Rough TID allocation based on HR / TE
-    if (aerobicTe < 2.5) {
-      z1z2Seconds += dur * 0.85;
-      z3Seconds += dur * 0.15;
-    } else if (aerobicTe <= 3.8) {
-      z1z2Seconds += dur * 0.5;
-      z3Seconds += dur * 0.4;
-      z4z5Seconds += dur * 0.1;
-    } else {
-      z1z2Seconds += dur * 0.3;
-      z3Seconds += dur * 0.3;
-      z4z5Seconds += dur * 0.4;
-    }
+    // Precise TID allocation based on personalized HR Zones & activity telemetry
+    const actZones = estimateActivityHrZones({
+      durationSeconds: dur,
+      avgHr,
+      maxHr: actMaxHr,
+      aerobicTe,
+      anaerobicTe,
+      zones: athleteHrZones,
+    });
+
+    z1z2Seconds += actZones.z1 + actZones.z2;
+    z3Seconds += actZones.z3;
+    z4z5Seconds += actZones.z4 + actZones.z5;
   }
 
   const totalTidSec = Math.max(1, z1z2Seconds + z3Seconds + z4z5Seconds);
@@ -318,6 +354,7 @@ export async function GET(req: NextRequest) {
     sleepHours: latestDaily?.sleep_duration_seconds ? Number(latestDaily.sleep_duration_seconds) / 3600 : 7.5,
     rampRate,
     athleteMaxHr: effectiveMaxHr,
+    athleteHrZones,
   });
 
   const corosModeData = {
@@ -366,6 +403,7 @@ export async function GET(req: NextRequest) {
     sleepHours: latestDaily?.sleep_duration_seconds ? Number(latestDaily.sleep_duration_seconds) / 3600 : 7.5,
     rampRate: latestIntervals?.rampRate || 0.6,
     athleteMaxHr: effectiveMaxHr,
+    athleteHrZones,
   });
 
   const intervalsModeData = {
@@ -412,14 +450,19 @@ export async function GET(req: NextRequest) {
       aerobicTe: Number(a.aerobic_te || 0),
       anaerobicTe: Number(a.anaerobic_te || 0),
     })),
-    Math.round(effectiveMaxHr * 0.85),
-    14
+    effectiveLthr,
+    14,
+    athleteHrZones
   );
 
   return NextResponse.json({
     connected: isConnected,
     hasData: dailyRows.length > 0 || activities.length > 0,
     athleteMaxHr: effectiveMaxHr,
+    athleteRestingHr: effectiveRestingHr,
+    athleteLthr: effectiveLthr,
+    hrZoneCalcMethod,
+    athleteHrZones,
     modes: {
       coros: corosModeData,
       intervals: intervalsModeData,

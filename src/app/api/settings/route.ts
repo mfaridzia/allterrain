@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
     trailTargetRaceElevStr,
     trailWeeklyVertTargetStr,
     trailTrainingTier,
+    hrZoneCalcMethodStr,
     athleteMaxHrStr,
+    athleteRestingHrStr,
+    athleteLthrStr,
   ] = await Promise.all([
     getSetting("ai_provider", defaultProvider, athleteId),
     getSetting("ai_model_name", defaultModel, athleteId),
@@ -34,7 +37,10 @@ export async function GET(req: NextRequest) {
     getSetting("trail_target_race_elev", "2200", athleteId),
     getSetting("trail_weekly_vert_target", "1000", athleteId),
     getSetting("trail_training_tier", "finisher", athleteId),
+    getSetting("hr_zone_calc_method", "max_hr", athleteId),
     getSetting("athlete_max_hr", "", athleteId),
+    getSetting("athlete_resting_hr", "", athleteId),
+    getSetting("athlete_lthr", "", athleteId),
   ]);
 
   const hasGeminiKey = !!geminiKey;
@@ -46,7 +52,10 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     aiProvider,
     aiModelName,
+    hrZoneCalcMethod: hrZoneCalcMethodStr || "max_hr",
     athleteMaxHr: athleteMaxHrStr ? Number(athleteMaxHrStr) : null,
+    athleteRestingHr: athleteRestingHrStr ? Number(athleteRestingHrStr) : null,
+    athleteLthr: athleteLthrStr ? Number(athleteLthrStr) : null,
     configuredKeys: {
       gemini: hasGeminiKey,
       openai: hasOpenAiKey,
@@ -116,11 +125,30 @@ export async function POST(req: NextRequest) {
     if (body.trailTrainingTier !== undefined) {
       await setSetting("trail_training_tier", body.trailTrainingTier.toString(), athleteId);
     }
+    if (body.hrZoneCalcMethod !== undefined) {
+      if (["max_hr", "hrr", "lthr"].includes(body.hrZoneCalcMethod)) {
+        await setSetting("hr_zone_calc_method", body.hrZoneCalcMethod, athleteId);
+      }
+    }
     if (body.athleteMaxHr !== undefined) {
       if (!body.athleteMaxHr) {
         await deleteSetting("athlete_max_hr", athleteId);
       } else {
         await setSetting("athlete_max_hr", String(body.athleteMaxHr), athleteId);
+      }
+    }
+    if (body.athleteRestingHr !== undefined) {
+      if (!body.athleteRestingHr) {
+        await deleteSetting("athlete_resting_hr", athleteId);
+      } else {
+        await setSetting("athlete_resting_hr", String(body.athleteRestingHr), athleteId);
+      }
+    }
+    if (body.athleteLthr !== undefined) {
+      if (!body.athleteLthr) {
+        await deleteSetting("athlete_lthr", athleteId);
+      } else {
+        await setSetting("athlete_lthr", String(body.athleteLthr), athleteId);
       }
     }
 

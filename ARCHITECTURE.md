@@ -137,6 +137,11 @@ Supports comprehensive telemetry across major endurance and fitness disciplines:
 ### 3.7 Physiological Efficiency & Polarized 80/20 Distribution
 - **Aerobic Decoupling ($Pa:HR$ / Cardiac Drift %):** Evaluates cardiac drift between the 1st half and 2nd half of steady-state workouts to confirm aerobic mitochondrial base.
 - **Efficiency Factor ($EF$):** Longitudinal metric calculating speed produced per single heart beat ($Speed / HR$).
+- **Configurable Heart Rate Zone Engine (% Max HR, Karvonen HRR, Joe Friel LTHR):** Supports 3 evidence-based physiological calculation models configurable in user settings with strict form validation:
+  - **% Max HR (Standard):** Z1 (<68%), Z2 (68–78%), Z3 (78–88%), Z4 (88–95%), Z5 (>95%).
+  - **HRR (Karvonen):** Calculates zones relative to autonomic heart rate reserve ($\text{HRR} = \text{Max HR} - \text{Resting HR}$).
+  - **LTHR (Joe Friel):** Calibrated to 30–60 min time-trial lactate threshold heart rate.
+  All zone cutoffs feed directly into `estimateActivityHrZones`, `calculateWeeklyZoneProgression`, and macro TID, establishing unified mathematical consistency across the analytics suite.
 - **Training Intensity Distribution (TID 80/20):** Classifies weekly volume into Low Intensity (Z1-Z2), Threshold (Z3), and High Intensity (Z4-Z5) to prevent athletes from stagnating in the *"Zone 3 Black Hole"*.
 
 ### 3.8 Ultra Trail & Mountain Running Suite

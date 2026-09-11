@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Info, ExternalLink, Trash2, Heart } from "lucide-react";
 import { useAppSettings, useUpdateSettingsMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
+import { calculateAthleteHrZones, HrZoneCalcMethod } from "@/lib/analytics";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -124,7 +125,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [provider, setProvider] = useState<string>("gemini");
   const [modelName, setModelName] = useState<string>("gemini-2.5-flash");
   const [apiKey, setApiKey] = useState<string>("");
+  const [hrZoneCalcMethod, setHrZoneCalcMethod] = useState<HrZoneCalcMethod>("max_hr");
   const [athleteMaxHr, setAthleteMaxHr] = useState<string>("");
+  const [athleteRestingHr, setAthleteRestingHr] = useState<string>("");
+  const [athleteLthr, setAthleteLthr] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"ai" | "physiology">("ai");
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
@@ -143,10 +147,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           setIsCustomModel(true);
         }
       }
+      if (settingsData.hrZoneCalcMethod) {
+        setHrZoneCalcMethod(settingsData.hrZoneCalcMethod);
+      }
       if (settingsData.athleteMaxHr) {
         setAthleteMaxHr(String(settingsData.athleteMaxHr));
       } else {
         setAthleteMaxHr("");
+      }
+      if (settingsData.athleteRestingHr) {
+        setAthleteRestingHr(String(settingsData.athleteRestingHr));
+      } else {
+        setAthleteRestingHr("");
+      }
+      if (settingsData.athleteLthr) {
+        setAthleteLthr(String(settingsData.athleteLthr));
+      } else {
+        setAthleteLthr("");
       }
     }
   }, [settingsData, language]);
@@ -222,14 +239,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   };
 
+  const maxHrNum = parseInt(athleteMaxHr.trim(), 10);
+  const restingHrNum = parseInt(athleteRestingHr.trim(), 10);
+  const lthrNum = parseInt(athleteLthr.trim(), 10);
+
+  let hrValidationError: string | null = null;
+
+  if (hrZoneCalcMethod === "max_hr") {
+    if (!athleteMaxHr.trim()) {
+      hrValidationError = language === "en" ? "Max HR is required (100 – 240 bpm)." : "Max HR wajib diisi (100 – 240 bpm).";
+    } else if (isNaN(maxHrNum) || maxHrNum < 100 || maxHrNum > 240) {
+      hrValidationError = language === "en" ? "Max HR must be between 100 and 240 bpm." : "Max HR harus antara 100 dan 240 bpm.";
+    }
+  } else if (hrZoneCalcMethod === "hrr") {
+    if (!athleteMaxHr.trim()) {
+      hrValidationError = language === "en" ? "Max HR is required (100 – 240 bpm)." : "Max HR wajib diisi (100 – 240 bpm).";
+    } else if (isNaN(maxHrNum) || maxHrNum < 100 || maxHrNum > 240) {
+      hrValidationError = language === "en" ? "Max HR must be between 100 and 240 bpm." : "Max HR harus antara 100 dan 240 bpm.";
+    } else if (!athleteRestingHr.trim()) {
+      hrValidationError = language === "en" ? "Resting HR is required for HRR (30 – 100 bpm)." : "Resting HR wajib diisi untuk HRR (30 – 100 bpm).";
+    } else if (isNaN(restingHrNum) || restingHrNum < 30 || restingHrNum > 100) {
+      hrValidationError = language === "en" ? "Resting HR must be between 30 and 100 bpm." : "Resting HR harus antara 30 dan 100 bpm.";
+    } else if (maxHrNum <= restingHrNum + 20) {
+      hrValidationError = language === "en" ? "Max HR must be at least 20 bpm higher than Resting HR." : "Max HR harus lebih tinggi minimal 20 bpm dari Resting HR.";
+    }
+  } else if (hrZoneCalcMethod === "lthr") {
+    if (!athleteLthr.trim()) {
+      hrValidationError = language === "en" ? "Lactate Threshold HR (LTHR) is required (100 – 220 bpm)." : "LTHR wajib diisi (100 – 220 bpm).";
+    } else if (isNaN(lthrNum) || lthrNum < 100 || lthrNum > 220) {
+      hrValidationError = language === "en" ? "LTHR must be between 100 and 220 bpm." : "LTHR harus antara 100 dan 220 bpm.";
+    }
+  }
+
+  const isHrValid = !hrValidationError;
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (activeTab === "physiology" && !isHrValid) {
+      return;
+    }
     setSavedSuccess(false);
 
     try {
       const payload: any = {
         aiProvider: provider,
         aiModelName: modelName,
+        hrZoneCalcMethod,
       };
 
       if (apiKey.trim()) {
@@ -249,6 +304,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         payload.athleteMaxHr = null;
       }
 
+      if (athleteRestingHr.trim()) {
+        const parsed = parseInt(athleteRestingHr.trim(), 10);
+        if (!isNaN(parsed) && parsed >= 30 && parsed <= 100) {
+          payload.athleteRestingHr = parsed;
+        }
+      } else {
+        payload.athleteRestingHr = null;
+      }
+
+      if (athleteLthr.trim()) {
+        const parsed = parseInt(athleteLthr.trim(), 10);
+        if (!isNaN(parsed) && parsed >= 100 && parsed <= 220) {
+          payload.athleteLthr = parsed;
+        }
+      } else {
+        payload.athleteLthr = null;
+      }
+
       await updateSettingsMutation.mutateAsync(payload);
 
       setSavedSuccess(true);
@@ -261,11 +334,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   const displayModels = dynamicModels[provider] || curatedModels[provider] || [];
 
-  const effectiveMax =
-    athleteMaxHr && Number(athleteMaxHr) >= 100 && Number(athleteMaxHr) <= 240
-      ? Number(athleteMaxHr)
-      : null;
-  const calcHr = effectiveMax || 185;
+  const previewZones = calculateAthleteHrZones({
+    method: hrZoneCalcMethod,
+    maxHr: !isNaN(maxHrNum) && maxHrNum >= 100 && maxHrNum <= 240 ? maxHrNum : 185,
+    restingHr: !isNaN(restingHrNum) && restingHrNum >= 30 && restingHrNum <= 100 ? restingHrNum : 48,
+    lthr: !isNaN(lthrNum) && lthrNum >= 100 && lthrNum <= 220 ? lthrNum : 162,
+  });
 
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
@@ -555,91 +629,241 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         </div>
       )}
 
-          {/* Tab 2: Athlete Physiology */}
+          {/* Tab 2: Athlete Physiology & Heart Rate Targets */}
           {activeTab === "physiology" && (
             <div className="space-y-3.5">
-              {/* Card 1: Custom Max HR input */}
-              <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-3 shadow-[2px_2px_0px_0px_#09090b]">
+              {/* Method Selector Segmented Tabs */}
+              <div className="p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b]">
                 <div className="flex items-center justify-between gap-2">
                   <label className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
                     <Heart className="h-4 w-4 text-rose-600 stroke-[2.5]" />
-                    <span>{t("settingsModal.maxHrCardTitle", "Max Heart Rate (HR Max)")}</span>
+                    <span>{t("settingsModal.calcMethodLabel", "Zone Calculation Method")}</span>
                   </label>
-                  {effectiveMax && (
-                    <span className="text-[10px] font-mono font-black text-rose-950 px-2 py-0.5 rounded-md bg-rose-100 border border-zinc-950">
-                      HR Max: {effectiveMax} bpm
-                    </span>
-                  )}
+                  <span className="text-[10px] font-mono font-bold text-zinc-700 uppercase px-1.5 py-0.5 rounded bg-zinc-200/70 border border-zinc-300">
+                    {hrZoneCalcMethod === "max_hr" ? "% Max HR" : hrZoneCalcMethod === "hrr" ? "Karvonen HRR" : "Joe Friel LTHR"}
+                  </span>
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={100}
-                      max={240}
-                      value={athleteMaxHr}
-                      onChange={(e) => setAthleteMaxHr(e.target.value)}
-                      placeholder={t("settingsModal.maxHrPlaceholder", "e.g. 190 (bpm)")}
-                      className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b]"
-                    />
-                    {athleteMaxHr && (
-                      <button
-                        type="button"
-                        onClick={() => setAthleteMaxHr("")}
-                        className="px-3 py-2.5 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
-                        title="Reset"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
-                    {t(
-                      "settingsModal.maxHrHelper",
-                      "Used to calculate your personalized training zone targets. Leave empty to auto-estimate from your COROS activities (Default: ~185 bpm)."
-                    )}
-                  </p>
+                <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-zinc-200/60 border border-zinc-950">
+                  <button
+                    type="button"
+                    onClick={() => setHrZoneCalcMethod("max_hr")}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-black transition-all text-center cursor-pointer ${
+                      hrZoneCalcMethod === "max_hr"
+                        ? "bg-zinc-950 text-white shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                        : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200"
+                    }`}
+                  >
+                    {t("settingsModal.methodMaxHr", "% Max HR")}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setHrZoneCalcMethod("hrr")}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-black transition-all text-center cursor-pointer ${
+                      hrZoneCalcMethod === "hrr"
+                        ? "bg-zinc-950 text-white shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                        : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200"
+                    }`}
+                  >
+                    {t("settingsModal.methodHrr", "HRR (Karvonen)")}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setHrZoneCalcMethod("lthr")}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-black transition-all text-center cursor-pointer ${
+                      hrZoneCalcMethod === "lthr"
+                        ? "bg-zinc-950 text-white shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                        : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200"
+                    }`}
+                  >
+                    {t("settingsModal.methodLthr", "LTHR (Joe Friel)")}
+                  </button>
                 </div>
               </div>
 
-              {/* Card 2: Interactive Zone Preview Breakdown */}
+              {/* Dynamic Inputs based on Method */}
+              <div className="p-4 rounded-xl bg-white border-2 border-zinc-950 space-y-3.5 shadow-[2px_2px_0px_0px_#09090b]">
+                {/* Max HR field (Required for max_hr and hrr) */}
+                {(hrZoneCalcMethod === "max_hr" || hrZoneCalcMethod === "hrr") && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
+                        <span>{t("settingsModal.maxHrCardTitle", "Max Heart Rate (HR Max)")}</span>
+                        <span className="text-rose-600 font-bold">*</span>
+                      </label>
+                      {athleteMaxHr.trim() && !isNaN(maxHrNum) && maxHrNum >= 100 && maxHrNum <= 240 && (
+                        <span className="text-[10px] font-mono font-bold text-rose-800 px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200">
+                          {maxHrNum} bpm
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={100}
+                        max={240}
+                        value={athleteMaxHr}
+                        onChange={(e) => setAthleteMaxHr(e.target.value)}
+                        placeholder={t("settingsModal.maxHrPlaceholder", "e.g. 190 (bpm)")}
+                        className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                      />
+                      {athleteMaxHr && (
+                        <button
+                          type="button"
+                          onClick={() => setAthleteMaxHr("")}
+                          className="px-3 py-2.5 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
+                          title="Reset"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
+                      {t("settingsModal.maxHrHelper", "Used to calibrate your personalized training zones. Required for % Max HR & HRR methods.")}
+                    </p>
+                  </div>
+                )}
+
+                {/* Resting HR field (Required for hrr) */}
+                {hrZoneCalcMethod === "hrr" && (
+                  <div className="space-y-1.5 pt-2 border-t border-zinc-200">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
+                        <span>{t("settingsModal.restingHrCardTitle", "Resting Heart Rate (RHR)")}</span>
+                        <span className="text-rose-600 font-bold">*</span>
+                      </label>
+                      {athleteRestingHr.trim() && !isNaN(restingHrNum) && restingHrNum >= 30 && restingHrNum <= 100 && (
+                        <span className="text-[10px] font-mono font-bold text-blue-800 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200">
+                          {restingHrNum} bpm
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={30}
+                        max={100}
+                        value={athleteRestingHr}
+                        onChange={(e) => setAthleteRestingHr(e.target.value)}
+                        placeholder={t("settingsModal.restingHrPlaceholder", "e.g. 48 (bpm)")}
+                        className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                      />
+                      {athleteRestingHr && (
+                        <button
+                          type="button"
+                          onClick={() => setAthleteRestingHr("")}
+                          className="px-3 py-2.5 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
+                          title="Reset"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
+                      {t("settingsModal.restingHrHelper", "Your true baseline resting pulse during deep sleep. Required for Karvonen HRR.")}
+                    </p>
+                  </div>
+                )}
+
+                {/* LTHR field (Required for lthr) */}
+                {hrZoneCalcMethod === "lthr" && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
+                        <span>{t("settingsModal.lthrCardTitle", "Lactate Threshold Heart Rate (LTHR)")}</span>
+                        <span className="text-rose-600 font-bold">*</span>
+                      </label>
+                      {athleteLthr.trim() && !isNaN(lthrNum) && lthrNum >= 100 && lthrNum <= 220 && (
+                        <span className="text-[10px] font-mono font-bold text-amber-800 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200">
+                          {lthrNum} bpm
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={100}
+                        max={220}
+                        value={athleteLthr}
+                        onChange={(e) => setAthleteLthr(e.target.value)}
+                        placeholder={t("settingsModal.lthrPlaceholder", "e.g. 168 (bpm)")}
+                        className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                      />
+                      {athleteLthr && (
+                        <button
+                          type="button"
+                          onClick={() => setAthleteLthr("")}
+                          className="px-3 py-2.5 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
+                          title="Reset"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
+                      {t("settingsModal.lthrHelper", "Your 30–60 min all-out time-trial threshold heart rate. Required for LTHR method.")}
+                    </p>
+                  </div>
+                )}
+
+                {/* Validation Error Banner */}
+                {hrValidationError && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-bold shadow-[1.5px_1.5px_0px_0px_#f43f5e]">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 stroke-[2.5]" />
+                    <span>{hrValidationError}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Interactive Zone Preview Card */}
               <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b]">
                 <div className="flex items-center justify-between text-xs font-black text-zinc-950">
                   <span>{language === "en" ? "Calculated Training Zones:" : "Kalkulasi Zona Latihan:"}</span>
                   <span className="text-[10px] font-mono text-zinc-500 font-bold">
-                    {effectiveMax ? `Based on ${effectiveMax} bpm` : (language === "en" ? "Default Baseline (~185 bpm)" : "Estimasi Baseline (~185 bpm)")}
+                    {hrZoneCalcMethod === "max_hr" && (athleteMaxHr ? `${maxHrNum} bpm Max` : "Preview")}
+                    {hrZoneCalcMethod === "hrr" && (athleteMaxHr && athleteRestingHr ? `Max ${maxHrNum} • Rest ${restingHrNum}` : "Preview")}
+                    {hrZoneCalcMethod === "lthr" && (athleteLthr ? `LTHR ${lthrNum} bpm` : "Preview")}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                   <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-950/20 space-y-0.5">
                     <div className="text-[10px] font-sans font-bold text-emerald-800 uppercase">Zone 1 (Recovery)</div>
-                    <div className="font-black text-emerald-950">&lt; 72% Max HR</div>
-                    <div className="text-[11px] text-emerald-700 font-bold">&lt; {Math.round(calcHr * 0.72)} bpm</div>
+                    <div className="font-black text-emerald-950">{previewZones.zones[0].pctLabel}</div>
+                    <div className="text-[11px] text-emerald-700 font-bold">&lt; {previewZones.z1Max} bpm</div>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-950/20 space-y-0.5">
                     <div className="text-[10px] font-sans font-bold text-blue-800 uppercase">Zone 2 (Aerobic Base)</div>
-                    <div className="font-black text-blue-950">68% – 78% Max HR</div>
+                    <div className="font-black text-blue-950">{previewZones.zones[1].pctLabel}</div>
                     <div className="text-[11px] text-blue-700 font-bold">
-                      {Math.round(calcHr * 0.68)} – {Math.round(calcHr * 0.78)} bpm
+                      {previewZones.z2Min} – {previewZones.z2Max} bpm
                     </div>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-950/20 space-y-0.5">
-                    <div className="text-[10px] font-sans font-bold text-amber-800 uppercase">Zone 3 (Tempo)</div>
-                    <div className="font-black text-amber-950">72% – 82% Max HR</div>
+                    <div className="text-[10px] font-sans font-bold text-amber-800 uppercase">Zone 3 (Tempo / Grey)</div>
+                    <div className="font-black text-amber-950">{previewZones.zones[2].pctLabel}</div>
                     <div className="text-[11px] text-amber-700 font-bold">
-                      {Math.round(calcHr * 0.72)} – {Math.round(calcHr * 0.82)} bpm
+                      {previewZones.z3Min} – {previewZones.z3Max} bpm
                     </div>
                   </div>
 
-                  <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-950/20 space-y-0.5">
-                    <div className="text-[10px] font-sans font-bold text-rose-800 uppercase">Zone 4/5 (Speed)</div>
-                    <div className="font-black text-rose-950">&gt; 85% Max HR</div>
+                  <div className="p-2.5 rounded-lg bg-orange-50 border border-orange-950/20 space-y-0.5">
+                    <div className="text-[10px] font-sans font-bold text-orange-800 uppercase">Zone 4 (Threshold)</div>
+                    <div className="font-black text-orange-950">{previewZones.zones[3].pctLabel}</div>
+                    <div className="text-[11px] text-orange-700 font-bold">
+                      {previewZones.z4Min} – {previewZones.z4Max} bpm
+                    </div>
+                  </div>
+
+                  <div className="col-span-2 p-2.5 rounded-lg bg-rose-50 border border-rose-950/20 space-y-0.5">
+                    <div className="text-[10px] font-sans font-bold text-rose-800 uppercase">Zone 5 (VO2Max / Anaerobic)</div>
+                    <div className="font-black text-rose-950">{previewZones.zones[4].pctLabel}</div>
                     <div className="text-[11px] text-rose-700 font-bold">
-                      {Math.round(calcHr * 0.85)}+ bpm
+                      {previewZones.z5Min}+ bpm
                     </div>
                   </div>
                 </div>
@@ -664,8 +888,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="w-full sm:w-auto px-5 py-2 text-xs font-black rounded-xl bg-orange-500 hover:bg-orange-600 text-white border-2 border-zinc-950 transition-all shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50"
+              disabled={saving || (activeTab === "physiology" && !isHrValid)}
+              className="w-full sm:w-auto px-5 py-2 text-xs font-black rounded-xl bg-orange-500 hover:bg-orange-600 text-white border-2 border-zinc-950 transition-all shadow-[2px_2px_0px_0px_#09090b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? t("common.saving", "Saving...") : t("settingsModal.saveButton", "Save Configuration")}
             </button>
