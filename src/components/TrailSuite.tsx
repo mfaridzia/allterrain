@@ -1435,7 +1435,13 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             <div className="flex items-center justify-between text-[10px] text-zinc-600 font-bold">
               <span>Mountain Specificity</span>
               <span className="font-black text-cyan-800">
-                {vertWindow === "this_week" ? "Road Base" : "Trail & Road"}
+                {currentDensity >= 65
+                  ? (language === "en" ? "Alpine / High Vert" : "Gunung Curam / Alpine")
+                  : currentDensity >= 35
+                  ? (language === "en" ? "Mountain Trail" : "Trail Berbukit")
+                  : currentDensity >= 15
+                  ? (language === "en" ? "Rolling Hills" : "Berbukit Ringan")
+                  : (language === "en" ? "Road Base" : "Dasar Jalan Datar")}
               </span>
             </div>
             <div className="text-2xl font-black text-zinc-950 font-mono">
@@ -1445,13 +1451,13 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
               </span>
             </div>
             <p className="text-[10px] text-zinc-600 font-medium">
-              {vertWindow === "this_week"
+              {currentDensity >= 35
                 ? language === "en"
-                  ? "Dominant flat road running (6 m/km). Trail-specific: 85 m/km."
-                  : "Dominan lari aspal datar (6 m/km). Khusus rute trail: 85 m/km."
+                  ? `Solid vert training (+${currentGain}m D+ in ${currentDist} km). Trail-specific: ${trailOnlyDensity || currentDensity} m/km.`
+                  : `Latihan elevasi solid (+${currentGain}m D+ dalam ${currentDist} km). Khusus rute trail: ${trailOnlyDensity || currentDensity} m/km.`
                 : language === "en"
-                  ? "Combined road runs and 2 West Lombok trail sessions (+972m D+)."
-                  : "Kombinasi lari aspal dan 2 sesi trail Lombok Barat (+972m D+)."}
+                  ? `Dominant flat road running (+${currentGain}m D+ in ${currentDist} km). Trail-specific: ${trailOnlyDensity || currentDensity} m/km.`
+                  : `Dominan lari aspal datar (+${currentGain}m D+ dalam ${currentDist} km). Khusus rute trail: ${trailOnlyDensity || currentDensity} m/km.`}
             </p>
           </div>
         </div>
