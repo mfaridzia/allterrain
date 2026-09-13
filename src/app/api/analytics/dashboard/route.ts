@@ -303,11 +303,15 @@ export async function GET(req: NextRequest) {
     const elevGain = Number(act.elevation_gain || 0);
 
     let tss = 0;
-    if (act.sport_type === "strength" || distM <= 0) {
+    const sport = String(act.sport_type || "").toLowerCase();
+    const isCycling = sport.includes("bike") || sport.includes("cycling");
+    const isStrengthOrCardio = sport === "strength" || sport === "cardio" || sport === "gym" || sport === "crossfit" || distM <= 0;
+
+    if (isStrengthOrCardio) {
       const thresholdHr = effectiveLthr;
       const hrIf = avgHr / thresholdHr;
       tss = Math.max(5, Math.min(250, Math.round(100 * durHours * Math.pow(hrIf, 2))));
-    } else if (act.sport_type === "bike") {
+    } else if (isCycling) {
       const thresholdHr = effectiveLthr;
       const hrIf = avgHr / thresholdHr;
       tss = Math.max(5, Math.min(350, Math.round(100 * durHours * Math.pow(hrIf, 2))));
