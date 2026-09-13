@@ -77,13 +77,13 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
   avgVam,
   trailActivitiesCount,
   flatMarathonPaceSec = 318, // 5:18 min/km from COROS FM prediction (3:43:35)
-  thisWeekGain = 120,
-  thisWeekDistanceKm = 20,
-  thisWeekDensity = 6,
-  rolling7dGain = 1152,
-  rolling7dDistanceKm = 43.7,
-  rolling7dDensity = 26.4,
-  trailOnlyDensity = 85,
+  thisWeekGain = 0,
+  thisWeekDistanceKm = 0,
+  thisWeekDensity = 0,
+  rolling7dGain = 0,
+  rolling7dDistanceKm = 0,
+  rolling7dDensity = 0,
+  trailOnlyDensity = 0,
   savedTargetRaceDist,
   savedTargetRaceElev,
   savedWeeklyVertTarget,
@@ -1364,11 +1364,11 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
               <p className="text-[11px] font-medium text-zinc-600">
                 {vertWindow === "this_week"
                   ? language === "en"
-                    ? "This week (Mon to Now): 2 road sessions in Central Lombok (+120m D+)"
-                    : "Minggu ini (Senin s/d Sekarang): 2 sesi road di Lombok Tengah (+120m D+)"
+                    ? `This week (Mon to Now): +${currentGain.toLocaleString()}m D+ (${currentDist} km)`
+                    : `Minggu ini (Senin s/d Sekarang): +${currentGain.toLocaleString()}m D+ (${currentDist} km)`
                   : language === "en"
-                    ? "Rolling 7 Days: Including 2 West Lombok Trail sessions (+1,152m D+)"
-                    : "7 Hari Bergulir: Termasuk 2 sesi Lombok Barat Trail (+1.152m D+)"}
+                    ? `Rolling 7 Days: +${currentGain.toLocaleString()}m D+ (${currentDist} km)`
+                    : `7 Hari Bergulir: +${currentGain.toLocaleString()}m D+ (${currentDist} km)`}
               </p>
             </div>
           </div>
@@ -1385,7 +1385,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             >
               {language === "en"
                 ? "This Week (Mon-Now)"
-                : "Minggu Ini (Senin-Kms)"}
+                : "Minggu Ini (Senin-Sekarang)"}
             </button>
             <button
               onClick={() => setVertWindow("rolling_7d")}

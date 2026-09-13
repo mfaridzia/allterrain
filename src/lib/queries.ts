@@ -30,13 +30,14 @@ export function useDashboardData() {
     queryFn: async () => {
       const res = await fetch("/api/analytics/dashboard", {
         headers: getSessionHeaders(),
+        cache: "no-store",
       });
       if (!res.ok) {
         throw new Error(`Failed to fetch dashboard: ${res.status}`);
       }
       return res.json();
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 1000,
   });
 }
 

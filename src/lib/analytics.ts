@@ -2069,7 +2069,8 @@ export function calculateWeeklyZoneProgression(
   }>,
   lthr: number = 162,
   maxWeeks: number = 12,
-  zones?: AthleteHrZones
+  zones?: AthleteHrZones,
+  userTimezone: string = "Asia/Jakarta"
 ): WeeklyZoneProgressionResult {
   if (!activities || activities.length === 0) {
     return {
@@ -2095,9 +2096,21 @@ export function calculateWeeklyZoneProgression(
     };
   }
 
-  // Helper to get ISO week Monday date and key
+  // Helper to get ISO week Monday date and key in athlete's timezone
   const getWeekMeta = (timestamp: number) => {
-    const d = new Date(timestamp);
+    let dStr = "";
+    try {
+      dStr = new Intl.DateTimeFormat("en-CA", {
+        timeZone: userTimezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date(timestamp));
+    } catch {
+      dStr = new Date(timestamp).toISOString().split("T")[0];
+    }
+    const [y, m, dayNum] = dStr.split("-").map(Number);
+    const d = new Date(Date.UTC(y, m - 1, dayNum));
     const day = d.getUTCDay() || 7;
     // Set to Monday of this week
     const monday = new Date(d);

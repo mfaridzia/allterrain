@@ -15,6 +15,9 @@ import {
   PmcPoint,
 } from "@/lib/analytics";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   const athleteId = await getCurrentAthleteId(req);
   let token = athleteId ? await getCorosToken(athleteId) : null;
@@ -170,16 +173,30 @@ export async function GET(req: NextRequest) {
   let totalDecouplingSum = 0;
   let totalDecouplingCount = 0;
 
-  // Date boundaries for real weekly vert and specificity
-  const now = Date.now();
-  const todayDate = new Date();
-  const dayOfWeek = todayDate.getDay();
-  const distanceToMonday = (dayOfWeek + 6) % 7;
-  const startOfWeek = new Date(todayDate);
-  startOfWeek.setDate(todayDate.getDate() - distanceToMonday);
-  startOfWeek.setHours(0, 0, 0, 0);
-  const startOfWeekTs = startOfWeek.getTime();
-  const rolling7dTs = now - 7 * 86400 * 1000;
+  // Generate full continuous calendar days sequence for Standard rTSS & Weekly windows in athlete's timezone
+  const userTimezone = getRequestTimezone(req);
+  const localTodayStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: userTimezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  // Week boundaries (Monday to Sunday) in athlete's timezone
+  const [tY, tM, tD] = localTodayStr.split("-").map(Number);
+  const todayUtcRef = new Date(Date.UTC(tY, tM - 1, tD));
+  const dayOfWeek = todayUtcRef.getUTCDay() || 7; // 1 = Mon, 7 = Sun
+  const mondayUtc = new Date(todayUtcRef);
+  mondayUtc.setUTCDate(todayUtcRef.getUTCDate() - dayOfWeek + 1);
+  const sundayUtc = new Date(mondayUtc);
+  sundayUtc.setUTCDate(mondayUtc.getUTCDate() + 6);
+
+  const thisWeekMondayStr = mondayUtc.toISOString().split("T")[0];
+  const thisWeekSundayStr = sundayUtc.toISOString().split("T")[0];
+
+  const rolling7dUtc = new Date(todayUtcRef);
+  rolling7dUtc.setUTCDate(todayUtcRef.getUTCDate() - 6);
+  const rolling7dStartStr = rolling7dUtc.toISOString().split("T")[0];
 
   let thisWeekGain = 0;
   let thisWeekDistM = 0;
@@ -193,6 +210,12 @@ export async function GET(req: NextRequest) {
     const gain = Number(act.elevation_gain || 0);
     const dist = Number(act.distance_meters || 0);
     const startTime = Number(act.start_time || 0);
+    const actDate = new Intl.DateTimeFormat("en-CA", {
+      timeZone: userTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(startTime));
     const dur = Number(act.duration_seconds || 1800);
     const avgHr = Number(act.avg_hr || 0);
     const actMaxHr = Number(act.max_hr || 0);
@@ -204,11 +227,11 @@ export async function GET(req: NextRequest) {
     totalElevationGain += gain;
     totalElevationLoss += Number(act.elevation_loss || 0);
 
-    if (startTime >= startOfWeekTs) {
+    if (actDate >= thisWeekMondayStr && actDate <= thisWeekSundayStr) {
       thisWeekGain += gain;
       thisWeekDistM += dist;
     }
-    if (startTime >= rolling7dTs) {
+    if (actDate >= rolling7dStartStr && actDate <= localTodayStr) {
       rolling7dGain += gain;
       rolling7dDistM += dist;
     }
@@ -272,14 +295,6 @@ export async function GET(req: NextRequest) {
     } catch {}
   }
 
-  // Generate full continuous calendar days sequence for Standard rTSS
-  const userTimezone = getRequestTimezone(req);
-  const localTodayStr = new Intl.DateTimeFormat("en-CA", {
-    timeZone: userTimezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
 
   // Compute Standard rTSS Mode from activities (Functional Threshold Pace from 10K / 1-hour race pace)
   const thresholdPaceSec = racePredictor?.tenKmSeconds
@@ -482,7 +497,8 @@ export async function GET(req: NextRequest) {
     })),
     effectiveLthr,
     14,
-    athleteHrZones
+    athleteHrZones,
+    userTimezone
   );
 
   return NextResponse.json({
@@ -544,5 +560,11 @@ export async function GET(req: NextRequest) {
       aerobicTe: Number(a.aerobic_te || 0),
       anaerobicTe: Number(a.anaerobic_te || 0),
     })),
+  }, {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
   });
 }
