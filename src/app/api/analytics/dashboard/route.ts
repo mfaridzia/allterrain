@@ -281,8 +281,12 @@ export async function GET(req: NextRequest) {
     day: "2-digit",
   }).format(new Date());
 
-  // Compute Standard rTSS Mode from activities
-  const thresholdPaceSec = racePredictor?.fiveKmSeconds ? 282 : 282; // 4:42 /km
+  // Compute Standard rTSS Mode from activities (Functional Threshold Pace from 10K / 1-hour race pace)
+  const thresholdPaceSec = racePredictor?.tenKmSeconds
+    ? Math.round(racePredictor.tenKmSeconds / 10)
+    : racePredictor?.fiveKmSeconds
+    ? Math.round((racePredictor.fiveKmSeconds / 5) * 1.06)
+    : 300; // default 5:00 /km
   const dailyRtssMap = new Map<string, number>();
 
   for (const act of activities) {
@@ -300,11 +304,11 @@ export async function GET(req: NextRequest) {
 
     let tss = 0;
     if (act.sport_type === "strength" || distM <= 0) {
-      const thresholdHr = 162;
+      const thresholdHr = effectiveLthr;
       const hrIf = avgHr / thresholdHr;
       tss = Math.max(5, Math.min(250, Math.round(100 * durHours * Math.pow(hrIf, 2))));
     } else if (act.sport_type === "bike") {
-      const thresholdHr = 162;
+      const thresholdHr = effectiveLthr;
       const hrIf = avgHr / thresholdHr;
       tss = Math.max(5, Math.min(350, Math.round(100 * durHours * Math.pow(hrIf, 2))));
     } else {
@@ -351,7 +355,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const intervalsPmc: PmcPoint[] = calculatePmcSeries(intervalsDailyLoads, 48, 48);
+  const intervalsPmc: PmcPoint[] = calculatePmcSeries(intervalsDailyLoads);
   const latestIntervals = intervalsPmc[intervalsPmc.length - 1] || null;
   const intervalsTsb = latestIntervals?.tsb || 1;
   const intervalsFormZone = classifyFormZone(intervalsTsb);
@@ -407,32 +411,35 @@ export async function GET(req: NextRequest) {
       acwr: Number(d.acwr || 1.0),
     })),
     scaleLabel: "COROS Load (TRIMP)",
-    scaleDescription: "Heart-rate impulse scale matching your COROS watch screen (Base Fitness ~115).",
+    scaleDescription: `Heart-rate impulse scale matching your COROS watch screen (Base Fitness: ${Math.round(ctl)}).`,
   };
 
   const intervalsTodayLoad = latestIntervals?.load || 0;
   const intervalsReadiness = calculateTrainingReadiness({
-    ctl: latestIntervals?.ctl || 48,
-    atl: latestIntervals?.atl || 47,
+    ctl: latestIntervals?.ctl ?? 0,
+    atl: latestIntervals?.atl ?? 0,
     tsb: intervalsTsb,
     todayLoad: intervalsTodayLoad,
     acwr: intervalsAcwr.acwr,
     recoveryScore: Number(latestDaily?.recovery_score || 82),
     hrvStatus: String(latestDaily?.hrv_status || "NORMAL"),
     sleepHours: latestDaily?.sleep_duration_seconds ? Number(latestDaily.sleep_duration_seconds) / 3600 : 7.5,
-    rampRate: latestIntervals?.rampRate || 0.6,
+    rampRate: latestIntervals?.rampRate ?? 0,
     athleteMaxHr: effectiveMaxHr,
     athleteHrZones,
   });
 
+  const intervalsPaceMin = Math.floor(thresholdPaceSec / 60);
+  const intervalsPaceSec = (thresholdPaceSec % 60).toString().padStart(2, "0");
+
   const intervalsModeData = {
     current: {
       date: String(latestDaily?.date || new Date().toISOString().split("T")[0]),
-      ctl: latestIntervals?.ctl || 48,
-      atl: latestIntervals?.atl || 47,
+      ctl: latestIntervals?.ctl ?? 0,
+      atl: latestIntervals?.atl ?? 0,
       tsb: intervalsTsb,
-      formPct: latestIntervals?.formPct || 2.1,
-      rampRate: latestIntervals?.rampRate || 0.6,
+      formPct: latestIntervals?.formPct ?? 0,
+      rampRate: latestIntervals?.rampRate ?? 0,
       formZone: intervalsFormZone,
       recoveryScore: Number(latestDaily?.recovery_score || 82),
       hrvRmssd: Number(latestDaily?.hrv_rmssd || 68),
@@ -456,7 +463,7 @@ export async function GET(req: NextRequest) {
       acwr: intervalsAcwr.acwr,
     })),
     scaleLabel: "Standard rTSS",
-    scaleDescription: "Threshold pace/power scale calibrated to Coggan rTSS model (Threshold: 4:42 /km).",
+    scaleDescription: `Threshold pace/power scale calibrated to Coggan rTSS model (Threshold: ${intervalsPaceMin}:${intervalsPaceSec} /km).`,
   };
 
   const weeklyZoneProgression = calculateWeeklyZoneProgression(

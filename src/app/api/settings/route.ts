@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  const detectedMaxHr = Number(maxHrRes.rows[0]?.peak_max_hr) || 192;
+  const detectedMaxHr = Number(maxHrRes.rows[0]?.peak_max_hr) || 185;
   const detectedRestingHr = Number(rhrRes.rows[0]?.avg_rhr) || 50;
   const detectedLthr = Math.round(detectedMaxHr * 0.88);
 

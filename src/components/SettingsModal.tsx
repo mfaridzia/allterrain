@@ -239,7 +239,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   };
 
-  const detectedMaxHr = Number(settingsData?.detectedMaxHr) || 192;
+  const detectedMaxHr = Number(settingsData?.detectedMaxHr) || 185;
   const detectedRestingHr = Number(settingsData?.detectedRestingHr) || 50;
   const detectedLthr = Number(settingsData?.detectedLthr) || Math.round(detectedMaxHr * 0.88);
 
