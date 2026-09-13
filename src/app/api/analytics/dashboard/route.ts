@@ -144,8 +144,153 @@ export async function GET(req: NextRequest) {
     lthr: effectiveLthr,
   });
 
-  // 3. Current Summary
-  const latestDaily = dailyRows[dailyRows.length - 1] || null;
+  // Athlete timezone resolution
+  const userTimezone = getRequestTimezone(req);
+  const localTodayStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: userTimezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  // 3. Group activity loads by localized calendar date in athlete's timezone
+  const dailyCorosLoadMap = new Map<string, number>();
+  for (const act of activities) {
+    const startTime = Number(act.start_time || 0);
+    const dStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: userTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(startTime));
+    dailyCorosLoadMap.set(dStr, (dailyCorosLoadMap.get(dStr) || 0) + Number(act.training_load || 0));
+  }
+
+  // Self-healing check: verify if stored daily_metrics matches activity dates in user timezone
+  const recentDaysToCheck = 7;
+  const recentDailySlice = dailyRows.slice(-recentDaysToCheck);
+  const hasDiscrepancy =
+    recentDailySlice.some((d) => {
+      const dStr = String(d.date);
+      const actLoad = dailyCorosLoadMap.get(dStr) || 0;
+      return Number(d.training_load || 0) !== actLoad;
+    }) || (dailyRows.length > 0 && String(dailyRows[dailyRows.length - 1].date) < localTodayStr);
+
+  let effectiveDailyRows = dailyRows;
+
+  if (hasDiscrepancy && (activities.length > 0 || dailyRows.length > 0)) {
+    const earliestTime = activities.length > 0 ? Number(activities[activities.length - 1].start_time || Date.now()) : Date.now();
+    const startCalStr = dailyRows.length > 0 ? String(dailyRows[0].date) : new Intl.DateTimeFormat("en-CA", {
+      timeZone: userTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(earliestTime));
+
+    const latestDailyDate = dailyRows.length > 0 ? String(dailyRows[dailyRows.length - 1].date) : localTodayStr;
+    const targetEndStr = latestDailyDate > localTodayStr ? latestDailyDate : localTodayStr;
+
+    const continuousLoads: { date: string; load: number }[] = [];
+    let cur = new Date(`${startCalStr}T00:00:00Z`);
+    const endLimit = new Date(`${targetEndStr}T00:00:00Z`);
+
+    while (cur <= endLimit) {
+      const dStr = cur.toISOString().split("T")[0];
+      continuousLoads.push({
+        date: dStr,
+        load: dailyCorosLoadMap.get(dStr) || 0,
+      });
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+
+    const initialCtl = Number(dailyRows[0]?.ctl || 115);
+    const initialAtl = Number(dailyRows[0]?.atl || 106);
+    const reconciledPmc = calculatePmcSeries(continuousLoads, initialCtl, initialAtl);
+
+    const dailyMetricsMap = new Map<string, any>();
+    for (const d of dailyRows) {
+      dailyMetricsMap.set(String(d.date), d);
+    }
+
+    let lastKnownSleep = 25200;
+    let lastKnownRhr = effectiveRestingHr;
+    let lastKnownHrv = 68;
+    let lastKnownRecovery = 80;
+
+    effectiveDailyRows = reconciledPmc.map((p, idx) => {
+      const existing = dailyMetricsMap.get(p.date);
+      if (existing?.sleep_duration_seconds) lastKnownSleep = Number(existing.sleep_duration_seconds);
+      if (existing?.resting_hr) lastKnownRhr = Number(existing.resting_hr);
+      if (existing?.hrv_rmssd) lastKnownHrv = Number(existing.hrv_rmssd);
+      if (existing?.recovery_score) lastKnownRecovery = Number(existing.recovery_score);
+
+      const pastSlice = reconciledPmc.slice(0, idx + 1).map((x) => ({ date: x.date, load: x.load }));
+      const acwrVal = calculateAcwr(pastSlice).acwr;
+
+      return {
+        date: p.date,
+        training_load: p.load,
+        ctl: p.ctl,
+        atl: p.atl,
+        tsb: p.tsb,
+        form_pct: p.formPct,
+        ramp_rate: p.rampRate,
+        acwr: acwrVal,
+        hrv_rmssd: existing?.hrv_rmssd ?? lastKnownHrv,
+        hrv_status: existing?.hrv_status ?? (lastKnownHrv >= 60 ? "NORMAL" : "MODERATE"),
+        resting_hr: existing?.resting_hr ?? lastKnownRhr,
+        sleep_duration_seconds: existing?.sleep_duration_seconds ?? lastKnownSleep,
+        recovery_score: existing?.recovery_score ?? lastKnownRecovery,
+      };
+    });
+
+    // Auto-update remote/local database in background with reconciled data
+    (async () => {
+      try {
+        const batchStatements = effectiveDailyRows.map((r) => ({
+          sql: `
+            INSERT INTO daily_metrics (
+              date, athlete_id, training_load, ctl, atl, tsb, form_pct,
+              ramp_rate, acwr, hrv_rmssd, hrv_status, resting_hr,
+              sleep_duration_seconds, recovery_score, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(date, athlete_id) DO UPDATE SET
+              training_load = excluded.training_load,
+              ctl = excluded.ctl,
+              atl = excluded.atl,
+              tsb = excluded.tsb,
+              form_pct = excluded.form_pct,
+              ramp_rate = excluded.ramp_rate,
+              acwr = excluded.acwr,
+              created_at = excluded.created_at
+          `,
+          args: [
+            r.date,
+            athleteId,
+            r.training_load,
+            r.ctl,
+            r.atl,
+            r.tsb,
+            r.form_pct,
+            r.ramp_rate,
+            r.acwr,
+            r.hrv_rmssd,
+            r.hrv_status,
+            r.resting_hr,
+            r.sleep_duration_seconds,
+            r.recovery_score,
+            Date.now(),
+          ],
+        }));
+        await db.batch(batchStatements);
+      } catch (dbErr) {
+        console.warn("Background auto-reconciliation DB write notice:", dbErr);
+      }
+    })();
+  }
+
+  // 4. Current Summary
+  const latestDaily = effectiveDailyRows[effectiveDailyRows.length - 1] || null;
   const tsb = Number(latestDaily?.tsb || 0);
   const formZone = classifyFormZone(tsb);
   const ctl = Number(latestDaily?.ctl || 0);
@@ -153,11 +298,11 @@ export async function GET(req: NextRequest) {
   const rampRate = Number(latestDaily?.ramp_rate || 0);
 
   // ACWR
-  const pastDaysForAcwr = dailyRows.map((d) => ({ date: String(d.date), load: Number(d.training_load || 0) }));
+  const pastDaysForAcwr = effectiveDailyRows.map((d) => ({ date: String(d.date), load: Number(d.training_load || 0) }));
   const acwrData = calculateAcwr(pastDaysForAcwr);
 
   // Monotony & Strain (past 7 days)
-  const past7Loads = dailyRows.slice(-7).map((d) => Number(d.training_load || 0));
+  const past7Loads = effectiveDailyRows.slice(-7).map((d) => Number(d.training_load || 0));
   const monotonyData = calculateMonotonyAndStrain(past7Loads);
 
   // Training Intensity Distribution (TID) from activities
@@ -172,15 +317,6 @@ export async function GET(req: NextRequest) {
   let totalVamCount = 0;
   let totalDecouplingSum = 0;
   let totalDecouplingCount = 0;
-
-  // Generate full continuous calendar days sequence for Standard rTSS & Weekly windows in athlete's timezone
-  const userTimezone = getRequestTimezone(req);
-  const localTodayStr = new Intl.DateTimeFormat("en-CA", {
-    timeZone: userTimezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
 
   // Week boundaries (Monday to Sunday) in athlete's timezone
   const [tY, tM, tD] = localTodayStr.split("-").map(Number);
@@ -349,7 +485,7 @@ export async function GET(req: NextRequest) {
     dailyRtssMap.set(dStr, (dailyRtssMap.get(dStr) || 0) + tss);
   }
 
-  const latestDailyDate = dailyRows.length > 0 ? String(dailyRows[dailyRows.length - 1].date) : localTodayStr;
+  const latestDailyDate = effectiveDailyRows.length > 0 ? String(effectiveDailyRows[effectiveDailyRows.length - 1].date) : localTodayStr;
   const targetEndStr = latestDailyDate > localTodayStr ? latestDailyDate : localTodayStr;
 
   const intervalsDailyLoads: { date: string; load: number }[] = [];
@@ -382,7 +518,7 @@ export async function GET(req: NextRequest) {
   const intervalsPast7 = intervalsPmc.slice(-7).map((p: PmcPoint) => p.load);
   const intervalsMonotony = calculateMonotonyAndStrain(intervalsPast7);
 
-  const todayRow = dailyRows.find((d) => String(d.date) === localTodayStr);
+  const todayRow = effectiveDailyRows.find((d) => String(d.date) === localTodayStr);
   const effectiveTodayLoad = todayRow ? Number(todayRow.training_load || 0) : Number(latestDaily?.training_load || 0);
 
   const corosReadiness = calculateTrainingReadiness({
@@ -419,7 +555,7 @@ export async function GET(req: NextRequest) {
     acwr: acwrData,
     monotony: monotonyData,
     readiness: corosReadiness,
-    pmcSeries: dailyRows.map((d) => ({
+    pmcSeries: effectiveDailyRows.map((d) => ({
       date: String(d.date),
       load: Number(d.training_load || 0),
       ctl: Number(d.ctl || 0),
