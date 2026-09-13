@@ -24,7 +24,9 @@ export type MetricTerm =
   | "ads"
   | "cumulative_gain"
   | "cumulative_loss"
-  | "readiness";
+  | "readiness"
+  | "trail_race_mode"
+  | "trail_conservative_mode";
 
 export interface MetricDefinition {
   title: string;
@@ -196,6 +198,22 @@ export const METRIC_GLOSSARY: Record<MetricTerm, MetricDefinition> = {
     sweetSpot: "Ikuti rekomendasi Active Recovery pasca sesi berat (TL ≥ 80) agar adaptasi glikogen dan otot tercapai maksimal tanpa risiko cedera.",
     source: "Banister (1991), Coggan & Allen (2010), Gabbett (2016 BJSM), Plews et al. (2013)",
   },
+  trail_race_mode: {
+    title: "Race Target Finish Time (Race Mode)",
+    subtitle: "Pacing Lomba Berbasis Ambang Aerobik & Trekking Poles",
+    definition:
+      "Prediksi kompetisi optimal dengan formula Adaptive Split-Segment: Total = T_nanjak + T_turun + T_datar + T_pos. Tanjakan menggunakan rata-rata VAM riil COROS Anda dinaikkan 35% (efisiensi poles & taper) dengan koreksi kelelahan Peter Riegel, turunan agresif (1.500–1.650 m/h), dan jeda efisien di water station (20 detik/km).",
+    sweetSpot: "Target ideal jika mengejar Cut-Off Time (COT) atau mengincar target waktu kompetisi.",
+    source: "Minetti et al. (2002) Gradient Cost, Giovanelli (2016) VAM, & Peter Riegel (1981)",
+  },
+  trail_conservative_mode: {
+    title: "Conservative Finisher Time (Base Z2)",
+    subtitle: "Pacing Santai Bertahan Berbasis Zona 2 Rendah",
+    definition:
+      "Prediksi waktu 'Survive & Finish' dengan denyut jantung tetap di Zona 1–2 (Fat-Max) untuk mencegah kram & bonking. Menanjak pada baseline VAM riil tanpa dipaksa, turunan defensif (1.200–1.350 m/h) guna melindungi sendi lutut dari benturan eksentrik, serta jeda istirahat pos yang leluasa (40 detik/km).",
+    sweetSpot: "Strategi terbaik untuk debut ultra marathon, rute teknikal berbatu lepas, atau cuaca ekstrem.",
+    source: "Millet et al. (2011) Eccentric Fatigue & Kilian Jornet Base Pacing Model",
+  },
 };
 
 export const METRIC_GLOSSARY_EN: Record<MetricTerm, MetricDefinition> = {
@@ -359,6 +377,22 @@ export const METRIC_GLOSSARY_EN: Record<MetricTerm, MetricDefinition> = {
       "Deterministic calculation combining TSB Form (Bannister), safe load ceilings (Gabbett ACWR Governor), and autonomic recovery. Guides optimal target load, duration, and intensity zone for the next day.",
     sweetSpot: "Adhere to Active Recovery recommendations following hard sessions (TL >= 80) to maximize adaptation and minimize injury risk.",
     source: "Bannister (1991), Coggan & Allen (2010), Gabbett (2016 BJSM), Plews et al. (2013)",
+  },
+  trail_race_mode: {
+    title: "Race Target Finish Time (Race Mode)",
+    subtitle: "Physiological Race Target Pacing Model",
+    definition:
+      "Optimal competitive finish projection using the Adaptive Split-Segment formula: Total = T_uphill + T_downhill + T_flat + T_aid. Climbing speed scales your real historical COROS VAM by +35% (poles & race taper efficiency) with Peter Riegel ultra fatigue decay, aggressive descent (1,500–1,650 m/h), and swift aid station stops (20s/km).",
+    sweetSpot: "Ideal benchmark for beating tight Cut-Off Times (COT) or age-group targets with disciplined fueling.",
+    source: "Minetti et al. (2002) Gradient Cost, Giovanelli (2016) VAM, & Peter Riegel (1981)",
+  },
+  trail_conservative_mode: {
+    title: "Conservative Finisher Time (Base Z2)",
+    subtitle: "Low Z2 Aerobic Base & Safe Finish Model",
+    definition:
+      "Safe 'Survive & Finish' projection keeping heart rate strictly within Zones 1-2 (Fat-Max) to eliminate bonking risk. Ascends at your natural unamplified COROS baseline VAM, descends conservatively (1,200–1,350 m/h) to protect quadriceps and knee joints from eccentric damage, with relaxed aid station buffers (40s/km).",
+    sweetSpot: "Best strategy for ultra debuts, extreme weather, or loose volcanic scree terrain.",
+    source: "Millet et al. (2011) Neuromuscular Fatigue in Ultra & Kilian Jornet Base Pacing",
   },
 };
 

@@ -523,11 +523,16 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[11px] text-zinc-600 block font-bold uppercase tracking-wider">
-                  {pacingMode === "race_target"
-                    ? (language === "en" ? "Race Target Finish Time" : "Target Waktu Lomba (Race Target)")
-                    : (language === "en" ? "Conservative Finisher Time" : "Waktu Finisher Aman (Konservatif)")}
-                </span>
+                <MetricTooltip
+                  term={pacingMode === "race_target" ? "trail_race_mode" : "trail_conservative_mode"}
+                  className="w-fit"
+                >
+                  <span className="text-[11px] text-zinc-600 block font-bold uppercase tracking-wider underline decoration-dotted decoration-zinc-400 cursor-help">
+                    {pacingMode === "race_target"
+                      ? (language === "en" ? "Race Target Finish Time" : "Target Waktu Lomba (Race Target)")
+                      : (language === "en" ? "Conservative Finisher Time" : "Waktu Finisher Aman (Konservatif)")}
+                  </span>
+                </MetricTooltip>
                 <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border border-zinc-950 ${
                   pacingMode === "race_target" ? "bg-cyan-200 text-cyan-950" : "bg-emerald-200 text-emerald-950"
                 }`}>
