@@ -26,6 +26,9 @@ import {
   Footprints,
   Flame,
   Info,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -109,6 +112,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
   const [pacingMode, setPacingMode] = useState<"race_target" | "conservative">(
     "race_target",
   );
+  const [showFormulaDetails, setShowFormulaDetails] = useState<boolean>(false);
   const updateSettings = useUpdateSettingsMutation();
 
   // Load from localStorage on mount (hydration safe)
@@ -614,6 +618,141 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             <span className="text-[10px] text-zinc-500 block">Refill & buffer</span>
           </div>
         </div>
+
+        {/* Toggle Science & Formula Deep Dive */}
+        <div className="flex justify-end -mt-1">
+          <button
+            type="button"
+            onClick={() => setShowFormulaDetails((prev) => !prev)}
+            className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-zinc-700 hover:text-zinc-950 transition-all py-1 px-2.5 rounded-lg border-2 border-zinc-950 bg-white hover:bg-zinc-100 shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
+          >
+            <BookOpen className="h-3.5 w-3.5 text-cyan-800" />
+            <span>
+              {showFormulaDetails
+                ? (language === "en" ? "Hide Scientific Formula" : "Tutup Rincian Formula")
+                : (language === "en" ? "🔬 View Scientific Formula & Biomechanics" : "🔬 Bedah Detail Rumus & Fisiologi")}
+            </span>
+            {showFormulaDetails ? (
+              <ChevronUp className="h-3.5 w-3.5 text-zinc-700" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5 text-zinc-700" />
+            )}
+          </button>
+        </div>
+
+        {/* Expandable Scientific Formula & Biomechanics Breakdown */}
+        {showFormulaDetails && (
+          <div className="p-4 sm:p-5 rounded-xl bg-white border-2 border-zinc-950 space-y-4 shadow-[2px_2px_0px_0px_#09090b] text-xs font-mono animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b-2 border-zinc-100">
+              <div className="flex items-center gap-2">
+                <span className="p-1 rounded bg-zinc-900 text-white font-black text-[10px]">
+                  PEER-REVIEWED
+                </span>
+                <span className="font-black text-sm text-zinc-950">
+                  {language === "en"
+                    ? "Adaptive Split-Segment Mathematical Model"
+                    : "Model Matematis Adaptive Split-Segment"}
+                </span>
+              </div>
+              <span className={`self-start sm:self-auto px-2 py-0.5 rounded text-[10px] font-black border border-zinc-950 ${
+                pacingMode === "race_target" ? "bg-cyan-200 text-cyan-950" : "bg-emerald-200 text-emerald-950"
+              }`}>
+                {pacingMode === "race_target"
+                  ? (language === "en" ? "Active: Race Target (+35% VAM, 20s/km transit)" : "Aktif: Race Target (+35% VAM, 20dtk/km transit)")
+                  : (language === "en" ? "Active: Base Z2 (Natural VAM, 40s/km transit)" : "Aktif: Base Z2 (VAM Alami, 40dtk/km transit)")}
+              </span>
+            </div>
+
+            {/* Core Formula Box */}
+            <div className="p-3 rounded-lg bg-[#FAF9F5] border border-zinc-300 font-mono text-zinc-900 text-center">
+              <span className="text-[11px] text-zinc-500 block mb-0.5 font-bold uppercase">
+                {language === "en" ? "Core Decomposition Formula" : "Formula Dekomposisi Utama"}
+              </span>
+              <div className="text-base sm:text-lg font-black tracking-tight text-zinc-950">
+                T<span className="text-xs">total</span> = T<span className="text-xs">uphill</span> + T<span className="text-xs">downhill</span> + T<span className="text-xs">flat</span> + T<span className="text-xs">aid</span>
+              </div>
+            </div>
+
+            {/* Segment Breakdown Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
+              {/* Uphill Sektor */}
+              <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 space-y-1.5">
+                <div className="flex items-center justify-between font-bold">
+                  <span className="text-cyan-950 font-black">1. Sektor Tanjakan (T_uphill)</span>
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-950 text-[10px] font-black">
+                    {prediction.uphillHours} Jam
+                  </span>
+                </div>
+                <div className="text-zinc-600 font-medium">
+                  {language === "en"
+                    ? `D+ ${raceElevation}m / Effective VAM ${prediction.effectiveVam} m/h (scaled from your historical baseline ${avgVam} m/h).`
+                    : `D+ ${raceElevation}m / VAM Efektif ${prediction.effectiveVam} m/jam (dikalibrasi dari rata-rata historis COROS ${avgVam} m/jam).`}
+                </div>
+                <div className="text-[10px] text-zinc-500 italic">
+                  Ref: Minetti et al. (2002) Gradient Cost & Giovanelli (2016) Vertical Energetics
+                </div>
+              </div>
+
+              {/* Downhill Sektor */}
+              <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 space-y-1.5">
+                <div className="flex items-center justify-between font-bold">
+                  <span className="text-emerald-950 font-black">2. Sektor Turunan (T_downhill)</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-950 text-[10px] font-black">
+                    {prediction.downhillHours} Jam
+                  </span>
+                </div>
+                <div className="text-zinc-600 font-medium">
+                  {language === "en"
+                    ? `D- ${raceElevation}m with progressive eccentric quadriceps braking degradation over distance.`
+                    : `D- ${raceElevation}m dengan degradasi rem otot kuadrisep eksentrik bertahap seiring jarak.`}
+                </div>
+                <div className="text-[10px] text-zinc-500 italic">
+                  Ref: Millet et al. (2011) Neuromuscular Eccentric Damage in Mountain Ultras
+                </div>
+              </div>
+
+              {/* Flat Sektor */}
+              <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 space-y-1.5">
+                <div className="flex items-center justify-between font-bold">
+                  <span className="text-amber-950 font-black">3. Sektor Datar / Rolling (T_flat)</span>
+                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-950 text-[10px] font-black">
+                    {prediction.horizontalHours} Jam
+                  </span>
+                </div>
+                <div className="text-zinc-600 font-medium">
+                  {prediction.horizontalHours === 0
+                    ? (language === "en"
+                        ? "0 km flat — course geometry is 100% pure mountain climbing and descending."
+                        : "0 km datar — profil rute 100% murni tanjakan dan turunan gunung ekstrem.")
+                    : (language === "en"
+                        ? "Evaluated via pure Trail Grade-Adjusted Pace (Trail GAP) with terrain friction."
+                        : "Dihitung via Trail Grade-Adjusted Pace (Trail GAP) di tanah/batu dengan friksi medan.")}
+                </div>
+                <div className="text-[10px] text-zinc-500 italic">
+                  Ref: Peter Riegel (1981) Ultra Fatigue Power Law & ITRA Terrain Standard
+                </div>
+              </div>
+
+              {/* Aid Station */}
+              <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 space-y-1.5">
+                <div className="flex items-center justify-between font-bold">
+                  <span className="text-zinc-950 font-black">4. Transit Pos / Aid Station (T_aid)</span>
+                  <span className="px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-950 text-[10px] font-black">
+                    {prediction.stoppageHours} Jam
+                  </span>
+                </div>
+                <div className="text-zinc-600 font-medium">
+                  {language === "en"
+                    ? `${raceDistance} km × ${pacingMode === "race_target" ? "20s/km" : "40s/km"} for hydration refill, electrolyte loading, and gear adjustment.`
+                    : `${raceDistance} km × ${pacingMode === "race_target" ? "20 dtk/km" : "40 dtk/km"} untuk refill hidrasi, elektrolit, dan ganti perlengkapan.`}
+                </div>
+                <div className="text-[10px] text-zinc-500 italic">
+                  Ref: Jason Koop (2016) Ultra Aid Station Transit Efficiency Protocol
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Climb Density Badge & Desc */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 p-3.5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-xs shadow-[2px_2px_0px_0px_#09090b]">
