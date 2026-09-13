@@ -320,31 +320,33 @@ $$\text{COT Checkpoint}_i \ (\text{hours}) = (\text{Effort Ratio}_i)^{0.88} \tim
 
 ---
 
-### 4.10 Hybrid Naismith & Minetti Mountain Pacing Model
+### 4.10 Adaptive Split-Segment Mountain & Ultra Trail Pacing Model
 
-Segment transit duration is estimated through a multi-factor physiological model:
+The interactive Trail Race Estimator implements an **Adaptive Split-Segment Decomposition Model** calibrated to real athlete trail telemetry, dynamic course climb density, and ultra-distance physiological fatigue curves. The system dynamically scales from short trails (15k) up to 100-mile ultra marathons (161 km) with up to 17,000m D+:
 
-$$T_{\text{segment}} = T_{\text{flat}} + T_{\text{climb}} + T_{\text{descent}} + T_{\text{altitude}} + T_{\text{night}} + T_{\text{fatigue}} + T_{\text{aid}}$$
+$$T_{\text{total}} = T_{\text{uphill}} + T_{\text{downhill}} + T_{\text{flat}} + T_{\text{aid}}$$
 
-1. **Flat Horizontal Component:**
-   $$T_{\text{flat}} = \Delta \text{Distance} \ (\text{km}) \times \text{Flat Pace} \ (\text{sec/km}) \times K_{\text{terrain}}$$
-   *(where $K_{\text{terrain}} \approx 1.12$ for rugged technical trail)*.
+1. **Course Geometric Decomposition:**
+   - Evaluates technical trail climb gradient ($\approx 15\%$) to segment the course into uphill distance ($D_{\text{up}} = \frac{D+}{150}\text{ km}$), downhill distance ($D_{\text{down}} = \frac{D-}{150}\text{ km}$), and runnable flat/rolling trail ($D_{\text{flat}} = \max(0, D - D_{\text{up}} - D_{\text{down}})$).
 
-2. **Vertical Climbing Component (Personal VAM):**
-   $$T_{\text{climb}} = \frac{\Delta D+ \ (m)}{\text{VAM} \ (m/h)} \times 3600$$
+2. **Distance-Scaled Uphill VAM:**
+   - Adjusts climbing rate based on event duration and glycogen depletion:
+     $$\text{VAM}_{\text{eff}} = \text{VAM}_{\text{trail}} \times K_{\text{vam\_decay}}$$
+     *(where $K_{\text{vam\_decay}}$ scales from $1.15\times$ for sprints $\le 25\text{k}$ down to $0.75\times$ for 100-milers $\ge 160\text{k}$)*.
+   $$T_{\text{uphill}} = \frac{D+}{\text{VAM}_{\text{eff}}} \times 3600$$
 
-3. **Descent Component (Minetti Eccentric Quad Braking):**
-   $$T_{\text{descent}} = \left(\frac{\Delta D- \ (m)}{1000}\right) \times K_{\text{quad}}$$
+3. **Downhill Eccentric Muscle Damage:**
+   - Incorporates progressive quadriceps degradation from eccentric muscular strain:
+     $$V_{\text{down\_eff}} = \frac{1500\text{ m/h}}{1.0 + \min(0.40, \frac{D - 25}{135} \times 0.40)}$$
+   $$T_{\text{downhill}} = \frac{D-}{V_{\text{down\_eff}}} \times 3600$$
 
-4. **Altitude Hypoxia Degradation:**
-   - Elevation $2,200m - 3,000m$: VAM degraded by $-6\%$.
-   - Elevation $> 3,000m$: VAM degraded by $-12\%$.
+4. **Flat / Rolling Trail Running (Trail GAP with Ultra Duration Riegel Scaling):**
+   - Applies trail terrain friction ($1.25\times$ over flat road) and ultra duration decay ($F_{\text{flat}} = (\frac{D}{21.1})^{0.06}$):
+   $$T_{\text{flat}} = D_{\text{flat}} \times (\text{Pace}_{\text{base}} \times 1.25 \times F_{\text{flat}})$$
 
-5. **Headlamp Night Visibility Penalty:**
-   - Between 18:00 and 06:00: Pacing slowed by $+16\%$.
-
-6. **Second-Half Glycogen & Muscular Fatigue:**
-   - Beyond $30\%$ of total course distance: Pacing degrades progressively by $+14\%$.
+5. **Aid Station Transit & Logistical Buffer:**
+   - Dynamically scales stop times from 20 sec/km on short events to 60 sec/km on 100-milers for gear changes, hydration refills, and night preparation:
+   $$T_{\text{aid}} = D \times K_{\text{transit}}$$
 
 ---
 

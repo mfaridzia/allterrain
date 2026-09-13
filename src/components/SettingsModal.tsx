@@ -239,34 +239,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   };
 
+  const detectedMaxHr = Number(settingsData?.detectedMaxHr) || 192;
+  const detectedRestingHr = Number(settingsData?.detectedRestingHr) || 50;
+  const detectedLthr = Number(settingsData?.detectedLthr) || Math.round(detectedMaxHr * 0.88);
+
   const maxHrNum = parseInt(athleteMaxHr.trim(), 10);
   const restingHrNum = parseInt(athleteRestingHr.trim(), 10);
   const lthrNum = parseInt(athleteLthr.trim(), 10);
 
+  const effectiveMaxHr = !isNaN(maxHrNum) && maxHrNum >= 100 && maxHrNum <= 240 ? maxHrNum : detectedMaxHr;
+  const effectiveRestingHr = !isNaN(restingHrNum) && restingHrNum >= 30 && restingHrNum <= 100 ? restingHrNum : detectedRestingHr;
+  const effectiveLthr = !isNaN(lthrNum) && lthrNum >= 100 && lthrNum <= 220 ? lthrNum : detectedLthr;
+
   let hrValidationError: string | null = null;
 
   if (hrZoneCalcMethod === "max_hr") {
-    if (!athleteMaxHr.trim()) {
-      hrValidationError = language === "en" ? "Max HR is required (100 – 240 bpm)." : "Max HR wajib diisi (100 – 240 bpm).";
-    } else if (isNaN(maxHrNum) || maxHrNum < 100 || maxHrNum > 240) {
+    if (athleteMaxHr.trim() && (isNaN(maxHrNum) || maxHrNum < 100 || maxHrNum > 240)) {
       hrValidationError = language === "en" ? "Max HR must be between 100 and 240 bpm." : "Max HR harus antara 100 dan 240 bpm.";
     }
   } else if (hrZoneCalcMethod === "hrr") {
-    if (!athleteMaxHr.trim()) {
-      hrValidationError = language === "en" ? "Max HR is required (100 – 240 bpm)." : "Max HR wajib diisi (100 – 240 bpm).";
-    } else if (isNaN(maxHrNum) || maxHrNum < 100 || maxHrNum > 240) {
+    if (athleteMaxHr.trim() && (isNaN(maxHrNum) || maxHrNum < 100 || maxHrNum > 240)) {
       hrValidationError = language === "en" ? "Max HR must be between 100 and 240 bpm." : "Max HR harus antara 100 dan 240 bpm.";
-    } else if (!athleteRestingHr.trim()) {
-      hrValidationError = language === "en" ? "Resting HR is required for HRR (30 – 100 bpm)." : "Resting HR wajib diisi untuk HRR (30 – 100 bpm).";
-    } else if (isNaN(restingHrNum) || restingHrNum < 30 || restingHrNum > 100) {
+    } else if (athleteRestingHr.trim() && (isNaN(restingHrNum) || restingHrNum < 30 || restingHrNum > 100)) {
       hrValidationError = language === "en" ? "Resting HR must be between 30 and 100 bpm." : "Resting HR harus antara 30 dan 100 bpm.";
-    } else if (maxHrNum <= restingHrNum + 20) {
+    } else if (effectiveMaxHr <= effectiveRestingHr + 20) {
       hrValidationError = language === "en" ? "Max HR must be at least 20 bpm higher than Resting HR." : "Max HR harus lebih tinggi minimal 20 bpm dari Resting HR.";
     }
   } else if (hrZoneCalcMethod === "lthr") {
-    if (!athleteLthr.trim()) {
-      hrValidationError = language === "en" ? "Lactate Threshold HR (LTHR) is required (100 – 220 bpm)." : "LTHR wajib diisi (100 – 220 bpm).";
-    } else if (isNaN(lthrNum) || lthrNum < 100 || lthrNum > 220) {
+    if (athleteLthr.trim() && (isNaN(lthrNum) || lthrNum < 100 || lthrNum > 220)) {
       hrValidationError = language === "en" ? "LTHR must be between 100 and 220 bpm." : "LTHR harus antara 100 dan 220 bpm.";
     }
   }
@@ -287,39 +287,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         hrZoneCalcMethod,
       };
 
-      if (apiKey.trim()) {
-        if (provider === "groq") payload.groqApiKey = apiKey.trim();
-        if (provider === "gemini") payload.geminiApiKey = apiKey.trim();
-        if (provider === "openai") payload.openaiApiKey = apiKey.trim();
-        if (provider === "claude") payload.claudeApiKey = apiKey.trim();
-        if (provider === "deepseek") payload.deepseekApiKey = apiKey.trim();
+      if (activeTab === "ai") {
+        if (apiKey.trim()) {
+          if (provider === "groq") payload.groqApiKey = apiKey.trim();
+          if (provider === "gemini") payload.geminiApiKey = apiKey.trim();
+          if (provider === "openai") payload.openaiApiKey = apiKey.trim();
+          if (provider === "claude") payload.claudeApiKey = apiKey.trim();
+          if (provider === "deepseek") payload.deepseekApiKey = apiKey.trim();
+        }
       }
 
-      if (athleteMaxHr.trim()) {
-        const parsed = parseInt(athleteMaxHr.trim(), 10);
-        if (!isNaN(parsed) && parsed >= 100 && parsed <= 240) {
-          payload.athleteMaxHr = parsed;
+      if (activeTab === "physiology") {
+        if (athleteMaxHr.trim()) {
+          const parsed = parseInt(athleteMaxHr.trim(), 10);
+          if (!isNaN(parsed) && parsed >= 100 && parsed <= 240) {
+            payload.athleteMaxHr = parsed;
+          }
+        } else {
+          payload.athleteMaxHr = null;
         }
-      } else {
-        payload.athleteMaxHr = null;
-      }
 
-      if (athleteRestingHr.trim()) {
-        const parsed = parseInt(athleteRestingHr.trim(), 10);
-        if (!isNaN(parsed) && parsed >= 30 && parsed <= 100) {
-          payload.athleteRestingHr = parsed;
+        if (athleteRestingHr.trim()) {
+          const parsed = parseInt(athleteRestingHr.trim(), 10);
+          if (!isNaN(parsed) && parsed >= 30 && parsed <= 100) {
+            payload.athleteRestingHr = parsed;
+          }
+        } else {
+          payload.athleteRestingHr = null;
         }
-      } else {
-        payload.athleteRestingHr = null;
-      }
 
-      if (athleteLthr.trim()) {
-        const parsed = parseInt(athleteLthr.trim(), 10);
-        if (!isNaN(parsed) && parsed >= 100 && parsed <= 220) {
-          payload.athleteLthr = parsed;
+        if (athleteLthr.trim()) {
+          const parsed = parseInt(athleteLthr.trim(), 10);
+          if (!isNaN(parsed) && parsed >= 100 && parsed <= 220) {
+            payload.athleteLthr = parsed;
+          }
+        } else {
+          payload.athleteLthr = null;
         }
-      } else {
-        payload.athleteLthr = null;
       }
 
       await updateSettingsMutation.mutateAsync(payload);
@@ -336,9 +340,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   const previewZones = calculateAthleteHrZones({
     method: hrZoneCalcMethod,
-    maxHr: !isNaN(maxHrNum) && maxHrNum >= 100 && maxHrNum <= 240 ? maxHrNum : 185,
-    restingHr: !isNaN(restingHrNum) && restingHrNum >= 30 && restingHrNum <= 100 ? restingHrNum : 48,
-    lthr: !isNaN(lthrNum) && lthrNum >= 100 && lthrNum <= 220 ? lthrNum : 162,
+    maxHr: effectiveMaxHr,
+    restingHr: effectiveRestingHr,
+    lthr: effectiveLthr,
   });
 
   return (
@@ -685,19 +689,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
               {/* Dynamic Inputs based on Method */}
               <div className="p-4 rounded-xl bg-white border-2 border-zinc-950 space-y-3.5 shadow-[2px_2px_0px_0px_#09090b]">
-                {/* Max HR field (Required for max_hr and hrr) */}
+                {/* Max HR field (Optional, auto-detects from COROS) */}
                 {(hrZoneCalcMethod === "max_hr" || hrZoneCalcMethod === "hrr") && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
                         <span>{t("settingsModal.maxHrCardTitle", "Max Heart Rate (HR Max)")}</span>
-                        <span className="text-rose-600 font-bold">*</span>
                       </label>
-                      {athleteMaxHr.trim() && !isNaN(maxHrNum) && maxHrNum >= 100 && maxHrNum <= 240 && (
-                        <span className="text-[10px] font-mono font-bold text-rose-800 px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200">
-                          {maxHrNum} bpm
-                        </span>
-                      )}
+                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                        athleteMaxHr.trim() && !isNaN(maxHrNum) && maxHrNum >= 100 && maxHrNum <= 240
+                          ? "text-rose-800 bg-rose-50 border-rose-200"
+                          : "text-zinc-600 bg-zinc-100 border-zinc-300"
+                      }`}>
+                        {athleteMaxHr.trim() && !isNaN(maxHrNum) && maxHrNum >= 100 && maxHrNum <= 240
+                          ? `Manual: ${maxHrNum} bpm`
+                          : `Auto COROS: ${detectedMaxHr} bpm`}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <input
@@ -706,7 +713,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         max={240}
                         value={athleteMaxHr}
                         onChange={(e) => setAthleteMaxHr(e.target.value)}
-                        placeholder={t("settingsModal.maxHrPlaceholder", "e.g. 190 (bpm)")}
+                        placeholder={`Auto: ${detectedMaxHr} bpm (COROS)`}
                         className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b]"
                       />
                       {athleteMaxHr && (
@@ -714,31 +721,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                           type="button"
                           onClick={() => setAthleteMaxHr("")}
                           className="px-3 py-2.5 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
-                          title="Reset"
+                          title={language === "en" ? "Reset to Auto" : "Reset ke Otomatis"}
                         >
                           <X className="h-4 w-4" />
                         </button>
                       )}
                     </div>
                     <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
-                      {t("settingsModal.maxHrHelper", "Used to calibrate your personalized training zones. Required for % Max HR & HRR methods.")}
+                      {language === "en"
+                        ? `Optional. Leave blank to auto-detect from COROS activity peaks (${detectedMaxHr} bpm).`
+                        : `Opsional. Kosongkan untuk otomatis menggunakan data puncak denyut dari COROS (${detectedMaxHr} bpm).`}
                     </p>
                   </div>
                 )}
 
-                {/* Resting HR field (Required for hrr) */}
+                {/* Resting HR field (Optional for hrr, auto-detects from COROS sleep) */}
                 {hrZoneCalcMethod === "hrr" && (
                   <div className="space-y-1.5 pt-2 border-t border-zinc-200">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
                         <span>{t("settingsModal.restingHrCardTitle", "Resting Heart Rate (RHR)")}</span>
-                        <span className="text-rose-600 font-bold">*</span>
                       </label>
-                      {athleteRestingHr.trim() && !isNaN(restingHrNum) && restingHrNum >= 30 && restingHrNum <= 100 && (
-                        <span className="text-[10px] font-mono font-bold text-blue-800 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200">
-                          {restingHrNum} bpm
-                        </span>
-                      )}
+                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                        athleteRestingHr.trim() && !isNaN(restingHrNum) && restingHrNum >= 30 && restingHrNum <= 100
+                          ? "text-blue-800 bg-blue-50 border-blue-200"
+                          : "text-zinc-600 bg-zinc-100 border-zinc-300"
+                      }`}>
+                        {athleteRestingHr.trim() && !isNaN(restingHrNum) && restingHrNum >= 30 && restingHrNum <= 100
+                          ? `Manual: ${restingHrNum} bpm`
+                          : `Auto COROS: ${detectedRestingHr} bpm`}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <input
@@ -747,7 +759,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         max={100}
                         value={athleteRestingHr}
                         onChange={(e) => setAthleteRestingHr(e.target.value)}
-                        placeholder={t("settingsModal.restingHrPlaceholder", "e.g. 48 (bpm)")}
+                        placeholder={`Auto: ${detectedRestingHr} bpm (COROS)`}
                         className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b]"
                       />
                       {athleteRestingHr && (
@@ -755,31 +767,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                           type="button"
                           onClick={() => setAthleteRestingHr("")}
                           className="px-3 py-2.5 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
-                          title="Reset"
+                          title={language === "en" ? "Reset to Auto" : "Reset ke Otomatis"}
                         >
                           <X className="h-4 w-4" />
                         </button>
                       )}
                     </div>
                     <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
-                      {t("settingsModal.restingHrHelper", "Your true baseline resting pulse during deep sleep. Required for Karvonen HRR.")}
+                      {language === "en"
+                        ? `Optional. Leave blank to auto-detect baseline RHR from COROS deep sleep (${detectedRestingHr} bpm).`
+                        : `Opsional. Kosongkan untuk otomatis menggunakan sensor denyut istirahat COROS saat tidur (${detectedRestingHr} bpm).`}
                     </p>
                   </div>
                 )}
 
-                {/* LTHR field (Required for lthr) */}
+                {/* LTHR field (Optional for lthr, auto-derives) */}
                 {hrZoneCalcMethod === "lthr" && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-zinc-950 flex items-center gap-1.5">
                         <span>{t("settingsModal.lthrCardTitle", "Lactate Threshold Heart Rate (LTHR)")}</span>
-                        <span className="text-rose-600 font-bold">*</span>
                       </label>
-                      {athleteLthr.trim() && !isNaN(lthrNum) && lthrNum >= 100 && lthrNum <= 220 && (
-                        <span className="text-[10px] font-mono font-bold text-amber-800 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200">
-                          {lthrNum} bpm
-                        </span>
-                      )}
+                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                        athleteLthr.trim() && !isNaN(lthrNum) && lthrNum >= 100 && lthrNum <= 220
+                          ? "text-amber-800 bg-amber-50 border-amber-200"
+                          : "text-zinc-600 bg-zinc-100 border-zinc-300"
+                      }`}>
+                        {athleteLthr.trim() && !isNaN(lthrNum) && lthrNum >= 100 && lthrNum <= 220
+                          ? `Manual: ${lthrNum} bpm`
+                          : `Auto Est: ${detectedLthr} bpm`}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <input
@@ -788,7 +805,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         max={220}
                         value={athleteLthr}
                         onChange={(e) => setAthleteLthr(e.target.value)}
-                        placeholder={t("settingsModal.lthrPlaceholder", "e.g. 168 (bpm)")}
+                        placeholder={`Auto: ${detectedLthr} bpm`}
                         className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white border-2 border-zinc-950 text-zinc-950 placeholder-zinc-400 focus:outline-none focus:bg-white font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b]"
                       />
                       {athleteLthr && (
@@ -796,14 +813,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                           type="button"
                           onClick={() => setAthleteLthr("")}
                           className="px-3 py-2.5 text-xs rounded-xl border-2 border-zinc-950 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
-                          title="Reset"
+                          title={language === "en" ? "Reset to Auto" : "Reset ke Otomatis"}
                         >
                           <X className="h-4 w-4" />
                         </button>
                       )}
                     </div>
                     <p className="text-[11px] text-zinc-600 leading-relaxed font-medium">
-                      {t("settingsModal.lthrHelper", "Your 30–60 min all-out time-trial threshold heart rate. Required for LTHR method.")}
+                      {language === "en"
+                        ? `Optional. Leave blank to auto-derive from 88% Max HR (${detectedLthr} bpm).`
+                        : `Opsional. Kosongkan untuk otomatis menurunkan dari 88% Max HR (${detectedLthr} bpm).`}
                     </p>
                   </div>
                 )}
@@ -821,10 +840,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b]">
                 <div className="flex items-center justify-between text-xs font-black text-zinc-950">
                   <span>{language === "en" ? "Calculated Training Zones:" : "Kalkulasi Zona Latihan:"}</span>
-                  <span className="text-[10px] font-mono text-zinc-500 font-bold">
-                    {hrZoneCalcMethod === "max_hr" && (athleteMaxHr ? `${maxHrNum} bpm Max` : "Preview")}
-                    {hrZoneCalcMethod === "hrr" && (athleteMaxHr && athleteRestingHr ? `Max ${maxHrNum} • Rest ${restingHrNum}` : "Preview")}
-                    {hrZoneCalcMethod === "lthr" && (athleteLthr ? `LTHR ${lthrNum} bpm` : "Preview")}
+                  <span className="text-[10px] font-mono text-zinc-600 font-bold">
+                    {hrZoneCalcMethod === "max_hr" && (athleteMaxHr.trim() ? `Manual Max: ${maxHrNum} bpm` : `Auto COROS: ${detectedMaxHr} bpm`)}
+                    {hrZoneCalcMethod === "hrr" && (
+                      `${athleteMaxHr.trim() ? `Max ${maxHrNum}` : `Auto ${detectedMaxHr}`} • ${athleteRestingHr.trim() ? `Rest ${restingHrNum}` : `Auto ${detectedRestingHr}`}`
+                    )}
+                    {hrZoneCalcMethod === "lthr" && (athleteLthr.trim() ? `Manual LTHR: ${lthrNum} bpm` : `Auto Est: ${detectedLthr} bpm`)}
                   </span>
                 </div>
 

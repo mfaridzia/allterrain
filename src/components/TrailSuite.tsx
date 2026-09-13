@@ -106,6 +106,9 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
   const [trainingTier, setTrainingTier] = useState<"finisher" | "elite">(
     savedTrainingTier || "finisher",
   );
+  const [pacingMode, setPacingMode] = useState<"race_target" | "conservative">(
+    "race_target",
+  );
   const updateSettings = useUpdateSettingsMutation();
 
   // Load from localStorage on mount (hydration safe)
@@ -183,8 +186,9 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
       elevationLossMeters: raceElevation,
       flatMarathonPaceSecPerKm: flatMarathonPaceSec,
       historicalVamMetersPerHour: avgVam,
+      pacingMode,
     });
-  }, [raceDistance, raceElevation, flatMarathonPaceSec, avgVam]);
+  }, [raceDistance, raceElevation, flatMarathonPaceSec, avgVam, pacingMode]);
 
   // ITRA Km-Effort
   const kmEffort = useMemo(() => {
@@ -379,26 +383,55 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
 
         {/* Sliders Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-2 shadow-[2px_2px_0px_0px_#09090b]">
-            <div className="flex justify-between text-xs">
+          <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b]">
+            <div className="flex justify-between items-center text-xs">
               <span className="text-zinc-700 font-bold">Race Distance</span>
-              <span className="font-black text-zinc-950 font-mono text-sm">
-                {raceDistance} km
-              </span>
+              <div className="flex items-center gap-1.5 font-mono">
+                <span className="font-black text-zinc-950 text-sm">
+                  {raceDistance} km
+                </span>
+                <span className="text-[10px] text-zinc-500 font-semibold">
+                  ({(raceDistance * 0.621371).toFixed(1)} mi)
+                </span>
+              </div>
             </div>
             <input
               type="range"
               min={5}
-              max={120}
+              max={161}
               step={1}
               value={raceDistance}
               onChange={(e) => setRaceDistance(Number(e.target.value))}
               className="w-full accent-cyan-600 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
             />
+            {/* Distance Quick Presets */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[
+                { label: "15k", val: 15 },
+                { label: "27k", val: 27 },
+                { label: "42k", val: 42 },
+                { label: "60k", val: 60 },
+                { label: "100k", val: 100 },
+                { label: "100M (161k)", val: 161 },
+              ].map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => setRaceDistance(p.val)}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all border ${
+                    raceDistance === p.val
+                      ? "bg-cyan-500 text-zinc-950 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                      : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-950"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-2 shadow-[2px_2px_0px_0px_#09090b]">
-            <div className="flex justify-between text-xs">
+          <div className="p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-2.5 shadow-[2px_2px_0px_0px_#09090b]">
+            <div className="flex justify-between items-center text-xs">
               <span className="text-zinc-700 font-bold">
                 Total Elevation Gain (D+)
               </span>
@@ -409,27 +442,103 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             <input
               type="range"
               min={100}
-              max={6000}
+              max={17000}
               step={50}
               value={raceElevation}
               onChange={(e) => setRaceElevation(Number(e.target.value))}
               className="w-full accent-cyan-600 cursor-pointer h-2 bg-zinc-200 rounded-lg border border-zinc-950"
             />
+            {/* Elevation Quick Presets */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[
+                { label: "800m", val: 800 },
+                { label: "1.8km", val: 1800 },
+                { label: "3.5km", val: 3500 },
+                { label: "5.4km", val: 5400 },
+                { label: "10km", val: 10000 },
+                { label: "17km", val: 17000 },
+              ].map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => setRaceElevation(p.val)}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all border ${
+                    raceElevation === p.val
+                      ? "bg-cyan-500 text-zinc-950 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                      : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-950"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Pacing Regime Strategy Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-zinc-100/90 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+            <span className="text-xs font-black uppercase text-zinc-900 tracking-wider">
+              {language === "en" ? "Pacing Strategy:" : "Strategi Pacing:"}
+            </span>
+            <span className="text-[11px] font-mono text-zinc-600">
+              {language === "en" ? "Spectrum: " : "Rentang Estimasi: "}
+              <strong className="text-zinc-950 font-bold">{prediction.rangeFormattedTime}</strong>
+            </span>
+          </div>
+
+          <div className="inline-flex rounded-lg border-2 border-zinc-950 p-0.5 bg-white shadow-[1px_1px_0px_0px_#09090b] self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setPacingMode("race_target")}
+              className={`px-3 py-1 rounded-md text-xs font-bold font-mono transition-all ${
+                pacingMode === "race_target"
+                  ? "bg-cyan-500 text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                  : "text-zinc-600 hover:text-zinc-950"
+              }`}
+            >
+              🎯 {language === "en" ? "Race Target (Tight COT)" : "Race Target (Kejar COT)"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPacingMode("conservative")}
+              className={`px-3 py-1 rounded-md text-xs font-bold font-mono transition-all ${
+                pacingMode === "conservative"
+                  ? "bg-emerald-400 text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                  : "text-zinc-600 hover:text-zinc-950"
+              }`}
+            >
+              🛡️ {language === "en" ? "Conservative (Finisher)" : "Konservatif (Finisher)"}
+            </button>
           </div>
         </div>
 
         {/* Prediction Results Banner */}
         <div className="p-4 sm:p-5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-[2px_2px_0px_0px_#09090b]">
           <div className="flex items-center gap-3.5">
-            <div className="h-12 w-12 rounded-xl bg-cyan-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+            <div className={`h-12 w-12 rounded-xl border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b] ${
+              pacingMode === "race_target" ? "bg-cyan-100" : "bg-emerald-100"
+            }`}>
               <Clock className="h-6 w-6 stroke-[2.5]" />
             </div>
             <div>
-              <span className="text-[11px] text-zinc-600 block font-bold uppercase tracking-wider">
-                Estimated Finish Time
-              </span>
-              <div className="text-3xl font-black text-cyan-800 font-mono tracking-tight">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[11px] text-zinc-600 block font-bold uppercase tracking-wider">
+                  {pacingMode === "race_target"
+                    ? (language === "en" ? "Race Target Finish Time" : "Target Waktu Lomba (Race Target)")
+                    : (language === "en" ? "Conservative Finisher Time" : "Waktu Finisher Aman (Konservatif)")}
+                </span>
+                <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border border-zinc-950 ${
+                  pacingMode === "race_target" ? "bg-cyan-200 text-cyan-950" : "bg-emerald-200 text-emerald-950"
+                }`}>
+                  {pacingMode === "race_target" ? "Race Mode" : "Base Z2"}
+                </span>
+              </div>
+              <div className="text-3xl font-black text-zinc-950 font-mono tracking-tight">
                 {prediction.formattedTime}
+              </div>
+              <div className="text-[11px] font-mono text-zinc-500 mt-0.5">
+                {language === "en" ? "Full Spectrum: " : "Rentang Spektrum: "}{prediction.rangeFormattedTime}
               </div>
             </div>
           </div>
@@ -457,7 +566,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             </div>
             <div className="flex flex-col justify-between">
               <span className="text-[10px] font-sans font-bold text-zinc-600 mb-1 block">
-                Climb Split
+                Climb Split (Uphill)
               </span>
               <div className="text-zinc-950 font-black text-base">
                 {prediction.uphillHours} hrs
@@ -474,6 +583,30 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                 <span className="text-[10px] font-normal">m/km</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Adaptive Segment Breakdown Chips */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-zinc-100/80 border border-zinc-950 text-xs font-mono">
+          <div className="p-2 rounded-lg bg-white border border-zinc-300">
+            <span className="text-[10px] text-zinc-500 block uppercase font-bold">Uphill Time</span>
+            <span className="text-sm font-black text-zinc-950">{prediction.uphillHours}j</span>
+            <span className="text-[10px] text-zinc-500 block">VAM {prediction.effectiveVam} m/h</span>
+          </div>
+          <div className="p-2 rounded-lg bg-white border border-zinc-300">
+            <span className="text-[10px] text-zinc-500 block uppercase font-bold">Downhill Time</span>
+            <span className="text-sm font-black text-zinc-950">{prediction.downhillHours}j</span>
+            <span className="text-[10px] text-zinc-500 block">Eccentric drop</span>
+          </div>
+          <div className="p-2 rounded-lg bg-white border border-zinc-300">
+            <span className="text-[10px] text-zinc-500 block uppercase font-bold">Flat / Rolling</span>
+            <span className="text-sm font-black text-zinc-950">{prediction.horizontalHours}j</span>
+            <span className="text-[10px] text-zinc-500 block">Trail GAP Pace</span>
+          </div>
+          <div className="p-2 rounded-lg bg-white border border-zinc-300">
+            <span className="text-[10px] text-zinc-500 block uppercase font-bold">Transit / Aid Station</span>
+            <span className="text-sm font-black text-zinc-950">{prediction.stoppageHours}j</span>
+            <span className="text-[10px] text-zinc-500 block">Refill & buffer</span>
           </div>
         </div>
 

@@ -561,27 +561,6 @@ export async function syncCorosData(
     console.warn("Could not query sport records from COROS MCP:", err);
   }
 
-  // 5. Aggregate daily load and compute continuous PMC across all calendar days for this athlete
-  const pastDaysRes = await db.execute({
-    sql: `
-      SELECT strftime('%Y-%m-%d', start_time / 1000, 'unixepoch') as date,
-             SUM(training_load) as daily_load
-      FROM activities
-      WHERE athlete_id = ?
-      GROUP BY date
-      ORDER BY date ASC
-    `,
-    args: [athleteId],
-  });
-
-  const pastDays = pastDaysRes.rows.map((r: any) => ({
-    date: String(r.date),
-    daily_load: Number(r.daily_load || 0),
-  }));
-
-  const activityLoadsMap = new Map<string, number>();
-  pastDays.forEach((p) => activityLoadsMap.set(p.date, p.daily_load));
-
   // Determine effective timezone: priority: user request header > COROS watch data > Asia/Jakarta fallback
   const effectiveTimezone = userTimezone && isValidTimezone(userTimezone)
     ? userTimezone
@@ -594,8 +573,37 @@ export async function syncCorosData(
     day: "2-digit",
   }).format(new Date());
 
+  // 5. Aggregate daily load and compute continuous PMC across all calendar days for this athlete
+  const allActivitiesRes = await db.execute({
+    sql: `
+      SELECT start_time, training_load
+      FROM activities
+      WHERE athlete_id = ?
+      ORDER BY start_time ASC
+    `,
+    args: [athleteId],
+  });
+
+  const activityLoadsMap = new Map<string, number>();
+  const activityDateSet = new Set<string>();
+
+  for (const row of allActivitiesRes.rows as any[]) {
+    const startTimeMs = Number(row.start_time || 0);
+    if (!startTimeMs) continue;
+    const actDate = new Intl.DateTimeFormat("en-CA", {
+      timeZone: effectiveTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(startTimeMs));
+
+    activityDateSet.add(actDate);
+    const load = Number(row.training_load || 0);
+    activityLoadsMap.set(actDate, (activityLoadsMap.get(actDate) || 0) + load);
+  }
+
   const allDateCandidates = [
-    ...pastDays.map((p) => p.date),
+    ...Array.from(activityDateSet),
     ...dailySleepMap.keys(),
     ...dailyRhrMap.keys(),
     ...dailyHrvMap.keys(),

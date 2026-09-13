@@ -23,7 +23,7 @@ export async function buildAthleteContext(athleteId: string = "athlete_primary")
   // 2. Get recent 5 activities for athlete
   const actRes = await db.execute({
     sql: `
-      SELECT name, sport_type, strftime('%Y-%m-%d', start_time / 1000, 'unixepoch') as act_date,
+      SELECT name, sport_type, start_time,
              distance_meters, duration_seconds, elevation_gain, elevation_loss,
              avg_pace_sec, avg_hr, max_hr, training_load, aerobic_te, anaerobic_te,
              vam_meters_per_hour, decoupling_pct
@@ -34,7 +34,21 @@ export async function buildAthleteContext(athleteId: string = "athlete_primary")
     `,
     args: [athleteId],
   });
-  const recentActivities: any[] = actRes.rows;
+  const recentActivities: any[] = actRes.rows.map((r: any) => {
+    const startTimeMs = Number(r.start_time || 0);
+    const actDate = startTimeMs
+      ? new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Makassar",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date(startTimeMs))
+      : "";
+    return {
+      ...r,
+      act_date: actDate,
+    };
+  });
 
   // Format TSB and zone
   const tsb = latestMetric ? Number(latestMetric.tsb || 0) : 0;

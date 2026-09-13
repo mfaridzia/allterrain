@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSetting, setSetting, deleteSetting } from "@/lib/db";
+import { getSetting, setSetting, deleteSetting, getDb } from "@/lib/db";
 import { getCurrentAthleteId } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
@@ -49,6 +49,26 @@ export async function GET(req: NextRequest) {
   const hasDeepseekKey = !!deepseekKey;
   const hasGroqKey = !!groqKey || !!process.env.GROQ_API_KEY;
 
+  const db = getDb();
+  const [maxHrRes, rhrRes] = await Promise.all([
+    db.execute({
+      sql: "SELECT max(max_hr) as peak_max_hr FROM activities WHERE athlete_id = ? AND max_hr >= 130 AND max_hr <= 240",
+      args: [athleteId],
+    }),
+    db.execute({
+      sql: `SELECT ROUND(AVG(resting_hr)) as avg_rhr FROM (
+        SELECT resting_hr FROM daily_metrics 
+        WHERE athlete_id = ? AND resting_hr >= 30 AND resting_hr <= 100 
+        ORDER BY date DESC LIMIT 7
+      )`,
+      args: [athleteId],
+    }),
+  ]);
+
+  const detectedMaxHr = Number(maxHrRes.rows[0]?.peak_max_hr) || 192;
+  const detectedRestingHr = Number(rhrRes.rows[0]?.avg_rhr) || 50;
+  const detectedLthr = Math.round(detectedMaxHr * 0.88);
+
   return NextResponse.json({
     aiProvider,
     aiModelName,
@@ -56,6 +76,9 @@ export async function GET(req: NextRequest) {
     athleteMaxHr: athleteMaxHrStr ? Number(athleteMaxHrStr) : null,
     athleteRestingHr: athleteRestingHrStr ? Number(athleteRestingHrStr) : null,
     athleteLthr: athleteLthrStr ? Number(athleteLthrStr) : null,
+    detectedMaxHr,
+    detectedRestingHr,
+    detectedLthr,
     configuredKeys: {
       gemini: hasGeminiKey,
       openai: hasOpenAiKey,

@@ -116,8 +116,14 @@ export async function GET(req: NextRequest) {
   if (athleteRestingHrStr && !isNaN(Number(athleteRestingHrStr)) && Number(athleteRestingHrStr) >= 30 && Number(athleteRestingHrStr) <= 100) {
     effectiveRestingHr = Math.round(Number(athleteRestingHrStr));
   } else if (dailyRows.length > 0) {
-    const lastRhr = Number(dailyRows[dailyRows.length - 1]?.resting_hr || 0);
-    if (lastRhr >= 30 && lastRhr <= 100) effectiveRestingHr = lastRhr;
+    // Robust 7-day rolling average of valid resting HR nights (filters outlier bad sleep or days without watch)
+    const validRhrs = dailyRows
+      .map((d) => Number(d.resting_hr || 0))
+      .filter((r) => r >= 30 && r <= 100)
+      .slice(-7);
+    if (validRhrs.length > 0) {
+      effectiveRestingHr = Math.round(validRhrs.reduce((sum, v) => sum + v, 0) / validRhrs.length);
+    }
   }
 
   const athleteLthrStr = (athleteLthrRes || "").trim();
@@ -212,7 +218,7 @@ export async function GET(req: NextRequest) {
       trailOnlyDistM += dist;
     }
 
-    if (vam > 0) {
+    if (isTrail && vam > 0) {
       totalVamSum += vam;
       totalVamCount++;
     }
@@ -245,7 +251,7 @@ export async function GET(req: NextRequest) {
     isPolarized: z1z2Seconds / totalTidSec >= 0.75,
   };
 
-  const avgVam = totalVamCount > 0 ? Math.round(totalVamSum / totalVamCount) : 520;
+  const avgVam = totalVamCount > 0 ? Math.round(totalVamSum / totalVamCount) : 330;
   const avgDecoupling =
     totalDecouplingCount > 0 ? Math.round((totalDecouplingSum / totalDecouplingCount) * 10) / 10 : 3.5;
 
@@ -266,13 +272,27 @@ export async function GET(req: NextRequest) {
     } catch {}
   }
 
+  // Generate full continuous calendar days sequence for Standard rTSS
+  const userTimezone = getRequestTimezone(req);
+  const localTodayStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: userTimezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
   // Compute Standard rTSS Mode from activities
   const thresholdPaceSec = racePredictor?.fiveKmSeconds ? 282 : 282; // 4:42 /km
   const dailyRtssMap = new Map<string, number>();
 
   for (const act of activities) {
     const startTime = Number(act.start_time || 0);
-    const dStr = new Date(startTime).toISOString().split("T")[0];
+    const dStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: userTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(startTime));
     const durHours = Number(act.duration_seconds || 1800) / 3600;
     const distM = Number(act.distance_meters || 0);
     const avgHr = Number(act.avg_hr || 140);
@@ -306,22 +326,18 @@ export async function GET(req: NextRequest) {
     dailyRtssMap.set(dStr, (dailyRtssMap.get(dStr) || 0) + tss);
   }
 
-  // Generate full continuous calendar days sequence for Standard rTSS
-  const userTimezone = getRequestTimezone(req);
-  const localTodayStr = new Intl.DateTimeFormat("en-CA", {
-    timeZone: userTimezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-
   const latestDailyDate = dailyRows.length > 0 ? String(dailyRows[dailyRows.length - 1].date) : localTodayStr;
   const targetEndStr = latestDailyDate > localTodayStr ? latestDailyDate : localTodayStr;
 
   const intervalsDailyLoads: { date: string; load: number }[] = [];
   if (activities.length > 0) {
     const earliestTime = Number(activities[activities.length - 1].start_time || Date.now());
-    const startCalStr = new Date(earliestTime).toISOString().split("T")[0];
+    const startCalStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: userTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(earliestTime));
     let cur = new Date(`${startCalStr}T00:00:00Z`);
     const endLimit = new Date(`${targetEndStr}T00:00:00Z`);
 
@@ -343,11 +359,14 @@ export async function GET(req: NextRequest) {
   const intervalsPast7 = intervalsPmc.slice(-7).map((p: PmcPoint) => p.load);
   const intervalsMonotony = calculateMonotonyAndStrain(intervalsPast7);
 
+  const todayRow = dailyRows.find((d) => String(d.date) === localTodayStr);
+  const effectiveTodayLoad = todayRow ? Number(todayRow.training_load || 0) : Number(latestDaily?.training_load || 0);
+
   const corosReadiness = calculateTrainingReadiness({
     ctl,
     atl,
     tsb,
-    todayLoad: Number(latestDaily?.training_load || 0),
+    todayLoad: effectiveTodayLoad,
     acwr: acwrData.acwr,
     recoveryScore: Number(latestDaily?.recovery_score || 82),
     hrvStatus: String(latestDaily?.hrv_status || "NORMAL"),
