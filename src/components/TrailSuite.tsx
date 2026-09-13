@@ -487,7 +487,9 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             </span>
             <span className="text-[11px] font-mono text-zinc-600">
               {language === "en" ? "Spectrum: " : "Rentang Estimasi: "}
-              <strong className="text-zinc-950 font-bold">{prediction.rangeFormattedTime}</strong>
+              <strong className="text-zinc-950 font-bold">
+                {prediction.rangeFormattedTime}
+              </strong>
             </span>
           </div>
 
@@ -501,7 +503,10 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                   : "text-zinc-600 hover:text-zinc-950"
               }`}
             >
-              🎯 {language === "en" ? "Race Target (Tight COT)" : "Race Target (Kejar COT)"}
+              {" "}
+              {language === "en"
+                ? "Race Target (Tight COT)"
+                : "Race Target (Kejar COT)"}
             </button>
             <button
               type="button"
@@ -512,7 +517,10 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                   : "text-zinc-600 hover:text-zinc-950"
               }`}
             >
-              🛡️ {language === "en" ? "Conservative (Finisher)" : "Konservatif (Finisher)"}
+              {" "}
+              {language === "en"
+                ? "Conservative (Finisher)"
+                : "Konservatif (Finisher)"}
             </button>
           </div>
         </div>
@@ -520,26 +528,40 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
         {/* Prediction Results Banner */}
         <div className="p-4 sm:p-5 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-[2px_2px_0px_0px_#09090b]">
           <div className="flex items-center gap-3.5">
-            <div className={`h-12 w-12 rounded-xl border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b] ${
-              pacingMode === "race_target" ? "bg-cyan-100" : "bg-emerald-100"
-            }`}>
+            <div
+              className={`h-12 w-12 rounded-xl border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shrink-0 shadow-[1.5px_1.5px_0px_0px_#09090b] ${
+                pacingMode === "race_target" ? "bg-cyan-100" : "bg-emerald-100"
+              }`}
+            >
               <Clock className="h-6 w-6 stroke-[2.5]" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <MetricTooltip
-                  term={pacingMode === "race_target" ? "trail_race_mode" : "trail_conservative_mode"}
+                  term={
+                    pacingMode === "race_target"
+                      ? "trail_race_mode"
+                      : "trail_conservative_mode"
+                  }
                   className="w-fit"
                 >
                   <span className="text-[11px] text-zinc-600 block font-bold uppercase tracking-wider underline decoration-dotted decoration-zinc-400 cursor-help">
                     {pacingMode === "race_target"
-                      ? (language === "en" ? "Race Target Finish Time" : "Target Waktu Lomba (Race Target)")
-                      : (language === "en" ? "Conservative Finisher Time" : "Waktu Finisher Aman (Konservatif)")}
+                      ? language === "en"
+                        ? "Race Target Finish Time"
+                        : "Target Waktu Lomba (Race Target)"
+                      : language === "en"
+                        ? "Conservative Finisher Time"
+                        : "Waktu Finisher Aman (Konservatif)"}
                   </span>
                 </MetricTooltip>
-                <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border border-zinc-950 ${
-                  pacingMode === "race_target" ? "bg-cyan-200 text-cyan-950" : "bg-emerald-200 text-emerald-950"
-                }`}>
+                <span
+                  className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border border-zinc-950 ${
+                    pacingMode === "race_target"
+                      ? "bg-cyan-200 text-cyan-950"
+                      : "bg-emerald-200 text-emerald-950"
+                  }`}
+                >
                   {pacingMode === "race_target" ? "Race Mode" : "Base Z2"}
                 </span>
               </div>
@@ -547,7 +569,8 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                 {prediction.formattedTime}
               </div>
               <div className="text-[11px] font-mono text-zinc-500 mt-0.5">
-                {language === "en" ? "Full Spectrum: " : "Rentang Spektrum: "}{prediction.rangeFormattedTime}
+                {language === "en" ? "Full Spectrum: " : "Rentang Spektrum: "}
+                {prediction.rangeFormattedTime}
               </div>
             </div>
           </div>
@@ -598,24 +621,48 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
         {/* Adaptive Segment Breakdown Chips */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-zinc-100/80 border border-zinc-950 text-xs font-mono">
           <div className="p-2 rounded-lg bg-white border border-zinc-300">
-            <span className="text-[10px] text-zinc-500 block uppercase font-bold">Uphill Time</span>
-            <span className="text-sm font-black text-zinc-950">{prediction.uphillHours}j</span>
-            <span className="text-[10px] text-zinc-500 block">VAM {prediction.effectiveVam} m/h</span>
+            <span className="text-[10px] text-zinc-500 block uppercase font-bold">
+              Uphill Time
+            </span>
+            <span className="text-sm font-black text-zinc-950">
+              {prediction.uphillHours}j
+            </span>
+            <span className="text-[10px] text-zinc-500 block">
+              VAM {prediction.effectiveVam} m/h
+            </span>
           </div>
           <div className="p-2 rounded-lg bg-white border border-zinc-300">
-            <span className="text-[10px] text-zinc-500 block uppercase font-bold">Downhill Time</span>
-            <span className="text-sm font-black text-zinc-950">{prediction.downhillHours}j</span>
-            <span className="text-[10px] text-zinc-500 block">Eccentric drop</span>
+            <span className="text-[10px] text-zinc-500 block uppercase font-bold">
+              Downhill Time
+            </span>
+            <span className="text-sm font-black text-zinc-950">
+              {prediction.downhillHours}j
+            </span>
+            <span className="text-[10px] text-zinc-500 block">
+              Eccentric drop
+            </span>
           </div>
           <div className="p-2 rounded-lg bg-white border border-zinc-300">
-            <span className="text-[10px] text-zinc-500 block uppercase font-bold">Flat / Rolling</span>
-            <span className="text-sm font-black text-zinc-950">{prediction.horizontalHours}j</span>
-            <span className="text-[10px] text-zinc-500 block">Trail GAP Pace</span>
+            <span className="text-[10px] text-zinc-500 block uppercase font-bold">
+              Flat / Rolling
+            </span>
+            <span className="text-sm font-black text-zinc-950">
+              {prediction.horizontalHours}j
+            </span>
+            <span className="text-[10px] text-zinc-500 block">
+              Trail GAP Pace
+            </span>
           </div>
           <div className="p-2 rounded-lg bg-white border border-zinc-300">
-            <span className="text-[10px] text-zinc-500 block uppercase font-bold">Transit / Aid Station</span>
-            <span className="text-sm font-black text-zinc-950">{prediction.stoppageHours}j</span>
-            <span className="text-[10px] text-zinc-500 block">Refill & buffer</span>
+            <span className="text-[10px] text-zinc-500 block uppercase font-bold">
+              Transit / Aid Station
+            </span>
+            <span className="text-sm font-black text-zinc-950">
+              {prediction.stoppageHours}j
+            </span>
+            <span className="text-[10px] text-zinc-500 block">
+              Refill & buffer
+            </span>
           </div>
         </div>
 
@@ -626,11 +673,14 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
             onClick={() => setShowFormulaDetails((prev) => !prev)}
             className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-zinc-700 hover:text-zinc-950 transition-all py-1 px-2.5 rounded-lg border-2 border-zinc-950 bg-white hover:bg-zinc-100 shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
           >
-            <BookOpen className="h-3.5 w-3.5 text-cyan-800" />
             <span>
               {showFormulaDetails
-                ? (language === "en" ? "Hide Scientific Formula" : "Tutup Rincian Formula")
-                : (language === "en" ? "🔬 View Scientific Formula & Biomechanics" : "🔬 Bedah Detail Rumus & Fisiologi")}
+                ? language === "en"
+                  ? "Hide Scientific Formula"
+                  : "Tutup Rincian Formula"
+                : language === "en"
+                  ? "View Scientific Formula & Biomechanics"
+                  : "Bedah Detail Rumus & Fisiologi"}
             </span>
             {showFormulaDetails ? (
               <ChevronUp className="h-3.5 w-3.5 text-zinc-700" />
@@ -654,22 +704,36 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                     : "Model Matematis Adaptive Split-Segment"}
                 </span>
               </div>
-              <span className={`self-start sm:self-auto px-2 py-0.5 rounded text-[10px] font-black border border-zinc-950 ${
-                pacingMode === "race_target" ? "bg-cyan-200 text-cyan-950" : "bg-emerald-200 text-emerald-950"
-              }`}>
+              <span
+                className={`self-start sm:self-auto px-2 py-0.5 rounded text-[10px] font-black border border-zinc-950 ${
+                  pacingMode === "race_target"
+                    ? "bg-cyan-200 text-cyan-950"
+                    : "bg-emerald-200 text-emerald-950"
+                }`}
+              >
                 {pacingMode === "race_target"
-                  ? (language === "en" ? "Active: Race Target (+35% VAM, 20s/km transit)" : "Aktif: Race Target (+35% VAM, 20dtk/km transit)")
-                  : (language === "en" ? "Active: Base Z2 (Natural VAM, 40s/km transit)" : "Aktif: Base Z2 (VAM Alami, 40dtk/km transit)")}
+                  ? language === "en"
+                    ? "Active: Race Target (+35% VAM, 20s/km transit)"
+                    : "Aktif: Race Target (+35% VAM, 20dtk/km transit)"
+                  : language === "en"
+                    ? "Active: Base Z2 (Natural VAM, 40s/km transit)"
+                    : "Aktif: Base Z2 (VAM Alami, 40dtk/km transit)"}
               </span>
             </div>
 
             {/* Core Formula Box */}
             <div className="p-3 rounded-lg bg-[#FAF9F5] border border-zinc-300 font-mono text-zinc-900 text-center">
               <span className="text-[11px] text-zinc-500 block mb-0.5 font-bold uppercase">
-                {language === "en" ? "Core Decomposition Formula" : "Formula Dekomposisi Utama"}
+                {language === "en"
+                  ? "Core Decomposition Formula"
+                  : "Formula Dekomposisi Utama"}
               </span>
               <div className="text-base sm:text-lg font-black tracking-tight text-zinc-950">
-                T<span className="text-xs">total</span> = T<span className="text-xs">uphill</span> + T<span className="text-xs">downhill</span> + T<span className="text-xs">flat</span> + T<span className="text-xs">aid</span>
+                T<span className="text-xs">total</span> = T
+                <span className="text-xs">uphill</span> + T
+                <span className="text-xs">downhill</span> + T
+                <span className="text-xs">flat</span> + T
+                <span className="text-xs">aid</span>
               </div>
             </div>
 
@@ -678,7 +742,9 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
               {/* Uphill Sektor */}
               <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 space-y-1.5">
                 <div className="flex items-center justify-between font-bold">
-                  <span className="text-cyan-950 font-black">1. Sektor Tanjakan (T_uphill)</span>
+                  <span className="text-cyan-950 font-black">
+                    1. Sektor Tanjakan (T_uphill)
+                  </span>
                   <span className="px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-950 text-[10px] font-black">
                     {prediction.uphillHours} Jam
                   </span>
@@ -689,14 +755,17 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                     : `D+ ${raceElevation}m / VAM Efektif ${prediction.effectiveVam} m/jam (dikalibrasi dari rata-rata historis COROS ${avgVam} m/jam).`}
                 </div>
                 <div className="text-[10px] text-zinc-500 italic">
-                  Ref: Minetti et al. (2002) Gradient Cost & Giovanelli (2016) Vertical Energetics
+                  Ref: Minetti et al. (2002) Gradient Cost & Giovanelli (2016)
+                  Vertical Energetics
                 </div>
               </div>
 
               {/* Downhill Sektor */}
               <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 space-y-1.5">
                 <div className="flex items-center justify-between font-bold">
-                  <span className="text-emerald-950 font-black">2. Sektor Turunan (T_downhill)</span>
+                  <span className="text-emerald-950 font-black">
+                    2. Sektor Turunan (T_downhill)
+                  </span>
                   <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-950 text-[10px] font-black">
                     {prediction.downhillHours} Jam
                   </span>
@@ -707,36 +776,42 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                     : `D- ${raceElevation}m dengan degradasi rem otot kuadrisep eksentrik bertahap seiring jarak.`}
                 </div>
                 <div className="text-[10px] text-zinc-500 italic">
-                  Ref: Millet et al. (2011) Neuromuscular Eccentric Damage in Mountain Ultras
+                  Ref: Millet et al. (2011) Neuromuscular Eccentric Damage in
+                  Mountain Ultras
                 </div>
               </div>
 
               {/* Flat Sektor */}
               <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 space-y-1.5">
                 <div className="flex items-center justify-between font-bold">
-                  <span className="text-amber-950 font-black">3. Sektor Datar / Rolling (T_flat)</span>
+                  <span className="text-amber-950 font-black">
+                    3. Sektor Datar / Rolling (T_flat)
+                  </span>
                   <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-950 text-[10px] font-black">
                     {prediction.horizontalHours} Jam
                   </span>
                 </div>
                 <div className="text-zinc-600 font-medium">
                   {prediction.horizontalHours === 0
-                    ? (language === "en"
-                        ? "0 km flat — course geometry is 100% pure mountain climbing and descending."
-                        : "0 km datar — profil rute 100% murni tanjakan dan turunan gunung ekstrem.")
-                    : (language === "en"
-                        ? "Evaluated via pure Trail Grade-Adjusted Pace (Trail GAP) with terrain friction."
-                        : "Dihitung via Trail Grade-Adjusted Pace (Trail GAP) di tanah/batu dengan friksi medan.")}
+                    ? language === "en"
+                      ? "0 km flat — course geometry is 100% pure mountain climbing and descending."
+                      : "0 km datar — profil rute 100% murni tanjakan dan turunan gunung ekstrem."
+                    : language === "en"
+                      ? "Evaluated via pure Trail Grade-Adjusted Pace (Trail GAP) with terrain friction."
+                      : "Dihitung via Trail Grade-Adjusted Pace (Trail GAP) di tanah/batu dengan friksi medan."}
                 </div>
                 <div className="text-[10px] text-zinc-500 italic">
-                  Ref: Peter Riegel (1981) Ultra Fatigue Power Law & ITRA Terrain Standard
+                  Ref: Peter Riegel (1981) Ultra Fatigue Power Law & ITRA
+                  Terrain Standard
                 </div>
               </div>
 
               {/* Aid Station */}
               <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-200 space-y-1.5">
                 <div className="flex items-center justify-between font-bold">
-                  <span className="text-zinc-950 font-black">4. Transit Pos / Aid Station (T_aid)</span>
+                  <span className="text-zinc-950 font-black">
+                    4. Transit Pos / Aid Station (T_aid)
+                  </span>
                   <span className="px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-950 text-[10px] font-black">
                     {prediction.stoppageHours} Jam
                   </span>
@@ -747,7 +822,8 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                     : `${raceDistance} km × ${pacingMode === "race_target" ? "20 dtk/km" : "40 dtk/km"} untuk refill hidrasi, elektrolit, dan ganti perlengkapan.`}
                 </div>
                 <div className="text-[10px] text-zinc-500 italic">
-                  Ref: Jason Koop (2016) Ultra Aid Station Transit Efficiency Protocol
+                  Ref: Jason Koop (2016) Ultra Aid Station Transit Efficiency
+                  Protocol
                 </div>
               </div>
             </div>
@@ -790,8 +866,8 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                 }`}
               >
                 {language === "en"
-                  ? "🏃 Finisher (Realistic)"
-                  : "🏃 Finisher (Realistis)"}
+                  ? "Finisher (Realistic)"
+                  : "Finisher (Realistis)"}
               </button>
               <button
                 onClick={() => setTrainingTier("elite")}
@@ -801,7 +877,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                     : "text-zinc-700 hover:text-zinc-950"
                 }`}
               >
-                🏔️ Elite / Pro Podium
+                Elite / Pro Podium
               </button>
             </div>
           </div>
@@ -1307,17 +1383,18 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
                             GAP Pace: {data.gapPace}
                           </div>
                           <div className="text-zinc-700 text-[10px] font-semibold pt-1 border-t border-zinc-200">
-                            {data.optimalStrategy === "power_hike" || data.optimalStrategy === "poles_mandatory"
+                            {data.optimalStrategy === "power_hike" ||
+                            data.optimalStrategy === "poles_mandatory"
                               ? language === "en"
                                 ? `🔥 Power-hiking is faster & saves ~${data.glycogenSavings}% glycogen`
                                 : `🔥 Power-hiking lebih cepat & hemat ~${data.glycogenSavings}% glikogen`
                               : data.optimalStrategy === "transition"
-                              ? language === "en"
-                                ? `⚖️ Transition Zone: Hike saves ~${data.glycogenSavings}% glycogen (similar VAM)`
-                                : `⚖️ Zona Transisi: Hike hemat ~${data.glycogenSavings}% glikogen (VAM setara)`
-                              : language === "en"
-                              ? "⚡ Running is mechanically more optimal (elastic recoil)"
-                              : "⚡ Lari lebih efisien secara mekanis (recoil elastis)"}
+                                ? language === "en"
+                                  ? `⚖️ Transition Zone: Hike saves ~${data.glycogenSavings}% glycogen (similar VAM)`
+                                  : `⚖️ Zona Transisi: Hike hemat ~${data.glycogenSavings}% glikogen (VAM setara)`
+                                : language === "en"
+                                  ? "⚡ Running is mechanically more optimal (elastic recoil)"
+                                  : "⚡ Lari lebih efisien secara mekanis (recoil elastis)"}
                           </div>
                         </div>
                       );
@@ -1580,12 +1657,20 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
               <span>Mountain Specificity</span>
               <span className="font-black text-cyan-800">
                 {currentDensity >= 65
-                  ? (language === "en" ? "Alpine / High Vert" : "Gunung Curam / Alpine")
+                  ? language === "en"
+                    ? "Alpine / High Vert"
+                    : "Gunung Curam / Alpine"
                   : currentDensity >= 35
-                  ? (language === "en" ? "Mountain Trail" : "Trail Berbukit")
-                  : currentDensity >= 15
-                  ? (language === "en" ? "Rolling Hills" : "Berbukit Ringan")
-                  : (language === "en" ? "Road Base" : "Dasar Jalan Datar")}
+                    ? language === "en"
+                      ? "Mountain Trail"
+                      : "Trail Berbukit"
+                    : currentDensity >= 15
+                      ? language === "en"
+                        ? "Rolling Hills"
+                        : "Berbukit Ringan"
+                      : language === "en"
+                        ? "Road Base"
+                        : "Dasar Jalan Datar"}
               </span>
             </div>
             <div className="text-2xl font-black text-zinc-950 font-mono">
