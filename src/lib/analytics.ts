@@ -674,6 +674,7 @@ export function estimateTrailRaceFinishTime(params: {
     distanceKm,
     elevationGainMeters,
     elevationLossMeters = elevationGainMeters,
+    flatMarathonPaceSecPerKm,
     historicalVamMetersPerHour = 320,
     pacingMode = "race_target",
   } = params;
@@ -693,6 +694,13 @@ export function estimateTrailRaceFinishTime(params: {
   // Ultra distance fatigue scaling (Peter Riegel power law)
   const ultraFatigueMultiplier = Math.pow(Math.max(1, distanceKm / 21.1), 0.06);
 
+  const baseFlatPace =
+    flatMarathonPaceSecPerKm && flatMarathonPaceSecPerKm > 180
+      ? flatMarathonPaceSecPerKm
+      : 330;
+  const raceFlatPace = baseFlatPace * 1.15; // 15% trail friction penalty over flat road tarmac
+  const consFlatPace = baseFlatPace * 1.30; // 30% conservative trail rolling pace
+
   // REGIME A: COMPETITIVE RACE TARGET (Tight COT / Pacing Lomba di Ambang Aerobic Power)
   const raceVam = Math.max(
     220,
@@ -701,7 +709,7 @@ export function estimateTrailRaceFinishTime(params: {
   const raceUphillSec = (elevationGainMeters / raceVam) * 3600;
   const raceDownhillSpeed = 1650 / (1.0 + Math.min(0.30, (distanceKm / 200) * 0.30));
   const raceDownhillSec = (elevationLossMeters / raceDownhillSpeed) * 3600;
-  const raceFlatSec = flatDistKm * (360 * ultraFatigueMultiplier);
+  const raceFlatSec = flatDistKm * (raceFlatPace * ultraFatigueMultiplier);
   const raceStopSec = distanceKm * 20; // 20s/km efficient aid station turnover
   const raceTotalSec = Math.round(raceUphillSec + raceDownhillSec + raceFlatSec + raceStopSec);
 
@@ -713,7 +721,7 @@ export function estimateTrailRaceFinishTime(params: {
   const consUphillSec = (elevationGainMeters / consVam) * 3600;
   const consDownhillSpeed = 1350 / (1.0 + Math.min(0.40, (distanceKm / 200) * 0.40));
   const consDownhillSec = (elevationLossMeters / consDownhillSpeed) * 3600;
-  const consFlatSec = flatDistKm * (420 * ultraFatigueMultiplier);
+  const consFlatSec = flatDistKm * (consFlatPace * ultraFatigueMultiplier);
   const consStopSec = distanceKm * 40; // 40s/km thorough aid station rest
   const consTotalSec = Math.round(consUphillSec + consDownhillSec + consFlatSec + consStopSec);
 
