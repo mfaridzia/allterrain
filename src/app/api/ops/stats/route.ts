@@ -11,9 +11,9 @@ export async function GET(req: NextRequest) {
     const currentAthleteId = await getCurrentAthleteId(req);
     const url = req.nextUrl;
     const queryKey = url.searchParams.get("key");
-    const headerKey = req.headers.get("x-admin-key");
+    const headerKey = req.headers.get("x-ops-key");
     const passedKey = queryKey || headerKey;
-    const envSecret = process.env.ADMIN_SECRET_KEY || "allterrain-admin";
+    const envSecret = process.env.ADMIN_SECRET_KEY || process.env.OPS_SECRET_KEY || "allterrain-ops";
     const envAdminId = process.env.ADMIN_ATHLETE_ID;
 
     const isOwner =
@@ -145,7 +145,7 @@ export async function GET(req: NextRequest) {
       athletes,
     });
   } catch (err: any) {
-    console.error("Admin stats route error:", err);
+    console.error("Ops stats route error:", err);
     return NextResponse.json({ error: "Failed to fetch telemetry stats", message: err.message }, { status: 500 });
   }
 }
