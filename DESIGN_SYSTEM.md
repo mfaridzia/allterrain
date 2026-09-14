@@ -210,6 +210,9 @@ When maintaining or extending this interface, adhere to these rules:
 4. ❌ **No Regular Sans-Serif Numbers for Telemetry Data:**
    - *Prohibited:* `<span className="font-sans">4:12/km</span>`.
    - *Mandatory:* `<span className="font-mono font-black">04:12/km</span>`.
+5. ❌ **No Emoji Icons in Buttons, Labels, or Badges (Anti AI-Slop):**
+   - *Prohibited:* Unicode emoji characters embedded in button copy, tab titles, or badges (e.g., `🎯 Race Target`, `🛡️ Conservative`, `🏃 Finisher`, `🏔️ Elite`, `🔬 View Science`). This degrades professional telemetry into unpolished "AI slop".
+   - *Mandatory:* Always use precision-scaled vector icons from `lucide-react` (e.g., `<Target className="h-3.5 w-3.5 stroke-[2.5]" />`, `<ShieldCheck className="h-3.5 w-3.5 stroke-[2.5]" />`, `<BookOpen className="h-3.5 w-3.5 stroke-[2.5]" />`) or rely on clean, authoritative typography.
 
 ---
 
