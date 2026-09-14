@@ -378,6 +378,15 @@ The training periodization module implements classical periodization theory (Tud
 
 ---
 
+### 4.13 Standalone Mission Control & Admin Telemetry Console (`/admin`)
+
+An isolated, unlinked command center at route `/admin` (backed by `/api/admin/stats`) designed for platform observability and athlete connection audits:
+- **Authentication & Security Guard:** Strictly restricts access to the platform owner athlete ID (`a1eb63e96de04fc1b48785bc47d0676a` / `ADMIN_ATHLETE_ID`) or via an optional `ADMIN_SECRET_KEY`. Unauthenticated requests return a `404 Not Found` response.
+- **Isolated Shell Architecture:** Operates on an independent standalone dark console shell completely detached from the consumer AllTerrain dashboard.
+- **Real-Time Telemetry:** Tracks total registered athlete accounts (`auth_tokens`), active athletes in the last 7 days, global synced workouts, total distance (km), total vertical climb (m D+), active sessions, and database ping latency.
+
+---
+
 ## 5. Scientific References & Citations
 
 1. **Bannister, E. W. (1991).** *Modeling Elite Athletic Performance.* Physiological Testing of the High-Performance Athlete (pp. 403-424). Human Kinetics.
