@@ -59,6 +59,10 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
                 {t("readiness.title", "Training Readiness & Suggestion")}
               </h3>
               <MetricTooltip term="readiness" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase font-mono border border-zinc-950 bg-amber-300 text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+                <CalendarCheck className="h-3 w-3" />
+                <span>Siklus 3:1 Aligned</span>
+              </span>
             </div>
             <p className="text-xs font-mono text-zinc-600 font-semibold mt-0.5">
               <span className="hidden sm:inline">

@@ -362,6 +362,22 @@ $$\text{Energy Gels Required} = \left\lceil \frac{\text{Total Carbohydrates} \ (
 
 ---
 
+### 4.12 Scientific Periodization & 3:1 Mesocycle Wave Architecture
+
+The training periodization module implements classical periodization theory (Tudor Bompa, Matveyev, Joe Friel) integrated with ultra-endurance wave loading (Jason Koop 2016):
+
+1. **Mesocycle 3:1 Wave Pattern:**
+   - **Week 1 (Base Load):** Volume multiplier $1.00\times$ (aerobic adaptation baseline).
+   - **Week 2 (Progressive Overload):** Volume multiplier $1.08\times$ (+8% over Week 1).
+   - **Week 3 (Peak Load):** Volume multiplier $1.16\times$ (+16% over Week 1).
+   - **Week 4 (Deload / Supercompensation):** Volume multiplier $0.68\times$ (-32% from peak load) allowing structural cellular repair, glycogen resynthesis, and rapid ATL fatigue decay.
+
+2. **Macrocycle Modes:**
+   - **Continuous Base Mode:** Endless rolling 4-week mesocycles safeguarding fitness progression without race day stress.
+   - **Target Race Countdown Mode:** Backward-anchored macrocycle targeting peak CTL and a TSB surge of $+10\text{--}+15$ on Race Day via a structured 2–3 week taper.
+
+---
+
 ## 5. Scientific References & Citations
 
 1. **Bannister, E. W. (1991).** *Modeling Elite Athletic Performance.* Physiological Testing of the High-Performance Athlete (pp. 403-424). Human Kinetics.
@@ -374,3 +390,5 @@ $$\text{Energy Gels Required} = \left\lceil \frac{\text{Total Carbohydrates} \ (
 8. **Costa, R. J., et al. (2019).** *Nutrition for ultra-endurance running: Trail and ultramarathons.* International Journal of Sport Nutrition and Exercise Metabolism, 29(2), 130-140.
 9. **International Trail Running Association (ITRA).** *Evaluation Criteria & Km-Effort Endurance Points Specification.* [https://itra.run](https://itra.run).
 10. **House, S., Johnston, S., & Jornet, K. (2019).** *Training for the Uphill Athlete: A Manual for Mountain Runners and Ski Mountaineers.* Patagonia Books.
+11. **Bompa, T. O., & Buzzichelli, C. (2018).** *Periodization: Theory and Methodology of Training.* Human Kinetics.
+12. **Koop, J. (2016).** *Training Essentials for Ultrarunning.* VP.

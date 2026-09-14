@@ -25,6 +25,11 @@ export async function GET(req: NextRequest) {
     athleteMaxHrStr,
     athleteRestingHrStr,
     athleteLthrStr,
+    periodizationMode,
+    periodizationFocus,
+    periodizationRaceDate,
+    periodizationRaceDistStr,
+    periodizationRaceElevStr,
   ] = await Promise.all([
     getSetting("ai_provider", defaultProvider, athleteId),
     getSetting("ai_model_name", defaultModel, athleteId),
@@ -41,6 +46,11 @@ export async function GET(req: NextRequest) {
     getSetting("athlete_max_hr", "", athleteId),
     getSetting("athlete_resting_hr", "", athleteId),
     getSetting("athlete_lthr", "", athleteId),
+    getSetting("periodization_mode", "continuous", athleteId),
+    getSetting("periodization_focus", "hybrid", athleteId),
+    getSetting("periodization_race_date", "", athleteId),
+    getSetting("periodization_race_dist", "60", athleteId),
+    getSetting("periodization_race_elev", "5400", athleteId),
   ]);
 
   const hasGeminiKey = !!geminiKey;
@@ -98,6 +108,13 @@ export async function GET(req: NextRequest) {
       targetRaceElev: Number(trailTargetRaceElevStr),
       weeklyVertTarget: Number(trailWeeklyVertTargetStr),
       trainingTier: trailTrainingTier,
+    },
+    periodizationSettings: {
+      mode: periodizationMode || "continuous",
+      focus: periodizationFocus || "hybrid",
+      raceDate: periodizationRaceDate || "",
+      raceDist: Number(periodizationRaceDistStr || "60"),
+      raceElev: Number(periodizationRaceElevStr || "5400"),
     },
   });
 }
@@ -173,6 +190,21 @@ export async function POST(req: NextRequest) {
       } else {
         await setSetting("athlete_lthr", String(body.athleteLthr), athleteId);
       }
+    }
+    if (body.periodizationMode !== undefined) {
+      await setSetting("periodization_mode", String(body.periodizationMode), athleteId);
+    }
+    if (body.periodizationFocus !== undefined) {
+      await setSetting("periodization_focus", String(body.periodizationFocus), athleteId);
+    }
+    if (body.periodizationRaceDate !== undefined) {
+      await setSetting("periodization_race_date", String(body.periodizationRaceDate), athleteId);
+    }
+    if (body.periodizationRaceDist !== undefined) {
+      await setSetting("periodization_race_dist", String(body.periodizationRaceDist), athleteId);
+    }
+    if (body.periodizationRaceElev !== undefined) {
+      await setSetting("periodization_race_elev", String(body.periodizationRaceElev), athleteId);
     }
 
     return NextResponse.json({ success: true });

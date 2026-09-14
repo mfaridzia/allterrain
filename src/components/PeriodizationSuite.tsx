@@ -1,0 +1,557 @@
+"use client";
+
+import React, { useState, useMemo, useEffect } from "react";
+import {
+  Calendar,
+  Trophy,
+  RefreshCw,
+  Layers,
+  Flame,
+  Mountain,
+  CheckCircle2,
+  AlertCircle,
+  TrendingUp,
+  Activity,
+  ArrowRight,
+  ShieldCheck,
+  Zap,
+  Info,
+  ChevronRight,
+  Clock,
+  Compass,
+} from "lucide-react";
+import { useTranslation } from "@/lib/i18n/context";
+import { useUpdateSettingsMutation } from "@/lib/queries";
+import {
+  PeriodizationMode,
+  DisciplineFocus,
+  generatePeriodizationPlan,
+  WeeklyPlan,
+} from "@/lib/periodization";
+
+interface PeriodizationSuiteProps {
+  currentCtl?: number;
+  currentAtl?: number;
+  currentTsb?: number;
+  thisWeekDistanceKm?: number;
+  thisWeekGain?: number;
+  thisWeekLoad?: number;
+  savedMode?: PeriodizationMode;
+  savedFocus?: DisciplineFocus;
+  savedRaceDate?: string;
+  savedRaceDist?: number;
+  savedRaceElev?: number;
+}
+
+export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
+  currentCtl = 42,
+  currentAtl = 42,
+  currentTsb = 0,
+  thisWeekDistanceKm = 0,
+  thisWeekGain = 0,
+  thisWeekLoad = 0,
+  savedMode = "continuous",
+  savedFocus = "hybrid",
+  savedRaceDate = "",
+  savedRaceDist = 60,
+  savedRaceElev = 5400,
+}) => {
+  const { language } = useTranslation();
+  const updateSettings = useUpdateSettingsMutation();
+
+  const [mode, setMode] = useState<PeriodizationMode>(savedMode);
+  const [focus, setFocus] = useState<DisciplineFocus>(savedFocus);
+  const [raceDate, setRaceDate] = useState<string>(savedRaceDate);
+  const [raceDist, setRaceDist] = useState<number>(savedRaceDist);
+  const [raceElev, setRaceElev] = useState<number>(savedRaceElev);
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(0);
+
+  // Sync from props on mount if prop arrives late
+  useEffect(() => {
+    if (savedMode) setMode(savedMode);
+    if (savedFocus) setFocus(savedFocus);
+    if (savedRaceDate) setRaceDate(savedRaceDate);
+    if (savedRaceDist) setRaceDist(savedRaceDist);
+    if (savedRaceElev) setRaceElev(savedRaceElev);
+  }, [savedMode, savedFocus, savedRaceDate, savedRaceDist, savedRaceElev]);
+
+  // Debounced save to database
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateSettings.mutate({
+        periodizationMode: mode,
+        periodizationFocus: focus,
+        periodizationRaceDate: raceDate,
+        periodizationRaceDist: raceDist,
+        periodizationRaceElev: raceElev,
+      } as any);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [mode, focus, raceDate, raceDist, raceElev]);
+
+  // Generate scientific periodization plan
+  const plan = useMemo(() => {
+    return generatePeriodizationPlan({
+      mode,
+      focus,
+      targetRaceDate: mode === "target_race" ? raceDate : undefined,
+      targetRaceDist: raceDist,
+      targetRaceElev: raceElev,
+      currentCtl,
+      avgWeeklyKm: thisWeekDistanceKm > 10 ? thisWeekDistanceKm : 48,
+      avgWeeklyGain: thisWeekGain > 200 ? thisWeekGain : 1600,
+    });
+  }, [mode, focus, raceDate, raceDist, raceElev, currentCtl, thisWeekDistanceKm, thisWeekGain]);
+
+  const currentPlanWeek = plan.currentWeek;
+  const inspectedWeek: WeeklyPlan = plan.weeksInCycle[selectedWeekIndex] || currentPlanWeek;
+
+  // Percentage progress against current targets
+  const distPct = Math.min(150, Math.round((thisWeekDistanceKm / Math.max(1, currentPlanWeek.targetDistanceKm)) * 100));
+  const gainPct = Math.min(150, Math.round((thisWeekGain / Math.max(1, currentPlanWeek.targetElevationGain)) * 100));
+  const loadPct = Math.min(150, Math.round((thisWeekLoad / Math.max(1, currentPlanWeek.targetTrainingLoad)) * 100));
+
+  return (
+    <div className="p-5 sm:p-7 rounded-2xl bg-white border-2 border-zinc-950 shadow-[4px_4px_0px_0px_#09090b] space-y-7 text-zinc-950">
+      {/* Top Header & Context */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-zinc-950 pb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-zinc-950 bg-amber-300 text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
+              PERIODIZATION & MESOCYCLE 3:1
+            </span>
+            <span className="text-[10px] font-bold font-mono text-zinc-500">
+              Bompa, Koop & Friel Methodology
+            </span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-zinc-950">
+            {language === "en"
+              ? "Training Periodization & Mesocycle Engine"
+              : "Periodisasi Latihan & Arsitektur Siklus 3:1"}
+          </h2>
+          <p className="text-xs text-zinc-600 font-medium mt-0.5">
+            {language === "en"
+              ? "Scientific 3-weeks progressive loading followed by 1-week structured supercompensation deload."
+              : "Model gelombang progresif 3 minggu beban latihan diikuti 1 pekan deload superkompensasi terstruktur."}
+          </p>
+        </div>
+
+        {/* Mode Selector: Target Race vs Continuous Base */}
+        <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+          <div className="inline-flex rounded-xl border-2 border-zinc-950 p-0.5 bg-zinc-100 text-xs font-mono font-bold shadow-[1.5px_1.5px_0px_0px_#09090b]">
+            <button
+              type="button"
+              onClick={() => {
+                setMode("continuous");
+                setSelectedWeekIndex(0);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                mode === "continuous"
+                  ? "bg-amber-400 text-zinc-950 border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                  : "text-zinc-600 hover:text-zinc-950"
+              }`}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>{language === "en" ? "Continuous Base (No Race)" : "Pondasi Berkelanjutan (Tanpa Lomba)"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("target_race");
+                if (!raceDate) {
+                  // Default to 12 weeks from today if empty
+                  const d = new Date();
+                  d.setDate(d.getDate() + 84);
+                  setRaceDate(d.toISOString().split("T")[0]);
+                }
+                setSelectedWeekIndex(0);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                mode === "target_race"
+                  ? "bg-cyan-400 text-zinc-950 border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                  : "text-zinc-600 hover:text-zinc-950"
+              }`}
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              <span>{language === "en" ? "Target Race Countdown" : "Target Lomba (Countdown)"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Configuration Controls Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 text-xs font-mono shadow-[2px_2px_0px_0px_#09090b]">
+        {/* Discipline Focus */}
+        <div>
+          <span className="text-[10px] text-zinc-500 font-sans font-bold uppercase block mb-1.5">
+            {language === "en" ? "Discipline Focus:" : "Fokus Disiplin:"}
+          </span>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              type="button"
+              onClick={() => setFocus("hybrid")}
+              className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg font-bold border transition-all ${
+                focus === "hybrid"
+                  ? "bg-white text-zinc-950 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                  : "border-zinc-300 text-zinc-600 hover:text-zinc-950"
+              }`}
+            >
+              <Layers className="h-3 w-3" />
+              <span>Hybrid</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFocus("road")}
+              className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg font-bold border transition-all ${
+                focus === "road"
+                  ? "bg-white text-zinc-950 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                  : "border-zinc-300 text-zinc-600 hover:text-zinc-950"
+              }`}
+            >
+              <Flame className="h-3 w-3" />
+              <span>Road</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFocus("trail")}
+              className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg font-bold border transition-all ${
+                focus === "trail"
+                  ? "bg-white text-zinc-950 border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                  : "border-zinc-300 text-zinc-600 hover:text-zinc-950"
+              }`}
+            >
+              <Mountain className="h-3 w-3" />
+              <span>Trail</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Target Race Inputs (if mode === target_race) or Cycle Focus */}
+        {mode === "target_race" ? (
+          <>
+            <div>
+              <span className="text-[10px] text-zinc-500 font-sans font-bold uppercase block mb-1.5">
+                {language === "en" ? "Target Race Date:" : "Tanggal Hari H Lomba:"}
+              </span>
+              <input
+                type="date"
+                value={raceDate}
+                onChange={(e) => setRaceDate(e.target.value)}
+                className="w-full bg-white border border-zinc-400 focus:border-zinc-950 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-zinc-950 shadow-sm"
+              />
+            </div>
+            <div>
+              <span className="text-[10px] text-zinc-500 font-sans font-bold uppercase block mb-1.5">
+                {language === "en" ? "Race Specifications:" : "Spesifikasi Lomba:"}
+              </span>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-1 bg-white border border-zinc-400 rounded-lg px-2 py-1">
+                  <input
+                    type="number"
+                    value={raceDist}
+                    onChange={(e) => setRaceDist(Number(e.target.value))}
+                    className="w-12 text-xs font-mono font-bold text-zinc-950 outline-none"
+                  />
+                  <span className="text-[10px] text-zinc-500">km</span>
+                </div>
+                <div className="flex-1 flex items-center gap-1 bg-white border border-zinc-400 rounded-lg px-2 py-1">
+                  <input
+                    type="number"
+                    value={raceElev}
+                    onChange={(e) => setRaceElev(Number(e.target.value))}
+                    className="w-14 text-xs font-mono font-bold text-zinc-950 outline-none"
+                  />
+                  <span className="text-[10px] text-zinc-500">m D+</span>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="col-span-2 flex items-center justify-between p-2.5 rounded-lg bg-white border border-zinc-300">
+            <div>
+              <span className="text-[10px] text-zinc-500 block uppercase font-bold">
+                {language === "en" ? "Continuous Fitness Strategy" : "Strategi Kebugaran Berkelanjutan"}
+              </span>
+              <span className="text-xs font-bold text-zinc-900">
+                {language === "en"
+                  ? "Stable CTL progression via repeating 4-week mesocycles (3 loading : 1 deload)."
+                  : "Kenaikan CTL stabil & aman via siklus 4 pekan berulang (3 minggu naik : 1 minggu deload)."}
+              </span>
+            </div>
+            <div className="text-right shrink-0 pl-3">
+              <span className="text-[10px] text-zinc-500 block uppercase font-bold">Baseline CTL</span>
+              <span className="text-base font-black font-mono text-cyan-800">{currentCtl} pts</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 1 (OPSI A): Current Week Operational HUD */}
+      <div className="p-5 sm:p-6 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 space-y-5 shadow-[3px_3px_0px_0px_#09090b]">
+        {/* HUD Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-zinc-200">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-sans font-bold text-zinc-500 uppercase tracking-wider">
+                {language === "en" ? "CURRENT OPERATIONAL WEEK" : "STATUS MINGGU BERJALAN"}
+              </span>
+              <span className="px-2 py-0.2 rounded border border-zinc-950 text-[9px] font-black uppercase font-mono bg-zinc-900 text-white">
+                {currentPlanWeek.weekDateStr}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-lg sm:text-xl font-black text-zinc-950">
+              <span>{language === "en" ? currentPlanWeek.phaseLabel.en : currentPlanWeek.phaseLabel.id}</span>
+              <span className="text-zinc-400 font-normal">/</span>
+              <span className="text-cyan-900">{language === "en" ? currentPlanWeek.mesoLabel.en : currentPlanWeek.mesoLabel.id}</span>
+            </div>
+          </div>
+
+          {/* Deload Status Countdown Pill */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-zinc-950 font-mono text-xs font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] ${
+            currentPlanWeek.isDeload
+              ? "bg-emerald-300 text-emerald-950"
+              : plan.nextDeloadInWeeks === 1
+              ? "bg-amber-300 text-amber-950"
+              : "bg-white text-zinc-950"
+          }`}>
+            {currentPlanWeek.isDeload ? (
+              <>
+                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-950" />
+                <span>{language === "en" ? "Deload Week Active (-32% Volume)" : "Pekan Deload Sedang Berjalan (-32%)"}</span>
+              </>
+            ) : (
+              <>
+                <Clock className="h-4 w-4 shrink-0 text-zinc-700" />
+                <span>
+                  {language === "en"
+                    ? `${plan.nextDeloadInWeeks} week${plan.nextDeloadInWeeks > 1 ? "s" : ""} until Deload Week`
+                    : `Sisa ${plan.nextDeloadInWeeks} minggu menuju Pekan Deload`}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 3 Live Targets Progress Bars: Distance, Vert, Training Load */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Distance Quota */}
+          <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-500 font-bold uppercase">{language === "en" ? "Weekly Distance" : "Jarak Mingguan"}</span>
+              <span className="font-black text-zinc-950">{distPct}%</span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <div className="text-2xl font-black font-mono text-zinc-950">
+                {thisWeekDistanceKm}{" "}
+                <span className="text-xs font-normal text-zinc-500">/ {currentPlanWeek.targetDistanceKm} km</span>
+              </div>
+            </div>
+            <div className="w-full bg-zinc-100 border border-zinc-950 h-2.5 rounded-full overflow-hidden">
+              <div
+                className="bg-emerald-400 h-full transition-all duration-500"
+                style={{ width: `${Math.min(100, distPct)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Elevation Vert Quota */}
+          <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-500 font-bold uppercase">{language === "en" ? "Vertical Ascent" : "Tanjakan Vertikal"}</span>
+              <span className="font-black text-cyan-900">{gainPct}%</span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <div className="text-2xl font-black font-mono text-zinc-950">
+                +{thisWeekGain}m{" "}
+                <span className="text-xs font-normal text-zinc-500">/ +{currentPlanWeek.targetElevationGain}m D+</span>
+              </div>
+            </div>
+            <div className="w-full bg-zinc-100 border border-zinc-950 h-2.5 rounded-full overflow-hidden">
+              <div
+                className="bg-cyan-400 h-full transition-all duration-500"
+                style={{ width: `${Math.min(100, gainPct)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Training Load Quota */}
+          <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-500 font-bold uppercase">{language === "en" ? "Training Load (TL)" : "Beban Latihan (TL)"}</span>
+              <span className="font-black text-purple-900">{loadPct}%</span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <div className="text-2xl font-black font-mono text-zinc-950">
+                {thisWeekLoad}{" "}
+                <span className="text-xs font-normal text-zinc-500">/ {currentPlanWeek.targetTrainingLoad} TL</span>
+              </div>
+            </div>
+            <div className="w-full bg-zinc-100 border border-zinc-950 h-2.5 rounded-full overflow-hidden">
+              <div
+                className="bg-purple-400 h-full transition-all duration-500"
+                style={{ width: `${Math.min(100, loadPct)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Key Workout & Sports Science Prescription for the Week */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+          <div className="p-3 rounded-lg bg-white border border-zinc-300 space-y-1">
+            <span className="text-[10px] text-zinc-500 font-bold uppercase block">
+              {language === "en" ? "Key Workout of the Week:" : "Sesi Kunci Minggu Ini:"}
+            </span>
+            <div className="font-bold text-zinc-950 flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+              <span>{language === "en" ? currentPlanWeek.keyWorkoutFocus.en : currentPlanWeek.keyWorkoutFocus.id}</span>
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-white border border-zinc-300 space-y-1">
+            <span className="text-[10px] text-zinc-500 font-bold uppercase block">
+              {language === "en" ? "Sports Science Directive:" : "Petunjuk Fisiologis Sains:"}
+            </span>
+            <div className="text-zinc-700 font-medium">
+              {language === "en" ? currentPlanWeek.prescriptionTip.en : currentPlanWeek.prescriptionTip.id}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 2 (OPSI B): Interactive 3:1 Mesocycle Wave Chart & Timeline */}
+      <div className="space-y-4 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-base sm:text-lg font-black tracking-tight text-zinc-950 flex items-center gap-2">
+              <Activity className="h-4 w-4 text-cyan-800" />
+              <span>
+                {mode === "target_race"
+                  ? (language === "en" ? "Macrocycle Wave Roadmap to Race Day" : "Roadmap Gelombang Makrosiklus Menuju Lomba")
+                  : (language === "en" ? "Mesocycle 3:1 Rolling Wave Architecture" : "Arsitektur Gelombang Mesosiklus 3:1")}
+              </span>
+            </h3>
+            <p className="text-xs text-zinc-600 font-medium">
+              {language === "en"
+                ? "Click any week below to inspect target workloads, vertical quotas, and workout focus."
+                : "Klik salah satu pekan di bawah untuk membedah target kuota elevasi, jarak, dan fokus latihannya."}
+            </p>
+          </div>
+          {mode === "target_race" && plan.daysUntilRace !== undefined && (
+            <div className="px-3 py-1.5 rounded-lg border-2 border-zinc-950 bg-amber-300 text-zinc-950 text-xs font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b] self-start sm:self-auto">
+              {plan.weeksUntilRace} {language === "en" ? "Weeks" : "Minggu"} ({plan.daysUntilRace} {language === "en" ? "Days to Race" : "Hari Menuju Race"})
+            </div>
+          )}
+        </div>
+
+        {/* Horizontal Week Cards / Wave Representation */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
+          {plan.weeksInCycle.slice(0, 8).map((week, idx) => {
+            const isSelected = selectedWeekIndex === idx;
+            return (
+              <button
+                key={week.weekNumber}
+                type="button"
+                onClick={() => setSelectedWeekIndex(idx)}
+                className={`p-3.5 rounded-xl border-2 text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+                  isSelected
+                    ? "border-zinc-950 bg-white ring-2 ring-zinc-950 shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
+                    : "border-zinc-300 bg-[#FAF9F5] hover:border-zinc-950 hover:bg-white shadow-[1.5px_1.5px_0px_0px_#09090b]"
+                }`}
+              >
+                {/* Week Header */}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono font-black text-zinc-500 uppercase">
+                    W{week.weekNumber} • {week.weekDateStr}
+                  </span>
+                  {week.isCurrentWeek && (
+                    <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-400 text-zinc-950 border border-zinc-950">
+                      LIVE
+                    </span>
+                  )}
+                </div>
+
+                {/* Phase & Meso Tag */}
+                <div className="space-y-0.5 mb-3">
+                  <span className={`text-[9px] font-mono font-bold uppercase block px-1.5 py-0.5 rounded w-fit border border-zinc-950 ${
+                    week.isRaceWeek
+                      ? "bg-amber-300 text-zinc-950"
+                      : week.phase === "taper"
+                      ? "bg-emerald-200 text-emerald-950"
+                      : week.isDeload
+                      ? "bg-emerald-300 text-emerald-950"
+                      : week.mesoType === "load_peak"
+                      ? "bg-rose-200 text-rose-950"
+                      : "bg-cyan-200 text-cyan-950"
+                  }`}>
+                    {language === "en" ? week.mesoLabel.en : week.mesoLabel.id}
+                  </span>
+                </div>
+
+                {/* Simulated Volume Wave Height Visual Bar */}
+                <div className="my-2 space-y-1">
+                  <div className="w-full bg-zinc-200 h-2 rounded-full overflow-hidden border border-zinc-400">
+                    <div
+                      className={`h-full transition-all ${
+                        week.isDeload
+                          ? "bg-emerald-500"
+                          : week.mesoType === "load_peak"
+                          ? "bg-rose-500"
+                          : "bg-cyan-600"
+                      }`}
+                      style={{ width: `${Math.round(week.volumeMultiplier * 75)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Targets Summary */}
+                <div className="pt-1 text-[11px] font-mono flex items-center justify-between text-zinc-900 font-bold border-t border-zinc-200">
+                  <span>{week.targetDistanceKm} km</span>
+                  <span className="text-cyan-800">+{week.targetElevationGain}m</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Inspected Week Deep Dive Panel */}
+        <div className="p-4 sm:p-5 rounded-xl bg-white border-2 border-zinc-950 space-y-3 shadow-[2px_2px_0px_0px_#09090b] text-xs font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-200 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-zinc-950 text-white">
+                W{inspectedWeek.weekNumber} PLAN
+              </span>
+              <span className="font-bold text-sm text-zinc-950">
+                {inspectedWeek.weekDateStr} — {language === "en" ? inspectedWeek.mesoLabel.en : inspectedWeek.mesoLabel.id}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-xs font-bold text-zinc-800">
+              <span>Target: <strong className="text-zinc-950 font-black">{inspectedWeek.targetDistanceKm} km</strong></span>
+              <span>•</span>
+              <span>Vert: <strong className="text-cyan-900 font-black">+{inspectedWeek.targetElevationGain}m D+</strong></span>
+              <span>•</span>
+              <span>Load: <strong className="text-purple-900 font-black">{inspectedWeek.targetTrainingLoad} TL</strong></span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
+            <div>
+              <span className="text-[10px] text-zinc-500 font-bold uppercase block mb-1">
+                {language === "en" ? "Key Workout Focus:" : "Fokus Menu Latihan:"}
+              </span>
+              <p className="font-bold text-zinc-900 leading-snug">
+                {language === "en" ? inspectedWeek.keyWorkoutFocus.en : inspectedWeek.keyWorkoutFocus.id}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] text-zinc-500 font-bold uppercase block mb-1">
+                {language === "en" ? "Physiological Rationale:" : "Rasional Sains Olahraga:"}
+              </span>
+              <p className="text-zinc-600 font-medium leading-snug">
+                {language === "en" ? inspectedWeek.prescriptionTip.en : inspectedWeek.prescriptionTip.id}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -13,8 +13,9 @@ import { RecoveryRadar } from "@/components/RecoveryRadar";
 import { TrainingReadinessCard } from "@/components/TrainingReadinessCard";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { WeeklyZoneProgressionCard } from "@/components/WeeklyZoneProgressionCard";
+import { PeriodizationSuite } from "@/components/PeriodizationSuite";
 import dynamic from "next/dynamic";
-import { Trophy, Mountain, RefreshCw, AlertCircle, CheckCircle2, Layers } from "lucide-react";
+import { Trophy, Mountain, RefreshCw, AlertCircle, CheckCircle2, Layers, Calendar } from "lucide-react";
 import { useDashboardData, useSyncCorosMutation, useDisconnectMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -36,7 +37,7 @@ export default function DashboardPage() {
 
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"evolab" | "trail" | "zones">("evolab");
+  const [activeTab, setActiveTab] = useState<"evolab" | "trail" | "periodization" | "zones">("evolab");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [scaleMode, setScaleMode] = useState<"coros" | "intervals">("coros");
 
@@ -219,6 +220,19 @@ export default function DashboardPage() {
                 </button>
 
                 <button
+                  onClick={() => setActiveTab("periodization")}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all shrink-0 ${
+                    activeTab === "periodization"
+                      ? "bg-emerald-400 text-black shadow-[3px_3px_0px_0px_#09090b] -translate-y-0.5"
+                      : "bg-white text-zinc-700 hover:text-black hover:bg-zinc-50 shadow-[2px_2px_0px_0px_#09090b] dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  <Calendar className="h-4 w-4 text-zinc-950 shrink-0" />
+                  <span className="sm:inline hidden">Periodisasi & Mesocycle</span>
+                  <span className="sm:hidden inline">Periodisasi</span>
+                </button>
+
+                <button
                   onClick={() => setActiveTab("zones")}
                   className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-black rounded-xl border-2 border-zinc-950 transition-all shrink-0 ${
                     activeTab === "zones"
@@ -269,6 +283,22 @@ export default function DashboardPage() {
                   savedTargetRaceElev={dashboardData.trail?.targetRaceElev}
                   savedWeeklyVertTarget={dashboardData.trail?.weeklyVertTarget}
                   savedTrainingTier={dashboardData.trail?.trainingTier}
+                />
+              </div>
+
+              <div className={activeTab === "periodization" ? "block" : "hidden"}>
+                <PeriodizationSuite
+                  currentCtl={dashboardData.current?.ctl || 42}
+                  currentAtl={dashboardData.current?.atl || 42}
+                  currentTsb={dashboardData.current?.tsb || 0}
+                  thisWeekDistanceKm={dashboardData.trail?.thisWeekDistanceKm || 0}
+                  thisWeekGain={dashboardData.trail?.thisWeekGain || 0}
+                  thisWeekLoad={dashboardData.periodization?.thisWeekLoad || dashboardData.trail?.thisWeekLoad || 0}
+                  savedMode={dashboardData.periodization?.mode}
+                  savedFocus={dashboardData.periodization?.focus}
+                  savedRaceDate={dashboardData.periodization?.raceDate}
+                  savedRaceDist={dashboardData.periodization?.raceDist}
+                  savedRaceElev={dashboardData.periodization?.raceElev}
                 />
               </div>
 

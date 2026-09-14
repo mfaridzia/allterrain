@@ -73,6 +73,11 @@ export async function GET(req: NextRequest) {
     athleteMaxHrRes,
     athleteRestingHrRes,
     athleteLthrRes,
+    periodizationModeStr,
+    periodizationFocusStr,
+    periodizationRaceDateStr,
+    periodizationRaceDistStr,
+    periodizationRaceElevStr,
   ] = await Promise.all([
     db.execute({
       sql: `SELECT * FROM daily_metrics WHERE athlete_id = ? ORDER BY date ASC`,
@@ -91,6 +96,11 @@ export async function GET(req: NextRequest) {
     getSetting("athlete_max_hr", "", athleteId),
     getSetting("athlete_resting_hr", "", athleteId),
     getSetting("athlete_lthr", "", athleteId),
+    getSetting("periodization_mode", "continuous", athleteId),
+    getSetting("periodization_focus", "hybrid", athleteId),
+    getSetting("periodization_race_date", "", athleteId),
+    getSetting("periodization_race_dist", "60", athleteId),
+    getSetting("periodization_race_elev", "5400", athleteId),
   ]);
 
   const dailyRows = dailyRes.rows as any[];
@@ -99,6 +109,11 @@ export async function GET(req: NextRequest) {
   const targetRaceElev = Number(targetRaceElevStr || "2200");
   const weeklyVertTarget = Number(weeklyVertTargetStr || "1000");
   const trainingTier = (trainingTierStr || "finisher") as "finisher" | "elite";
+  const periodizationMode = (periodizationModeStr || "continuous") as "continuous" | "target_race";
+  const periodizationFocus = (periodizationFocusStr || "hybrid") as "hybrid" | "road" | "trail";
+  const periodizationRaceDate = periodizationRaceDateStr || "";
+  const periodizationRaceDist = Number(periodizationRaceDistStr || "60");
+  const periodizationRaceElev = Number(periodizationRaceElevStr || "5400");
 
   // Athlete HR Zones Resolution (Graceful fallbacks: 1. Manual user settings, 2. Activity / metrics auto-detect, 3. Standard baseline)
   const athleteMaxHrStr = (athleteMaxHrRes || "").trim();
@@ -336,6 +351,7 @@ export async function GET(req: NextRequest) {
 
   let thisWeekGain = 0;
   let thisWeekDistM = 0;
+  let thisWeekLoad = 0;
   let rolling7dGain = 0;
   let rolling7dDistM = 0;
   let trailOnlyGain = 0;
@@ -366,6 +382,7 @@ export async function GET(req: NextRequest) {
     if (actDate >= thisWeekMondayStr && actDate <= thisWeekSundayStr) {
       thisWeekGain += gain;
       thisWeekDistM += dist;
+      thisWeekLoad += Number(act.training_load || 0);
     }
     if (actDate >= rolling7dStartStr && actDate <= localTodayStr) {
       rolling7dGain += gain;
@@ -663,6 +680,7 @@ export async function GET(req: NextRequest) {
       avgDecoupling,
       thisWeekGain: Math.round(thisWeekGain),
       thisWeekDistanceKm: Math.round((thisWeekDistM / 1000) * 10) / 10,
+      thisWeekLoad: Math.round(thisWeekLoad),
       thisWeekDensity: thisWeekDistM > 0 ? Math.round((thisWeekGain / (thisWeekDistM / 1000)) * 10) / 10 : 0,
       rolling7dGain: Math.round(rolling7dGain),
       rolling7dDistanceKm: Math.round((rolling7dDistM / 1000) * 10) / 10,
@@ -672,6 +690,19 @@ export async function GET(req: NextRequest) {
       targetRaceElev,
       weeklyVertTarget,
       trainingTier,
+    },
+    periodization: {
+      mode: periodizationMode,
+      focus: periodizationFocus,
+      raceDate: periodizationRaceDate,
+      raceDist: periodizationRaceDist,
+      raceElev: periodizationRaceElev,
+      thisWeekLoad: Math.round(thisWeekLoad),
+      thisWeekDistanceKm: Math.round((thisWeekDistM / 1000) * 10) / 10,
+      thisWeekGain: Math.round(thisWeekGain),
+      currentCtl: corosModeData.current?.ctl || 42,
+      currentTsb: corosModeData.current?.tsb || 0,
+      currentAtl: corosModeData.current?.atl || 42,
     },
     racePredictor,
     pmcSeries: corosModeData.pmcSeries,
