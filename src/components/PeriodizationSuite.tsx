@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Calendar,
   Trophy,
@@ -74,8 +74,13 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
   const [mode, setMode] = useState<PeriodizationMode>(savedMode);
   const [focus, setFocus] = useState<DisciplineFocus>(savedFocus);
   const [raceDate, setRaceDate] = useState<string>(savedRaceDate);
-  const [raceDist, setRaceDist] = useState<number>(savedRaceDist);
-  const [raceElev, setRaceElev] = useState<number>(savedRaceElev);
+  const [raceDistInput, setRaceDistInput] = useState<string>(String(savedRaceDist ?? 60));
+  const [raceElevInput, setRaceElevInput] = useState<string>(String(savedRaceElev ?? 5400));
+  const isDistFocused = useRef<boolean>(false);
+  const isElevFocused = useRef<boolean>(false);
+
+  const raceDist = Math.max(0, parseFloat(raceDistInput) || 0);
+  const raceElev = Math.max(0, parseFloat(raceElevInput) || 0);
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(0);
   const [showWaveChart, setShowWaveChart] = useState<boolean>(true);
 
@@ -88,8 +93,12 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
     if (savedMode) setMode(savedMode);
     if (savedFocus) setFocus(savedFocus);
     if (savedRaceDate) setRaceDate(savedRaceDate);
-    if (savedRaceDist) setRaceDist(savedRaceDist);
-    if (savedRaceElev) setRaceElev(savedRaceElev);
+    if (savedRaceDist !== undefined && !isDistFocused.current) {
+      setRaceDistInput(String(savedRaceDist));
+    }
+    if (savedRaceElev !== undefined && !isElevFocused.current) {
+      setRaceElevInput(String(savedRaceElev));
+    }
   }, [savedMode, savedFocus, savedRaceDate, savedRaceDist, savedRaceElev]);
 
   // Debounced save to database
@@ -285,41 +294,71 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex-1 flex items-center gap-1 bg-white border border-zinc-400 rounded-lg px-2 py-1">
+                <div className="flex-1 min-w-0 flex items-center justify-between gap-1 bg-white border border-zinc-400 focus-within:border-zinc-950 focus-within:ring-1 focus-within:ring-zinc-950 rounded-lg px-2.5 py-1.5 shadow-sm">
                   <input
-                    type="number"
-                    value={raceDist}
+                    type="text"
+                    inputMode="decimal"
+                    value={raceDistInput}
+                    onFocus={() => {
+                      isDistFocused.current = true;
+                    }}
                     onChange={(e) => {
-                      const val = Number(e.target.value);
-                      setRaceDist(val);
-                      if (val > 0 && raceElev >= 0) {
-                        const d = raceElev / val;
-                        if (d < 15 && focus !== "road") setFocus("road");
-                        else if (d > 35 && focus !== "trail") setFocus("trail");
-                        else if (d >= 15 && d <= 35 && focus !== "hybrid") setFocus("hybrid");
+                      const valStr = e.target.value;
+                      if (/^\d*\.?\d*$/.test(valStr)) {
+                        setRaceDistInput(valStr);
+                        const valNum = parseFloat(valStr) || 0;
+                        const currentElev = parseFloat(raceElevInput) || 0;
+                        if (valNum > 0 && currentElev >= 0) {
+                          const d = currentElev / valNum;
+                          if (d < 15 && focus !== "road") setFocus("road");
+                          else if (d > 35 && focus !== "trail") setFocus("trail");
+                          else if (d >= 15 && d <= 35 && focus !== "hybrid") setFocus("hybrid");
+                        }
                       }
                     }}
-                    className="w-12 text-xs font-mono font-bold text-zinc-950 outline-none"
+                    onBlur={() => {
+                      isDistFocused.current = false;
+                      if (!raceDistInput.trim() || parseFloat(raceDistInput) <= 0) {
+                        setRaceDistInput("42");
+                      }
+                    }}
+                    placeholder="42"
+                    className="w-full min-w-0 text-xs font-mono font-bold text-zinc-950 outline-none bg-transparent"
                   />
-                  <span className="text-[10px] text-zinc-500">km</span>
+                  <span className="text-[10px] text-zinc-500 font-mono font-semibold shrink-0">km</span>
                 </div>
-                <div className="flex-1 flex items-center gap-1 bg-white border border-zinc-400 rounded-lg px-2 py-1">
+                <div className="flex-1 min-w-0 flex items-center justify-between gap-1 bg-white border border-zinc-400 focus-within:border-zinc-950 focus-within:ring-1 focus-within:ring-zinc-950 rounded-lg px-2.5 py-1.5 shadow-sm">
                   <input
-                    type="number"
-                    value={raceElev}
+                    type="text"
+                    inputMode="numeric"
+                    value={raceElevInput}
+                    onFocus={() => {
+                      isElevFocused.current = true;
+                    }}
                     onChange={(e) => {
-                      const val = Number(e.target.value);
-                      setRaceElev(val);
-                      if (raceDist > 0 && val >= 0) {
-                        const d = val / raceDist;
-                        if (d < 15 && focus !== "road") setFocus("road");
-                        else if (d > 35 && focus !== "trail") setFocus("trail");
-                        else if (d >= 15 && d <= 35 && focus !== "hybrid") setFocus("hybrid");
+                      const valStr = e.target.value;
+                      if (/^\d*$/.test(valStr)) {
+                        setRaceElevInput(valStr);
+                        const valNum = parseInt(valStr, 10);
+                        const currentDist = parseFloat(raceDistInput) || 0;
+                        if (currentDist > 0 && !isNaN(valNum)) {
+                          const d = valNum / currentDist;
+                          if (d < 15 && focus !== "road") setFocus("road");
+                          else if (d > 35 && focus !== "trail") setFocus("trail");
+                          else if (d >= 15 && d <= 35 && focus !== "hybrid") setFocus("hybrid");
+                        }
                       }
                     }}
-                    className="w-14 text-xs font-mono font-bold text-zinc-950 outline-none"
+                    onBlur={() => {
+                      isElevFocused.current = false;
+                      if (!raceElevInput.trim() || parseInt(raceElevInput, 10) < 0) {
+                        setRaceElevInput("0");
+                      }
+                    }}
+                    placeholder="0"
+                    className="w-full min-w-0 text-xs font-mono font-bold text-zinc-950 outline-none bg-transparent"
                   />
-                  <span className="text-[10px] text-zinc-500">m D+</span>
+                  <span className="text-[10px] text-zinc-500 font-mono font-semibold shrink-0">m D+</span>
                 </div>
               </div>
               <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono mt-1.5">
