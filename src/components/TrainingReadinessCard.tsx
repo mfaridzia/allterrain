@@ -19,7 +19,7 @@ interface TrainingReadinessCardProps {
 }
 
 export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ readiness }) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   if (!readiness) {
     return null;
@@ -61,7 +61,7 @@ export const TrainingReadinessCard: React.FC<TrainingReadinessCardProps> = ({ re
               <MetricTooltip term="readiness" />
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase font-mono border border-zinc-950 bg-amber-300 text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
                 <CalendarCheck className="h-3 w-3" />
-                <span>Siklus 3:1 Aligned</span>
+                <span>{language === "en" ? "3:1 Cycle Aligned" : "Siklus 3:1 Selaras"}</span>
               </span>
             </div>
             <p className="text-xs font-mono text-zinc-600 font-semibold mt-0.5">

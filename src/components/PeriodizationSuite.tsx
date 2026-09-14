@@ -19,7 +19,19 @@ import {
   ChevronRight,
   Clock,
   Compass,
+  BarChart2,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Cell,
+} from "recharts";
 import { useTranslation } from "@/lib/i18n/context";
 import { useUpdateSettingsMutation } from "@/lib/queries";
 import {
@@ -65,6 +77,11 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
   const [raceDist, setRaceDist] = useState<number>(savedRaceDist);
   const [raceElev, setRaceElev] = useState<number>(savedRaceElev);
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(0);
+  const [showWaveChart, setShowWaveChart] = useState<boolean>(true);
+
+  const climbDensity = raceDist > 0 ? raceElev / raceDist : 0;
+  const detectedProfile: DisciplineFocus =
+    climbDensity < 15 ? "road" : climbDensity > 35 ? "trail" : "hybrid";
 
   // Sync from props on mount if prop arrives late
   useEffect(() => {
@@ -102,6 +119,24 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
       avgWeeklyGain: thisWeekGain > 200 ? thisWeekGain : 1600,
     });
   }, [mode, focus, raceDate, raceDist, raceElev, currentCtl, thisWeekDistanceKm, thisWeekGain]);
+
+  const chartData = useMemo(() => {
+    return plan.weeksInCycle.slice(0, 12).map((w, idx) => ({
+      weekNum: w.weekNumber,
+      weekLabel: `W${w.weekNumber}`,
+      dateRange: w.weekDateStr,
+      distanceKm: w.targetDistanceKm,
+      elevationGain: w.targetElevationGain,
+      trainingLoad: w.targetTrainingLoad,
+      isDeload: w.isDeload,
+      isCurrentWeek: w.isCurrentWeek,
+      isRaceWeek: w.isRaceWeek,
+      mesoType: w.mesoType,
+      phaseName: language === "en" ? w.phaseLabel.en : w.phaseLabel.id,
+      mesoName: language === "en" ? w.mesoLabel.en : w.mesoLabel.id,
+      idx,
+    }));
+  }, [plan.weeksInCycle, language]);
 
   const currentPlanWeek = plan.currentWeek;
   const inspectedWeek: WeeklyPlan = plan.weeksInCycle[selectedWeekIndex] || currentPlanWeek;
@@ -241,15 +276,29 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
               />
             </div>
             <div>
-              <span className="text-[10px] text-zinc-500 font-sans font-bold uppercase block mb-1.5">
-                {language === "en" ? "Race Specifications:" : "Spesifikasi Lomba:"}
-              </span>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-zinc-500 font-sans font-bold uppercase">
+                  {language === "en" ? "Race Specifications:" : "Spesifikasi Lomba:"}
+                </span>
+                <span className="text-[9px] font-mono font-bold text-zinc-600 bg-zinc-200 px-1.5 py-0.2 rounded">
+                  {climbDensity.toFixed(1)} m/km
+                </span>
+              </div>
               <div className="flex items-center gap-2">
                 <div className="flex-1 flex items-center gap-1 bg-white border border-zinc-400 rounded-lg px-2 py-1">
                   <input
                     type="number"
                     value={raceDist}
-                    onChange={(e) => setRaceDist(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setRaceDist(val);
+                      if (val > 0 && raceElev >= 0) {
+                        const d = raceElev / val;
+                        if (d < 15 && focus !== "road") setFocus("road");
+                        else if (d > 35 && focus !== "trail") setFocus("trail");
+                        else if (d >= 15 && d <= 35 && focus !== "hybrid") setFocus("hybrid");
+                      }
+                    }}
                     className="w-12 text-xs font-mono font-bold text-zinc-950 outline-none"
                   />
                   <span className="text-[10px] text-zinc-500">km</span>
@@ -258,11 +307,38 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
                   <input
                     type="number"
                     value={raceElev}
-                    onChange={(e) => setRaceElev(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setRaceElev(val);
+                      if (raceDist > 0 && val >= 0) {
+                        const d = val / raceDist;
+                        if (d < 15 && focus !== "road") setFocus("road");
+                        else if (d > 35 && focus !== "trail") setFocus("trail");
+                        else if (d >= 15 && d <= 35 && focus !== "hybrid") setFocus("hybrid");
+                      }
+                    }}
                     className="w-14 text-xs font-mono font-bold text-zinc-950 outline-none"
                   />
                   <span className="text-[10px] text-zinc-500">m D+</span>
                 </div>
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono mt-1.5">
+                <span>{language === "en" ? "Auto Profile:" : "Profil Terdeteksi:"}</span>
+                <button
+                  type="button"
+                  onClick={() => setFocus(detectedProfile)}
+                  title={language === "en" ? "Click to lock focus to detected profile" : "Klik untuk sesuaikan fokus"}
+                  className={`font-black underline transition-colors ${
+                    focus === detectedProfile ? "text-emerald-700" : "text-amber-700 hover:text-amber-950"
+                  }`}
+                >
+                  {detectedProfile === "road"
+                    ? (language === "en" ? "Road (<15 m/km)" : "Road (<15 m/km)")
+                    : detectedProfile === "trail"
+                    ? (language === "en" ? "Mountain Trail (>35 m/km)" : "Trail Gunung (>35 m/km)")
+                    : (language === "en" ? "Hybrid/Rolling (15-35 m/km)" : "Hybrid (15-35 m/km)")}
+                  {focus !== detectedProfile && (language === "en" ? " • Sync" : " • Terapkan")}
+                </button>
               </div>
             </div>
           </>
@@ -435,12 +511,175 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
                 : "Klik salah satu pekan di bawah untuk membedah target kuota elevasi, jarak, dan fokus latihannya."}
             </p>
           </div>
-          {mode === "target_race" && plan.daysUntilRace !== undefined && (
-            <div className="px-3 py-1.5 rounded-lg border-2 border-zinc-950 bg-amber-300 text-zinc-950 text-xs font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b] self-start sm:self-auto">
-              {plan.weeksUntilRace} {language === "en" ? "Weeks" : "Minggu"} ({plan.daysUntilRace} {language === "en" ? "Days to Race" : "Hari Menuju Race"})
-            </div>
-          )}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setShowWaveChart(!showWaveChart)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-zinc-950 font-mono text-xs font-bold shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer ${
+                showWaveChart
+                  ? "bg-cyan-300 text-zinc-950"
+                  : "bg-white text-zinc-600 hover:text-zinc-950"
+              }`}
+            >
+              <BarChart2 className="h-3.5 w-3.5" />
+              <span>
+                {showWaveChart
+                  ? (language === "en" ? "Wave Chart: ON" : "Grafik: ON")
+                  : (language === "en" ? "Wave Chart: OFF" : "Grafik: OFF")}
+              </span>
+            </button>
+            {mode === "target_race" && plan.daysUntilRace !== undefined && (
+              <div className="px-3 py-1.5 rounded-lg border-2 border-zinc-950 bg-amber-300 text-zinc-950 text-xs font-mono font-black shadow-[1.5px_1.5px_0px_0px_#09090b]">
+                {plan.weeksUntilRace} {language === "en" ? "Weeks" : "Minggu"} ({plan.daysUntilRace} {language === "en" ? "Days" : "Hari"})
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Interactive 3:1 Mesocycle Wave Chart */}
+        {showWaveChart && (
+          <div className="p-4 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono border-b border-zinc-200 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-zinc-950 uppercase">
+                  {language === "en" ? "3:1 Wave Progression Visualizer" : "Visualisasi Gelombang Siklus 3:1"}
+                </span>
+                <span className="text-zinc-500 font-medium hidden sm:inline">
+                  {language === "en" ? "(Left: Distance km • Right: Vert m D+)" : "(Kiri: Jarak km • Kanan: Elevasi m D+)"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] font-bold flex-wrap">
+                <span className="flex items-center gap-1 text-cyan-900">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-cyan-500 border border-zinc-950 inline-block" />
+                  <span>Loading</span>
+                </span>
+                <span className="flex items-center gap-1 text-rose-900">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-rose-500 border border-zinc-950 inline-block" />
+                  <span>Peak</span>
+                </span>
+                <span className="flex items-center gap-1 text-emerald-900">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-emerald-400 border border-zinc-950 inline-block" />
+                  <span>Deload</span>
+                </span>
+                <span className="flex items-center gap-1 text-amber-900">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-amber-400 border border-zinc-950 inline-block" />
+                  <span>Race</span>
+                </span>
+                <span className="flex items-center gap-1 text-orange-700">
+                  <span className="h-0.5 w-3 bg-orange-600 inline-block" />
+                  <span>Vert D+</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+                  onClick={(state) => {
+                    if (state && typeof state.activeTooltipIndex === "number") {
+                      setSelectedWeekIndex(state.activeTooltipIndex);
+                    }
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
+                  <XAxis
+                    dataKey="weekLabel"
+                    tick={{ fontSize: 11, fontFamily: "monospace", fill: "#52525b" }}
+                    tickLine={false}
+                    axisLine={{ stroke: "#09090b", strokeWidth: 1.5 }}
+                  />
+                  <YAxis
+                    yAxisId="km"
+                    tick={{ fontSize: 10, fontFamily: "monospace", fill: "#52525b" }}
+                    tickLine={false}
+                    axisLine={false}
+                    unit="k"
+                  />
+                  <YAxis
+                    yAxisId="elev"
+                    orientation="right"
+                    tick={{ fontSize: 10, fontFamily: "monospace", fill: "#52525b" }}
+                    tickLine={false}
+                    axisLine={false}
+                    unit="m"
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const d = payload[0].payload as (typeof chartData)[0];
+                        return (
+                          <div className="rounded-xl bg-white border-2 border-zinc-950 p-2.5 shadow-[3px_3px_0px_0px_#09090b] text-xs font-mono space-y-1 z-50">
+                            <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-1">
+                              <span className="font-black text-zinc-950">W{d.weekNum} ({d.dateRange})</span>
+                              {d.isDeload && (
+                                <span className="px-1.5 py-0.2 rounded bg-emerald-300 text-emerald-950 font-black text-[9px] uppercase border border-zinc-950">
+                                  Deload
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] font-bold text-zinc-700">
+                              {d.phaseName} • {d.mesoName}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+                              <div>
+                                <span className="text-[9px] text-zinc-500 block uppercase">Target Dist</span>
+                                <span className="font-black text-cyan-800">{d.distanceKm} km</span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-zinc-500 block uppercase">Target Vert</span>
+                                <span className="font-black text-amber-700">+{d.elevationGain}m</span>
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-zinc-500 pt-0.5 border-t border-zinc-100">
+                              Load: <span className="font-bold text-purple-900">{d.trainingLoad} TL</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar
+                    yAxisId="km"
+                    dataKey="distanceKm"
+                    radius={[4, 4, 0, 0]}
+                    stroke="#09090b"
+                    strokeWidth={1.5}
+                    cursor="pointer"
+                  >
+                    {chartData.map((entry, index) => {
+                      let fill = "#06b6d4";
+                      if (entry.isRaceWeek) fill = "#f59e0b";
+                      else if (entry.isDeload) fill = "#34d399";
+                      else if (entry.mesoType === "load_peak") fill = "#f43f5e";
+                      const isSelected = selectedWeekIndex === index;
+                      return (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={fill}
+                          opacity={isSelected ? 1 : 0.85}
+                          stroke={isSelected ? "#09090b" : "#09090b"}
+                          strokeWidth={isSelected ? 2.5 : 1.5}
+                        />
+                      );
+                    })}
+                  </Bar>
+                  <Line
+                    yAxisId="elev"
+                    type="monotone"
+                    dataKey="elevationGain"
+                    stroke="#ea580c"
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: "#ea580c", stroke: "#09090b", strokeWidth: 1 }}
+                    activeDot={{ r: 5, fill: "#ea580c", stroke: "#09090b", strokeWidth: 2 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {/* Horizontal Week Cards / Wave Representation */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">

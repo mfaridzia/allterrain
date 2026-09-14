@@ -29,7 +29,7 @@ const SettingsModal = dynamic(
 );
 
 export default function DashboardPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { data: dashboardData, isLoading: loading } = useDashboardData();
   const syncMutation = useSyncCorosMutation();
   const disconnectMutation = useDisconnectMutation();
@@ -228,8 +228,12 @@ export default function DashboardPage() {
                   }`}
                 >
                   <Calendar className="h-4 w-4 text-zinc-950 shrink-0" />
-                  <span className="sm:inline hidden">Periodisasi & Mesocycle</span>
-                  <span className="sm:hidden inline">Periodisasi</span>
+                  <span className="sm:inline hidden">
+                    {language === "en" ? "Periodization & Mesocycle" : "Periodisasi & Mesosiklus"}
+                  </span>
+                  <span className="sm:hidden inline">
+                    {language === "en" ? "Periodization" : "Periodisasi"}
+                  </span>
                 </button>
 
                 <button
