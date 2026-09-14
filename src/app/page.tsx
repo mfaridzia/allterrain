@@ -292,12 +292,18 @@ export default function DashboardPage() {
 
               <div className={activeTab === "periodization" ? "block" : "hidden"}>
                 <PeriodizationSuite
-                  currentCtl={dashboardData.current?.ctl || 42}
-                  currentAtl={dashboardData.current?.atl || 42}
-                  currentTsb={dashboardData.current?.tsb || 0}
+                  currentCtl={activeModeData.current?.ctl || 42}
+                  currentAtl={activeModeData.current?.atl || 42}
+                  currentTsb={activeModeData.current?.tsb || 0}
                   thisWeekDistanceKm={dashboardData.trail?.thisWeekDistanceKm || 0}
                   thisWeekGain={dashboardData.trail?.thisWeekGain || 0}
-                  thisWeekLoad={dashboardData.periodization?.thisWeekLoad || dashboardData.trail?.thisWeekLoad || 0}
+                  thisWeekLoad={
+                    scaleMode === "intervals"
+                      ? (dashboardData.periodization?.thisWeekRtss ?? dashboardData.periodization?.thisWeekLoad ?? 0)
+                      : (dashboardData.periodization?.thisWeekLoad ?? 0)
+                  }
+                  scaleMode={scaleMode}
+                  onToggleScaleMode={setScaleMode}
                   savedMode={dashboardData.periodization?.mode}
                   savedFocus={dashboardData.periodization?.focus}
                   savedRaceDate={dashboardData.periodization?.raceDate}

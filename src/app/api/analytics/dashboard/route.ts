@@ -456,6 +456,7 @@ export async function GET(req: NextRequest) {
     ? Math.round((racePredictor.fiveKmSeconds / 5) * 1.06)
     : 300; // default 5:00 /km
   const dailyRtssMap = new Map<string, number>();
+  let thisWeekRtss = 0;
 
   for (const act of activities) {
     const startTime = Number(act.start_time || 0);
@@ -500,6 +501,9 @@ export async function GET(req: NextRequest) {
     }
 
     dailyRtssMap.set(dStr, (dailyRtssMap.get(dStr) || 0) + tss);
+    if (dStr >= thisWeekMondayStr && dStr <= thisWeekSundayStr) {
+      thisWeekRtss += tss;
+    }
   }
 
   const latestDailyDate = effectiveDailyRows.length > 0 ? String(effectiveDailyRows[effectiveDailyRows.length - 1].date) : localTodayStr;
@@ -698,8 +702,11 @@ export async function GET(req: NextRequest) {
       raceDist: periodizationRaceDist,
       raceElev: periodizationRaceElev,
       thisWeekLoad: Math.round(thisWeekLoad),
+      thisWeekRtss: Math.round(thisWeekRtss),
       thisWeekDistanceKm: Math.round((thisWeekDistM / 1000) * 10) / 10,
       thisWeekGain: Math.round(thisWeekGain),
+      corosCtl: corosModeData.current?.ctl || 42,
+      intervalsCtl: intervalsModeData.current?.ctl || 42,
       currentCtl: corosModeData.current?.ctl || 42,
       currentTsb: corosModeData.current?.tsb || 0,
       currentAtl: corosModeData.current?.atl || 42,

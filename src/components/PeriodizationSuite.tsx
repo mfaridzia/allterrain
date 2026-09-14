@@ -48,6 +48,8 @@ interface PeriodizationSuiteProps {
   thisWeekDistanceKm?: number;
   thisWeekGain?: number;
   thisWeekLoad?: number;
+  scaleMode?: "coros" | "intervals";
+  onToggleScaleMode?: (mode: "coros" | "intervals") => void;
   savedMode?: PeriodizationMode;
   savedFocus?: DisciplineFocus;
   savedRaceDate?: string;
@@ -62,6 +64,8 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
   thisWeekDistanceKm = 0,
   thisWeekGain = 0,
   thisWeekLoad = 0,
+  scaleMode = "coros",
+  onToggleScaleMode,
   savedMode = "continuous",
   savedFocus = "hybrid",
   savedRaceDate = "",
@@ -70,6 +74,9 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
 }) => {
   const { language } = useTranslation();
   const updateSettings = useUpdateSettingsMutation();
+
+  const loadUnit = scaleMode === "intervals" ? "rTSS" : "TL";
+  const loadScaleTitle = scaleMode === "intervals" ? "Standard rTSS" : "COROS TRIMP";
 
   const [mode, setMode] = useState<PeriodizationMode>(savedMode);
   const [focus, setFocus] = useState<DisciplineFocus>(savedFocus);
@@ -160,9 +167,14 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
       {/* Top Header & Context */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-zinc-950 pb-5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-zinc-950 bg-amber-300 text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]">
               PERIODIZATION & MESOCYCLE 3:1
+            </span>
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase font-mono border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b] ${
+              scaleMode === "intervals" ? "bg-purple-300 text-purple-950" : "bg-cyan-300 text-cyan-950"
+            }`}>
+              {loadScaleTitle} ({loadUnit})
             </span>
             <span className="text-[10px] font-bold font-mono text-zinc-500">
               Bompa, Koop & Friel Methodology
@@ -180,8 +192,37 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
           </p>
         </div>
 
-        {/* Mode Selector: Target Race vs Continuous Base */}
+        {/* Mode Selector & Scale Mode Switcher */}
         <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+          {onToggleScaleMode && (
+            <div className="inline-flex rounded-xl border-2 border-zinc-950 p-0.5 bg-zinc-100 text-xs font-mono font-bold shadow-[1.5px_1.5px_0px_0px_#09090b]">
+              <button
+                type="button"
+                onClick={() => onToggleScaleMode("coros")}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  scaleMode === "coros"
+                    ? "bg-amber-400 text-zinc-950 border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                    : "text-zinc-600 hover:text-zinc-950"
+                }`}
+                title={language === "en" ? "Scale: COROS TRIMP load" : "Skala: Beban TRIMP COROS"}
+              >
+                <span>COROS Load</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleScaleMode("intervals")}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  scaleMode === "intervals"
+                    ? "bg-purple-400 text-zinc-950 border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                    : "text-zinc-600 hover:text-zinc-950"
+                }`}
+                title={language === "en" ? "Scale: Standard rTSS (Coggan)" : "Skala: Standard rTSS (Coggan)"}
+              >
+                <span>rTSS</span>
+              </button>
+            </div>
+          )}
+
           <div className="inline-flex rounded-xl border-2 border-zinc-950 p-0.5 bg-zinc-100 text-xs font-mono font-bold shadow-[1.5px_1.5px_0px_0px_#09090b]">
             <button
               type="button"
@@ -189,7 +230,7 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
                 setMode("continuous");
                 setSelectedWeekIndex(0);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 mode === "continuous"
                   ? "bg-amber-400 text-zinc-950 border border-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
                   : "text-zinc-600 hover:text-zinc-950"
@@ -394,8 +435,12 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
               </span>
             </div>
             <div className="text-right shrink-0 pl-3">
-              <span className="text-[10px] text-zinc-500 block uppercase font-bold">Baseline CTL</span>
-              <span className="text-base font-black font-mono text-cyan-800">{currentCtl} pts</span>
+              <span className="text-[10px] text-zinc-500 block uppercase font-bold">
+                Baseline CTL ({loadUnit})
+              </span>
+              <span className="text-base font-black font-mono text-cyan-800">
+                {currentCtl} {loadUnit}
+              </span>
             </div>
           </div>
         )}
@@ -492,13 +537,15 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
           {/* Training Load Quota */}
           <div className="p-3.5 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-2">
             <div className="flex items-center justify-between text-[11px] font-mono">
-              <span className="text-zinc-500 font-bold uppercase">{language === "en" ? "Training Load (TL)" : "Beban Latihan (TL)"}</span>
+              <span className="text-zinc-500 font-bold uppercase">
+                {language === "en" ? `Training Load (${loadUnit})` : `Beban Latihan (${loadUnit})`}
+              </span>
               <span className="font-black text-purple-900">{loadPct}%</span>
             </div>
             <div className="flex items-baseline justify-between">
               <div className="text-2xl font-black font-mono text-zinc-950">
                 {thisWeekLoad}{" "}
-                <span className="text-xs font-normal text-zinc-500">/ {currentPlanWeek.targetTrainingLoad} TL</span>
+                <span className="text-xs font-normal text-zinc-500">/ {currentPlanWeek.targetTrainingLoad} {loadUnit}</span>
               </div>
             </div>
             <div className="w-full bg-zinc-100 border border-zinc-950 h-2.5 rounded-full overflow-hidden">
@@ -672,7 +719,7 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
                               </div>
                             </div>
                             <div className="text-[10px] text-zinc-500 pt-0.5 border-t border-zinc-100">
-                              Load: <span className="font-bold text-purple-900">{d.trainingLoad} TL</span>
+                              Load: <span className="font-bold text-purple-900">{d.trainingLoad} {loadUnit}</span>
                             </div>
                           </div>
                         );
@@ -806,7 +853,7 @@ export const PeriodizationSuite: React.FC<PeriodizationSuiteProps> = ({
               <span>•</span>
               <span>Vert: <strong className="text-cyan-900 font-black">+{inspectedWeek.targetElevationGain}m D+</strong></span>
               <span>•</span>
-              <span>Load: <strong className="text-purple-900 font-black">{inspectedWeek.targetTrainingLoad} TL</strong></span>
+              <span>Load: <strong className="text-purple-900 font-black">{inspectedWeek.targetTrainingLoad} {loadUnit}</strong></span>
             </div>
           </div>
 
