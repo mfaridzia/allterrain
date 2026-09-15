@@ -370,20 +370,22 @@ export const Header: React.FC<HeaderProps> = ({
             {/* 1: Overview */}
             <Link
               href="/"
-              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 border-2 border-transparent ${
                 isLinkActive("/", true)
-                  ? "bg-zinc-950 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#f97316] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#ea580c]"
-                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                  ? "text-orange-600 dark:text-orange-500"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100"
               }`}
             >
               <Activity
                 className={`h-4 w-4 mb-0.5 transition-colors ${
-                  isLinkActive("/", true) ? "text-orange-500" : "text-zinc-500 dark:text-zinc-400"
+                  isLinkActive("/", true) ? "text-orange-600 dark:text-orange-500" : "text-zinc-500 dark:text-zinc-400"
                 }`}
               />
               <span
                 className={`text-[10px] tracking-tight text-center leading-tight truncate max-w-full ${
-                  isLinkActive("/", true) ? "font-black text-white dark:text-zinc-100" : "font-bold"
+                  isLinkActive("/", true)
+                    ? "font-black text-orange-600 dark:text-orange-500"
+                    : "font-bold text-zinc-500 dark:text-zinc-400"
                 }`}
               >
                 {t("nav.home", "Overview")}
@@ -393,20 +395,22 @@ export const Header: React.FC<HeaderProps> = ({
             {/* 2: GPX Plan */}
             <Link
               href="/trail-planner"
-              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 border-2 border-transparent ${
                 isLinkActive("/trail-planner", false)
-                  ? "bg-zinc-950 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#f97316] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#ea580c]"
-                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                  ? "text-orange-600 dark:text-orange-500"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100"
               }`}
             >
               <Mountain
                 className={`h-4 w-4 mb-0.5 transition-colors ${
-                  isLinkActive("/trail-planner", false) ? "text-orange-500" : "text-zinc-500 dark:text-zinc-400"
+                  isLinkActive("/trail-planner", false) ? "text-orange-600 dark:text-orange-500" : "text-zinc-500 dark:text-zinc-400"
                 }`}
               />
               <span
                 className={`text-[10px] tracking-tight text-center leading-tight truncate max-w-full ${
-                  isLinkActive("/trail-planner", false) ? "font-black text-white dark:text-zinc-100" : "font-bold"
+                  isLinkActive("/trail-planner", false)
+                    ? "font-black text-orange-600 dark:text-orange-500"
+                    : "font-bold text-zinc-500 dark:text-zinc-400"
                 }`}
               >
                 GPX Plan
@@ -433,20 +437,22 @@ export const Header: React.FC<HeaderProps> = ({
             {/* 4: Logbook */}
             <Link
               href="/activities"
-              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 border-2 border-transparent ${
                 isLinkActive("/activities", false)
-                  ? "bg-zinc-950 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#f97316] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#ea580c]"
-                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                  ? "text-orange-600 dark:text-orange-500"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100"
               }`}
             >
               <ClipboardList
                 className={`h-4 w-4 mb-0.5 transition-colors ${
-                  isLinkActive("/activities", false) ? "text-orange-500" : "text-zinc-500 dark:text-zinc-400"
+                  isLinkActive("/activities", false) ? "text-orange-600 dark:text-orange-500" : "text-zinc-500 dark:text-zinc-400"
                 }`}
               />
               <span
                 className={`text-[10px] tracking-tight text-center leading-tight truncate max-w-full ${
-                  isLinkActive("/activities", false) ? "font-black text-white dark:text-zinc-100" : "font-bold"
+                  isLinkActive("/activities", false)
+                    ? "font-black text-orange-600 dark:text-orange-500"
+                    : "font-bold text-zinc-500 dark:text-zinc-400"
                 }`}
               >
                 {t("nav.activities", "Logbook")}
@@ -457,20 +463,22 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={handleCoachClick}
               aria-label="Toggle AI Coach"
-              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 ${
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 border-2 border-transparent ${
                 isAiOpen
-                  ? "bg-orange-500 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#000000]"
-                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                  ? "text-orange-600 dark:text-orange-500"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100"
               }`}
             >
               <Bot
                 className={`h-4 w-4 mb-0.5 transition-colors ${
-                  isAiOpen ? "text-white" : "text-orange-600"
+                  isAiOpen ? "text-orange-600 dark:text-orange-500" : "text-zinc-500 dark:text-zinc-400"
                 }`}
               />
               <span
                 className={`text-[10px] tracking-tight text-center leading-tight truncate max-w-full ${
-                  isAiOpen ? "font-black text-white" : "font-bold"
+                  isAiOpen
+                    ? "font-black text-orange-600 dark:text-orange-500"
+                    : "font-bold text-zinc-500 dark:text-zinc-400"
                 }`}
               >
                 AI Coach
