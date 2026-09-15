@@ -105,7 +105,7 @@ export const PwaInstallPrompt: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 animate-in slide-in-from-bottom-5 duration-300">
+    <div className="fixed bottom-20 sm:bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 animate-in slide-in-from-bottom-5 duration-300">
       <div className="relative p-4 rounded-2xl bg-[#FBF9F3] dark:bg-zinc-900 border-2 border-zinc-950 dark:border-zinc-700 shadow-[4px_4px_0px_0px_#09090b] dark:shadow-[4px_4px_0px_0px_#000000] text-zinc-950 dark:text-zinc-100">
         {/* Dismiss X button */}
         <button

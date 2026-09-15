@@ -219,7 +219,7 @@ When maintaining or extending this interface, adhere to these rules:
 ## 8. Codebase File Mapping
 
 - **Global Instrument Navigation & Layout:**
-  - Navigation Header: `src/components/Header.tsx`
+  - Navigation Header & Mobile Bottom Tab Bar: `src/components/Header.tsx`
   - Universal Neo-Brutalist Footer: `src/components/Footer.tsx`
   - Language Switcher: `src/components/LanguageToggle.tsx`
 - **Core Visualizations & Telemetry:**

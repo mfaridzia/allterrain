@@ -14,7 +14,7 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-[#F6F4EE] text-zinc-950 flex flex-col font-sans">
       <Header />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-8 pt-6">
+      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-8 pt-6 pb-24 sm:pb-6">
         {/* Title */}
         <section className="space-y-2 border-b-2 border-zinc-950 pb-6">
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-950 leading-tight">

@@ -8,7 +8,7 @@ export const Footer: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <footer className="w-full border-t-2 border-zinc-950 bg-white py-6 pb-8 sm:pb-6 px-4 text-center mt-4 sm:mt-6 shadow-[0_-2px_0px_0px_#09090b]">
+    <footer className="w-full border-t-2 border-zinc-950 bg-white py-6 pb-24 sm:pb-6 px-4 text-center mt-4 sm:mt-6 shadow-[0_-2px_0px_0px_#09090b]">
       <div className="max-w-5xl mx-auto space-y-3">
         <nav
           aria-label="Footer navigation"

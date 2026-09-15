@@ -52,6 +52,11 @@ export default function DashboardPage() {
           url.searchParams.delete("sid");
           window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
         }
+        if (url.searchParams.get("coach") === "open" || url.searchParams.get("coach") === "1") {
+          setIsAiOpen(true);
+          url.searchParams.delete("coach");
+          window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+        }
       } catch {}
     }
   }, []);
@@ -114,7 +119,7 @@ export default function DashboardPage() {
         isAiOpen={isAiOpen}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6 pb-24 sm:pb-6">
         {syncMessage && (
           <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-amber-100 border-2 border-zinc-950 text-xs font-bold text-amber-950 shadow-[3px_3px_0px_0px_#09090b]">
             <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />

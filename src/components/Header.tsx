@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   RefreshCw,
@@ -43,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   extraActions,
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useTranslation();
   const [internalSettingsOpen, setInternalSettingsOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
@@ -110,6 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
     {
       href: "/",
       label: t("nav.home", "Overview"),
+      shortLabel: t("nav.home", "Overview"),
       description: "Load metrics summary & PMC chart",
       icon: Activity,
       exact: true,
@@ -117,6 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
     {
       href: "/trail-planner",
       label: t("nav.trailPlanner", "GPX Planner"),
+      shortLabel: "GPX Plan",
       description: "Trail elevation profile & route simulation",
       icon: Mountain,
       exact: false,
@@ -124,6 +127,7 @@ export const Header: React.FC<HeaderProps> = ({
     {
       href: "/activities",
       label: t("nav.activities", "Logbook"),
+      shortLabel: t("nav.activities", "Logbook"),
       description: "COROS activity history & logbook",
       icon: ClipboardList,
       exact: false,
@@ -134,6 +138,14 @@ export const Header: React.FC<HeaderProps> = ({
     if (!pathname) return false;
     if (exact) return pathname === href;
     return pathname.startsWith(href);
+  };
+
+  const handleCoachClick = () => {
+    if (onToggleAi) {
+      onToggleAi();
+    } else {
+      router.push("/?coach=open");
+    }
   };
 
   return (
@@ -268,7 +280,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* Mobile Menu Hamburger Toggle */}
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+                  aria-label={isMobileMenuOpen ? "Close settings and account menu" : "Open settings and account menu"}
                   aria-expanded={isMobileMenuOpen}
                   className="md:hidden flex items-center justify-center p-2 text-zinc-950 dark:text-zinc-100 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:shadow-[2.5px_2.5px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                 >
@@ -283,128 +295,57 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer Panel */}
+        {/* Mobile Settings & Integration Drawer Panel */}
         {isConnected && isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 z-40 bg-[#F6F4EE] dark:bg-[#09090b] border-b-2 border-zinc-950 dark:border-zinc-800 shadow-[0_6px_0_0_#09090b] dark:shadow-[0_6px_0_0_#000000] p-4 space-y-4 max-h-[calc(100vh-70px)] overflow-y-auto">
-            {/* Nav Route Links */}
-            <div>
-              <div className="text-[10px] font-mono font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2 px-1">
-                Navigation Menu
-              </div>
-              <div className="space-y-1.5">
-                {navLinks.map((item) => {
-                  const Icon = item.icon;
-                  const active = isLinkActive(item.href, item.exact);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
-                        active
-                          ? "bg-white text-zinc-950 border-zinc-950 shadow-[2.5px_2.5px_0px_0px_#09090b] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2.5px_2.5px_0px_0px_#000000]"
-                          : "bg-white/70 dark:bg-zinc-900/80 text-zinc-700 dark:text-zinc-300 border-zinc-950/20 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-800 hover:border-zinc-950"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`flex h-8 w-8 items-center justify-center rounded-lg border-2 ${
-                            active
-                              ? "bg-orange-500 text-white border-zinc-950"
-                              : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700"
-                          }`}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <div className="text-left">
-                          <div className="text-sm font-black text-zinc-950 dark:text-zinc-100">
-                            {item.label}
-                          </div>
-                          <div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                            {item.description}
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight
-                        className={`h-4 w-4 ${
-                          active ? "text-orange-600" : "text-zinc-400 dark:text-zinc-600"
-                        }`}
-                      />
-                    </Link>
-                  );
-                })}
-              </div>
+          <div className="md:hidden absolute top-full left-0 right-0 z-40 bg-[#F6F4EE] dark:bg-[#09090b] border-b-2 border-zinc-950 dark:border-zinc-800 shadow-[0_6px_0_0_#09090b] dark:shadow-[0_6px_0_0_#000000] p-4 space-y-3.5 max-h-[calc(100vh-70px)] overflow-y-auto animate-in slide-in-from-top-2 duration-150">
+            <div className="text-[10px] font-mono font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1 flex items-center justify-between">
+              <span>Account & Device Integration</span>
+              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse border border-zinc-950 dark:border-zinc-700" />
+                COROS Online
+              </span>
             </div>
 
-            {/* Quick Actions & Status Section */}
-            <div className="pt-3 border-t-2 border-zinc-200 dark:border-zinc-800 space-y-2.5">
-              <div className="text-[10px] font-mono font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1 flex items-center justify-between">
-                <span>Actions & Integration</span>
-                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse border border-zinc-950 dark:border-zinc-700" />
-                  COROS Online
-                </span>
-              </div>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Sync Action */}
+              <button
+                onClick={() => {
+                  handleSync();
+                }}
+                disabled={isSyncing}
+                className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 transition-all"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${
+                    isSyncing ? "animate-spin text-orange-600" : "text-zinc-700 dark:text-zinc-300"
+                  }`}
+                />
+                <span>{isSyncing ? t("common.syncing", "Syncing...") : `${t("common.sync", "Sync")} COROS`}</span>
+              </button>
 
-              <div className="grid grid-cols-2 gap-2">
-                {/* Sync Action */}
-                <button
-                  onClick={() => {
-                    handleSync();
-                  }}
-                  disabled={isSyncing}
-                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 transition-all"
-                >
-                  <RefreshCw
-                    className={`h-3.5 w-3.5 ${
-                      isSyncing ? "animate-spin text-orange-600" : "text-zinc-700 dark:text-zinc-300"
-                    }`}
-                  />
-                  <span>{isSyncing ? t("common.syncing", "Syncing...") : `${t("common.sync", "Sync")} COROS`}</span>
-                </button>
+              {/* Settings Action */}
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleOpenSettings();
+                }}
+                className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+              >
+                <Settings className="h-3.5 w-3.5 text-zinc-700 dark:text-zinc-300" />
+                <span>{t("common.settings", "Settings")}</span>
+              </button>
 
-                {/* AI Coach Action */}
-                {onToggleAi && (
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      onToggleAi();
-                    }}
-                    className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-zinc-950 dark:border-zinc-700 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all ${
-                      isAiOpen
-                        ? "bg-orange-500 text-white"
-                        : "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100"
-                    }`}
-                  >
-                    <Bot className={`h-3.5 w-3.5 ${isAiOpen ? "text-white" : "text-orange-600"}`} />
-                    <span>AI Coach</span>
-                  </button>
-                )}
-
-                {/* Settings Action */}
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleOpenSettings();
-                  }}
-                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-950 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
-                >
-                  <Settings className="h-3.5 w-3.5 text-zinc-700 dark:text-zinc-300" />
-                  <span>{t("common.settings", "Settings")}</span>
-                </button>
-
-                {/* Disconnect Action */}
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleDisconnect();
-                  }}
-                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border-2 border-zinc-950 dark:border-zinc-700 text-rose-700 dark:text-rose-400 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
-                >
-                  <LogOut className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-                  <span>{t("nav.disconnect", "Disconnect")}</span>
-                </button>
-              </div>
+              {/* Disconnect Action */}
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleDisconnect();
+                }}
+                className="col-span-2 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border-2 border-zinc-950 dark:border-zinc-700 text-rose-700 dark:text-rose-400 font-black text-xs shadow-[2px_2px_0px_0px_#09090b] dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+              >
+                <LogOut className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                <span>{t("nav.disconnect", "Disconnect")}</span>
+              </button>
             </div>
           </div>
         )}
@@ -417,6 +358,126 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => setIsMobileMenuOpen(false)}
           aria-hidden="true"
         />
+      )}
+
+      {/* Fixed Mobile Bottom Navigation Bar (5-Tab Segmented Neo-Brutalist with Center Sync) */}
+      {isConnected && (
+        <nav
+          aria-label="Mobile Bottom Navigation"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border-t-2 border-zinc-950 dark:border-zinc-800 shadow-[0_-3px_0px_0px_#09090b] dark:shadow-[0_-3px_0px_0px_#000000] px-1.5 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] transition-colors"
+        >
+          <div className="grid grid-cols-5 gap-1 items-center max-w-md mx-auto">
+            {/* 1: Overview */}
+            <Link
+              href="/"
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 ${
+                isLinkActive("/", true)
+                  ? "bg-zinc-950 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#f97316] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#ea580c]"
+                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              }`}
+            >
+              <Activity
+                className={`h-4 w-4 mb-0.5 transition-colors ${
+                  isLinkActive("/", true) ? "text-orange-500" : "text-zinc-500 dark:text-zinc-400"
+                }`}
+              />
+              <span
+                className={`text-[10px] tracking-tight text-center leading-tight truncate max-w-full ${
+                  isLinkActive("/", true) ? "font-black text-white dark:text-zinc-100" : "font-bold"
+                }`}
+              >
+                {t("nav.home", "Overview")}
+              </span>
+            </Link>
+
+            {/* 2: GPX Plan */}
+            <Link
+              href="/trail-planner"
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 ${
+                isLinkActive("/trail-planner", false)
+                  ? "bg-zinc-950 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#f97316] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#ea580c]"
+                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              }`}
+            >
+              <Mountain
+                className={`h-4 w-4 mb-0.5 transition-colors ${
+                  isLinkActive("/trail-planner", false) ? "text-orange-500" : "text-zinc-500 dark:text-zinc-400"
+                }`}
+              />
+              <span
+                className={`text-[10px] tracking-tight text-center leading-tight truncate max-w-full ${
+                  isLinkActive("/trail-planner", false) ? "font-black text-white dark:text-zinc-100" : "font-bold"
+                }`}
+              >
+                GPX Plan
+              </span>
+            </Link>
+
+            {/* 3: Center Hero Action - Sync Button */}
+            <button
+              onClick={handleSync}
+              disabled={isSyncing}
+              aria-label={isSyncing ? "Syncing with COROS" : "Sync latest COROS activities"}
+              className="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] dark:border-zinc-700 dark:shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-60 transition-all select-none"
+            >
+              <RefreshCw
+                className={`h-4 w-4 mb-0.5 ${
+                  isSyncing ? "animate-spin text-orange-700" : "text-zinc-950"
+                }`}
+              />
+              <span className="text-[10px] font-black tracking-tight text-center leading-tight truncate max-w-full text-zinc-950">
+                {isSyncing ? t("common.syncing", "Sync...") : t("common.sync", "Sync")}
+              </span>
+            </button>
+
+            {/* 4: Logbook */}
+            <Link
+              href="/activities"
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 ${
+                isLinkActive("/activities", false)
+                  ? "bg-zinc-950 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#f97316] dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#ea580c]"
+                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              }`}
+            >
+              <ClipboardList
+                className={`h-4 w-4 mb-0.5 transition-colors ${
+                  isLinkActive("/activities", false) ? "text-orange-500" : "text-zinc-500 dark:text-zinc-400"
+                }`}
+              />
+              <span
+                className={`text-[10px] tracking-tight text-center leading-tight truncate max-w-full ${
+                  isLinkActive("/activities", false) ? "font-black text-white dark:text-zinc-100" : "font-bold"
+                }`}
+              >
+                {t("nav.activities", "Logbook")}
+              </span>
+            </Link>
+
+            {/* 5: AI Coach */}
+            <button
+              onClick={handleCoachClick}
+              aria-label="Toggle AI Coach"
+              className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all select-none active:scale-95 ${
+                isAiOpen
+                  ? "bg-orange-500 text-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] dark:border-zinc-600 dark:shadow-[2px_2px_0px_0px_#000000]"
+                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 border-2 border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              }`}
+            >
+              <Bot
+                className={`h-4 w-4 mb-0.5 transition-colors ${
+                  isAiOpen ? "text-white" : "text-orange-600"
+                }`}
+              />
+              <span
+                className={`text-[10px] tracking-tight text-center leading-tight truncate max-w-full ${
+                  isAiOpen ? "font-black text-white" : "font-bold"
+                }`}
+              >
+                AI Coach
+              </span>
+            </button>
+          </div>
+        </nav>
       )}
 
       {/* Standalone Settings Modal if triggered internally */}

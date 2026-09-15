@@ -324,7 +324,7 @@ export default function ActivitiesPage() {
         }
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-28 sm:pb-6">
         {/* Page Title & Context Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b-2 border-zinc-200">
           <div>
@@ -1198,7 +1198,7 @@ export default function ActivitiesPage() {
 
       {/* Floating Compare Action Dock (When 1 or 2 activities selected) */}
       {compareIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 text-white border-2 border-zinc-950 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl shadow-[4px_4px_0px_0px_#09090b] flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 max-w-[calc(100vw-1.5rem)] w-fit animate-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 bg-zinc-950 text-white border-2 border-zinc-950 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl shadow-[4px_4px_0px_0px_#09090b] flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 max-w-[calc(100vw-1.5rem)] w-fit animate-in slide-in-from-bottom-3 duration-200">
           <div className="flex items-center gap-2 min-w-0">
             <div className="h-6 w-6 rounded-full bg-amber-400 text-zinc-950 font-black text-xs flex items-center justify-center font-mono shrink-0">
               {compareIds.length}

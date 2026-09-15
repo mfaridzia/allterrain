@@ -136,7 +136,7 @@ export default function FeaturesPage() {
     <div className="min-h-screen bg-[#F6F4EE] text-zinc-950 flex flex-col font-sans">
       <Header />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-8">
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-8 pb-24 sm:pb-8">
         {/* Hero Header */}
         <section className="text-center space-y-3 pt-4">
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-950 leading-tight">
