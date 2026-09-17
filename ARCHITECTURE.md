@@ -208,6 +208,15 @@ Supports comprehensive telemetry across major endurance and fitness disciplines:
 - Features direct cross-navigation links (`Overview`, `Features & Science`, `Privacy Policy`, `Terms of Service`) and official community attribution:
   *“© 2026 ALLTERRAIN. Developed for the COROS user community. Not affiliated with COROS Wearables Inc.”*
 
+### 3.16 Public Athlete Profile & Telemetry Passport (`/u/[username]`)
+- **Zero-Config Athlete Discovery:** Automatically extracts verified athlete handle (`Nickname`) directly from the official COROS MCP `queryUserInfo` tool on sync without requiring manual credential re-entry.
+- **Granular Privacy & Anti-Leak Safeguards:**
+  - Master switch defaults to `OFF` until explicitly toggled on by the athlete in Settings (`public_profile_enabled`).
+  - Independent user toggles for PMC fitness curves, volume/milestones, mountain VAM dynamics, recent workout feed, and cardiac HR.
+  - Cardiac Heart Rate metrics (Avg/Max HR) default to `OFF` to prevent competitive biological leakage to rivals.
+  - **Zero-Geolocation Stalking Risk:** Raw GPS coordinates are strictly scrubbed server-side; activities render only non-georeferenced normalized mini SVG route silhouettes without base-maps or start/finish home coordinate points.
+- **Dynamic Social Graph Engine:** Generates real-time OpenGraph and Twitter card metadata for athlete links shared on WhatsApp, Telegram, or X/Twitter.
+
 ---
 
 ## 4. Scientific Formulas & Mathematical Models

@@ -125,6 +125,7 @@ export async function syncCorosData(
     healthResult,
     rhrResult,
     hrvResult,
+    userInfoResult,
   ] = await Promise.allSettled([
     callCorosMcpTool("queryFitnessAssessmentOverview", {}, effectiveAthleteId),
     callCorosMcpTool("queryRecoveryStatus", {}, athleteId),
@@ -132,7 +133,24 @@ export async function syncCorosData(
     callCorosMcpTool("queryDailyHealthData", {}, athleteId),
     callCorosMcpTool("queryRestingHeartRate", {}, athleteId),
     callCorosMcpTool("querySleepHrv", {}, athleteId),
+    callCorosMcpTool("queryUserInfo", {}, athleteId),
   ]);
+
+  // Extract athlete profile information (Nickname, etc.)
+  if (userInfoResult.status === "fulfilled" && typeof userInfoResult.value === "string") {
+    try {
+      const nickMatch = userInfoResult.value.match(/Nickname:\s*([^\n\r]+)/i);
+      if (nickMatch && nickMatch[1]?.trim()) {
+        const nick = nickMatch[1].trim();
+        await setSetting("athlete_nickname", nick, effectiveAthleteId);
+        if (effectiveAthleteId !== "athlete_primary") {
+          await setSetting("athlete_nickname", nick, "athlete_primary");
+        }
+      }
+    } catch (err) {
+      console.warn("Could not save athlete nickname:", err);
+    }
+  }
 
   // 1. Process Fitness Assessment Overview
   let evolabRacePredictor: any = null;
@@ -717,4 +735,38 @@ export async function syncCorosData(
     syncedDays: pmcSeries.length,
     latestPmc: pmcSeries[pmcSeries.length - 1] || null,
   };
+}
+
+/**
+ * Lightweight helper to fetch athlete user info (Nickname, etc.) without full sync.
+ */
+export async function fetchAndSaveAthleteUserInfo(
+  athleteId: string = "athlete_primary"
+): Promise<{ nickname: string | null; height?: string; weight?: string }> {
+  try {
+    const text = await callCorosMcpTool("queryUserInfo", {}, athleteId);
+    if (typeof text !== "string") return { nickname: null };
+
+    const nickMatch = text.match(/Nickname:\s*([^\n\r]+)/i);
+    const heightMatch = text.match(/Height:\s*([^\n\r]+)/i);
+    const weightMatch = text.match(/Weight:\s*([^\n\r]+)/i);
+
+    const nickname = nickMatch ? nickMatch[1].trim() : null;
+
+    if (nickname) {
+      await setSetting("athlete_nickname", nickname, athleteId);
+      if (athleteId !== "athlete_primary") {
+        await setSetting("athlete_nickname", nickname, "athlete_primary");
+      }
+    }
+
+    return {
+      nickname,
+      height: heightMatch ? heightMatch[1].trim() : undefined,
+      weight: weightMatch ? weightMatch[1].trim() : undefined,
+    };
+  } catch (err) {
+    console.warn("Could not fetch athlete user info:", err);
+    return { nickname: null };
+  }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSetting, setSetting, deleteSetting, getDb } from "@/lib/db";
 import { getCurrentAthleteId } from "@/lib/session";
+import { fetchAndSaveAthleteUserInfo } from "@/lib/coros-mcp";
 
 export async function GET(req: NextRequest) {
   const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
@@ -30,6 +31,13 @@ export async function GET(req: NextRequest) {
     periodizationRaceDate,
     periodizationRaceDistStr,
     periodizationRaceElevStr,
+    publicProfileEnabledStr,
+    publicProfileShowPmcStr,
+    publicProfileShowVolumeStr,
+    publicProfileShowTrailStr,
+    publicProfileShowRecentStr,
+    publicProfileShowHrStr,
+    athleteNicknameStr,
   ] = await Promise.all([
     getSetting("ai_provider", defaultProvider, athleteId),
     getSetting("ai_model_name", defaultModel, athleteId),
@@ -51,6 +59,13 @@ export async function GET(req: NextRequest) {
     getSetting("periodization_race_date", "", athleteId),
     getSetting("periodization_race_dist", "60", athleteId),
     getSetting("periodization_race_elev", "5400", athleteId),
+    getSetting("public_profile_enabled", "false", athleteId),
+    getSetting("public_profile_show_pmc", "true", athleteId),
+    getSetting("public_profile_show_volume", "true", athleteId),
+    getSetting("public_profile_show_trail", "true", athleteId),
+    getSetting("public_profile_show_recent", "true", athleteId),
+    getSetting("public_profile_show_hr", "false", athleteId),
+    getSetting("athlete_nickname", "", athleteId),
   ]);
 
   const hasGeminiKey = !!geminiKey;
@@ -78,6 +93,14 @@ export async function GET(req: NextRequest) {
   const detectedMaxHr = Number(maxHrRes.rows[0]?.peak_max_hr) || 185;
   const detectedRestingHr = Number(rhrRes.rows[0]?.avg_rhr) || 50;
   const detectedLthr = Math.round(detectedMaxHr * 0.88);
+
+  let effectiveNickname = athleteNicknameStr;
+  if (!effectiveNickname && athleteId && athleteId !== "athlete_primary") {
+    try {
+      const userRes = await fetchAndSaveAthleteUserInfo(athleteId);
+      if (userRes.nickname) effectiveNickname = userRes.nickname;
+    } catch {}
+  }
 
   return NextResponse.json({
     aiProvider,
@@ -115,6 +138,15 @@ export async function GET(req: NextRequest) {
       raceDate: periodizationRaceDate || "",
       raceDist: Number(periodizationRaceDistStr || "60"),
       raceElev: Number(periodizationRaceElevStr || "5400"),
+    },
+    publicProfile: {
+      enabled: publicProfileEnabledStr === "true",
+      showPmc: publicProfileShowPmcStr === "true",
+      showVolume: publicProfileShowVolumeStr === "true",
+      showTrail: publicProfileShowTrailStr === "true",
+      showRecent: publicProfileShowRecentStr === "true",
+      showHr: publicProfileShowHrStr === "true",
+      nickname: effectiveNickname || "athlete",
     },
   });
 }
@@ -205,6 +237,24 @@ export async function POST(req: NextRequest) {
     }
     if (body.periodizationRaceElev !== undefined) {
       await setSetting("periodization_race_elev", String(body.periodizationRaceElev), athleteId);
+    }
+    if (body.publicProfileEnabled !== undefined) {
+      await setSetting("public_profile_enabled", String(body.publicProfileEnabled), athleteId);
+    }
+    if (body.publicProfileShowPmc !== undefined) {
+      await setSetting("public_profile_show_pmc", String(body.publicProfileShowPmc), athleteId);
+    }
+    if (body.publicProfileShowVolume !== undefined) {
+      await setSetting("public_profile_show_volume", String(body.publicProfileShowVolume), athleteId);
+    }
+    if (body.publicProfileShowTrail !== undefined) {
+      await setSetting("public_profile_show_trail", String(body.publicProfileShowTrail), athleteId);
+    }
+    if (body.publicProfileShowRecent !== undefined) {
+      await setSetting("public_profile_show_recent", String(body.publicProfileShowRecent), athleteId);
+    }
+    if (body.publicProfileShowHr !== undefined) {
+      await setSetting("public_profile_show_hr", String(body.publicProfileShowHr), athleteId);
     }
 
     return NextResponse.json({ success: true });
