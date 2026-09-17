@@ -243,28 +243,69 @@ export async function getPublicAthleteProfile(
     };
   }
 
-  // 2. Check if Public Profile is enabled by athlete or primary fallback
+  // CRITICAL RESOLUTION: Determine effective athlete ID with activities/telemetry.
+  // In single-athlete or production environments, user_settings might be linked to 'athlete_primary',
+  // while activities & daily_metrics belong to the real COROS athlete UUID (or vice versa).
+  let effectiveDataAthleteId = athleteId;
+  const countRes = await db.execute({
+    sql: `SELECT COUNT(*) as cnt FROM activities WHERE athlete_id = ?;`,
+    args: [athleteId],
+  });
+  const hasActivities = Number(countRes.rows[0]?.cnt || 0) > 0;
+
+  if (!hasActivities || athleteId === "athlete_primary") {
+    // 1. Check auth_tokens for a real athlete UUID
+    const realTokenRow = await db.execute({
+      sql: `SELECT athlete_id, id FROM auth_tokens WHERE athlete_id IS NOT NULL AND athlete_id != 'athlete_primary' ORDER BY updated_at DESC LIMIT 1;`,
+    });
+    if (realTokenRow.rows.length > 0) {
+      const candidateRealId = String(realTokenRow.rows[0].athlete_id || realTokenRow.rows[0].id);
+      if (candidateRealId && candidateRealId !== "athlete_primary") {
+        effectiveDataAthleteId = candidateRealId;
+      }
+    } else {
+      // 2. Inspect activities table directly for the athlete ID who owns workouts
+      const actRow = await db.execute({
+        sql: `SELECT athlete_id FROM activities WHERE athlete_id IS NOT NULL AND athlete_id != 'athlete_primary' ORDER BY start_time DESC LIMIT 1;`,
+      });
+      if (actRow.rows.length > 0 && actRow.rows[0].athlete_id) {
+        effectiveDataAthleteId = String(actRow.rows[0].athlete_id);
+      }
+    }
+  }
+
+  // Check if Public Profile is enabled (check effectiveDataAthleteId, athleteId, and athlete_primary)
   const isPublicEnabled =
+    (await getSetting("public_profile_enabled", "false", effectiveDataAthleteId)) === "true" ||
     (await getSetting("public_profile_enabled", "false", athleteId)) === "true" ||
     (await getSetting("public_profile_enabled", "false", "athlete_primary")) === "true";
 
-  const showPmc = (await getSetting("public_profile_show_pmc", "true", athleteId)) !== "false";
-  const showVolume = (await getSetting("public_profile_show_volume", "true", athleteId)) !== "false";
-  const showTrail = (await getSetting("public_profile_show_trail", "true", athleteId)) !== "false";
-  const showRecent = (await getSetting("public_profile_show_recent", "true", athleteId)) !== "false";
-  const showHr = (await getSetting("public_profile_show_hr", "false", athleteId)) === "true";
+  const getToggleSetting = async (key: string, defaultValue: string) => {
+    for (const id of [effectiveDataAthleteId, athleteId, "athlete_primary"]) {
+      if (!id) continue;
+      const val = await getSetting(key, "", id);
+      if (val !== "") return val;
+    }
+    return defaultValue;
+  };
+
+  const showPmc = (await getToggleSetting("public_profile_show_pmc", "true")) !== "false";
+  const showVolume = (await getToggleSetting("public_profile_show_volume", "true")) !== "false";
+  const showTrail = (await getToggleSetting("public_profile_show_trail", "true")) !== "false";
+  const showRecent = (await getToggleSetting("public_profile_show_recent", "true")) !== "false";
+  const showHr = (await getToggleSetting("public_profile_show_hr", "false")) === "true";
 
   if (!isPublicEnabled) {
     return {
       found: true,
       isPublic: false,
       nickname: verifiedNickname,
-      athleteId,
+      athleteId: effectiveDataAthleteId,
       settings: { showPmc, showVolume, showTrail, showRecent, showHr },
     };
   }
 
-  // 3. Parallel Query for Permitted Metrics
+  // 3. Parallel Query for Permitted Metrics using effectiveDataAthleteId
   const queries: Promise<any>[] = [];
 
   // A. Latest PMC
@@ -276,7 +317,7 @@ export async function getPublicAthleteProfile(
           WHERE athlete_id = ? OR athlete_id = 'athlete_primary'
           ORDER BY date DESC LIMIT 1;
         `,
-        args: [athleteId],
+        args: [effectiveDataAthleteId],
       })
     : Promise.resolve(null);
 
@@ -293,7 +334,7 @@ export async function getPublicAthleteProfile(
             FROM activities 
             WHERE athlete_id = ? OR athlete_id = 'athlete_primary';
           `,
-          args: [athleteId],
+          args: [effectiveDataAthleteId],
         }),
         db.execute({
           sql: `
@@ -302,7 +343,7 @@ export async function getPublicAthleteProfile(
             WHERE athlete_id = ? OR athlete_id = 'athlete_primary'
             GROUP BY sport_type;
           `,
-          args: [athleteId],
+          args: [effectiveDataAthleteId],
         }),
         db.execute({
           sql: `
@@ -314,7 +355,7 @@ export async function getPublicAthleteProfile(
             GROUP BY week_id
             ORDER BY week_id ASC;
           `,
-          args: [athleteId],
+          args: [effectiveDataAthleteId],
         }),
       ])
     : Promise.resolve(null);
@@ -331,7 +372,7 @@ export async function getPublicAthleteProfile(
           FROM activities 
           WHERE athlete_id = ? OR athlete_id = 'athlete_primary';
         `,
-        args: [athleteId],
+        args: [effectiveDataAthleteId],
       })
     : Promise.resolve(null);
 
@@ -346,7 +387,7 @@ export async function getPublicAthleteProfile(
           WHERE athlete_id = ? OR athlete_id = 'athlete_primary'
           ORDER BY start_time DESC LIMIT 6;
         `,
-        args: [athleteId],
+        args: [effectiveDataAthleteId],
       })
     : Promise.resolve(null);
 

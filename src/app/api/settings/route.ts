@@ -3,8 +3,25 @@ import { getSetting, setSetting, deleteSetting, getDb } from "@/lib/db";
 import { getCurrentAthleteId } from "@/lib/session";
 import { fetchAndSaveAthleteUserInfo } from "@/lib/coros-mcp";
 
+async function resolveAthleteId(req: NextRequest): Promise<string> {
+  const current = await getCurrentAthleteId(req);
+  if (current && current !== "athlete_primary") {
+    return current;
+  }
+  try {
+    const db = getDb();
+    const tokenRes = await db.execute({
+      sql: `SELECT athlete_id, id FROM auth_tokens WHERE athlete_id IS NOT NULL AND athlete_id != 'athlete_primary' ORDER BY updated_at DESC LIMIT 1;`,
+    });
+    if (tokenRes.rows.length > 0) {
+      return String(tokenRes.rows[0].athlete_id || tokenRes.rows[0].id);
+    }
+  } catch {}
+  return current || "athlete_primary";
+}
+
 export async function GET(req: NextRequest) {
-  const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
+  const athleteId = await resolveAthleteId(req);
 
   const defaultProvider = process.env.AI_PROVIDER || (process.env.GROQ_API_KEY ? "groq" : "groq");
   const defaultModel = process.env.AI_MODEL_NAME || (defaultProvider === "groq" ? "openai/gpt-oss-120b" : defaultProvider === "deepseek" ? "deepseek-chat" : "gemini-2.5-flash");
@@ -157,7 +174,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
+    const athleteId = await resolveAthleteId(req);
     const body = await req.json();
 
     if (body.clearKey) {
