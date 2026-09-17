@@ -346,6 +346,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       }
 
       if (activeTab === "public") {
+        payload.athleteNickname = athleteNickname;
         payload.publicProfileEnabled = publicProfileEnabled;
         payload.publicProfileShowPmc = publicProfileShowPmc;
         payload.publicProfileShowVolume = publicProfileShowVolume;
@@ -361,6 +362,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleTogglePublicEnabled = async (newVal: boolean) => {
+    setPublicProfileEnabled(newVal);
+    try {
+      await updateSettingsMutation.mutateAsync({
+        publicProfileEnabled: newVal,
+        publicProfileShowPmc,
+        publicProfileShowVolume,
+        publicProfileShowTrail,
+        publicProfileShowRecent,
+        publicProfileShowHr,
+        athleteNickname,
+      });
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2000);
+    } catch (e) {
+      console.error("Auto-save publicProfileEnabled failed:", e);
+    }
+  };
+
+  const handleTogglePublicOption = async (
+    key: "pmc" | "volume" | "trail" | "recent" | "hr",
+    newVal: boolean
+  ) => {
+    if (key === "pmc") setPublicProfileShowPmc(newVal);
+    if (key === "volume") setPublicProfileShowVolume(newVal);
+    if (key === "trail") setPublicProfileShowTrail(newVal);
+    if (key === "recent") setPublicProfileShowRecent(newVal);
+    if (key === "hr") setPublicProfileShowHr(newVal);
+
+    const updated = {
+      publicProfileEnabled,
+      publicProfileShowPmc: key === "pmc" ? newVal : publicProfileShowPmc,
+      publicProfileShowVolume: key === "volume" ? newVal : publicProfileShowVolume,
+      publicProfileShowTrail: key === "trail" ? newVal : publicProfileShowTrail,
+      publicProfileShowRecent: key === "recent" ? newVal : publicProfileShowRecent,
+      publicProfileShowHr: key === "hr" ? newVal : publicProfileShowHr,
+      athleteNickname,
+    };
+
+    try {
+      await updateSettingsMutation.mutateAsync(updated);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2000);
+    } catch (e) {
+      console.error("Auto-save public option failed:", e);
     }
   };
 
@@ -967,7 +1016,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     type="button"
                     role="switch"
                     aria-checked={publicProfileEnabled}
-                    onClick={() => setPublicProfileEnabled(!publicProfileEnabled)}
+                    onClick={() => handleTogglePublicEnabled(!publicProfileEnabled)}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-zinc-950 transition-colors duration-200 ease-in-out ${
                       publicProfileEnabled ? "bg-emerald-500" : "bg-zinc-200"
                     }`}
@@ -1031,7 +1080,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       <input
                         type="checkbox"
                         checked={publicProfileShowPmc}
-                        onChange={(e) => setPublicProfileShowPmc(e.target.checked)}
+                        onChange={(e) => handleTogglePublicOption("pmc", e.target.checked)}
                         className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
                       />
                       <div className="text-xs">
@@ -1047,7 +1096,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       <input
                         type="checkbox"
                         checked={publicProfileShowVolume}
-                        onChange={(e) => setPublicProfileShowVolume(e.target.checked)}
+                        onChange={(e) => handleTogglePublicOption("volume", e.target.checked)}
                         className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
                       />
                       <div className="text-xs">
@@ -1063,7 +1112,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       <input
                         type="checkbox"
                         checked={publicProfileShowTrail}
-                        onChange={(e) => setPublicProfileShowTrail(e.target.checked)}
+                        onChange={(e) => handleTogglePublicOption("trail", e.target.checked)}
                         className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
                       />
                       <div className="text-xs">
@@ -1079,7 +1128,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       <input
                         type="checkbox"
                         checked={publicProfileShowRecent}
-                        onChange={(e) => setPublicProfileShowRecent(e.target.checked)}
+                        onChange={(e) => handleTogglePublicOption("recent", e.target.checked)}
                         className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
                       />
                       <div className="text-xs">
@@ -1095,7 +1144,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       <input
                         type="checkbox"
                         checked={publicProfileShowHr}
-                        onChange={(e) => setPublicProfileShowHr(e.target.checked)}
+                        onChange={(e) => handleTogglePublicOption("hr", e.target.checked)}
                         className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
                       />
                       <div className="text-xs">

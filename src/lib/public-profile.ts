@@ -1,4 +1,5 @@
-import { getDb, getSetting } from "./db";
+import { getDb, getSetting, setSetting } from "./db";
+import { fetchAndSaveAthleteUserInfo } from "./coros-mcp";
 
 export interface PublicActivityItem {
   id: string;
@@ -153,12 +154,12 @@ export async function getPublicAthleteProfile(
   const username = decodeURIComponent(rawUsername).trim();
   const db = getDb();
 
-  // 1. Locate athlete by nickname in user_settings or directly by athlete_id
-  const athleteQuery = await db.execute({
+  // 1. First attempt: locate athlete by nickname in user_settings (case-insensitive)
+  let athleteQuery = await db.execute({
     sql: `
       SELECT athlete_id, value as nickname FROM user_settings 
       WHERE key = 'athlete_nickname' AND LOWER(TRIM(value)) = LOWER(?)
-      LIMIT 1;
+      ORDER BY updated_at DESC LIMIT 1;
     `,
     args: [username],
   });
@@ -170,15 +171,59 @@ export async function getPublicAthleteProfile(
     athleteId = String(athleteQuery.rows[0].athlete_id);
     verifiedNickname = String(athleteQuery.rows[0].nickname || username);
   } else {
-    // Fallback: check if matches athlete_id in auth_tokens
-    const tokenQuery = await db.execute({
-      sql: `SELECT athlete_id FROM auth_tokens WHERE athlete_id = ? OR id = ? LIMIT 1;`,
+    // 2. Check if username directly matches an athlete_id or id in auth_tokens
+    const tokenDirectQuery = await db.execute({
+      sql: `SELECT athlete_id, id FROM auth_tokens WHERE athlete_id = ? OR id = ? LIMIT 1;`,
       args: [username, username],
     });
-    if (tokenQuery.rows.length > 0) {
-      athleteId = String(tokenQuery.rows[0].athlete_id);
+
+    if (tokenDirectQuery.rows.length > 0) {
+      athleteId = String(tokenDirectQuery.rows[0].athlete_id || tokenDirectQuery.rows[0].id);
       const nickSetting = await getSetting("athlete_nickname", username, athleteId);
       verifiedNickname = nickSetting || username;
+    } else {
+      // 3. Robust fallback: Inspect active tokens and resolve nickname via COROS MCP or cached settings
+      const tokensRes = await db.execute({
+        sql: `SELECT athlete_id, id FROM auth_tokens ORDER BY updated_at DESC LIMIT 5;`
+      });
+
+      for (const row of tokensRes.rows) {
+        const candidateId = String(row.athlete_id || row.id);
+        const storedNick = await getSetting("athlete_nickname", "", candidateId);
+        if (storedNick && storedNick.toLowerCase().trim() === username.toLowerCase().trim()) {
+          athleteId = candidateId;
+          verifiedNickname = storedNick;
+          break;
+        }
+
+        // Live check via queryUserInfo
+        try {
+          const userRes = await fetchAndSaveAthleteUserInfo(candidateId);
+          if (userRes.nickname) {
+            await setSetting("athlete_nickname", userRes.nickname, candidateId);
+            await setSetting("athlete_nickname", userRes.nickname, "athlete_primary");
+            if (userRes.nickname.toLowerCase().trim() === username.toLowerCase().trim()) {
+              athleteId = candidateId;
+              verifiedNickname = userRes.nickname;
+              break;
+            }
+          }
+        } catch {}
+      }
+
+      // 4. Single-athlete deployment fallback: if only 1 athlete in system
+      if (!athleteId && tokensRes.rows.length > 0) {
+        const singleCandidateId = String(tokensRes.rows[0].athlete_id || tokensRes.rows[0].id);
+        try {
+          const userRes = await fetchAndSaveAthleteUserInfo(singleCandidateId);
+          if (userRes.nickname) {
+            await setSetting("athlete_nickname", userRes.nickname, singleCandidateId);
+            await setSetting("athlete_nickname", userRes.nickname, "athlete_primary");
+            verifiedNickname = userRes.nickname;
+          }
+        } catch {}
+        athleteId = singleCandidateId;
+      }
     }
   }
 
@@ -198,13 +243,15 @@ export async function getPublicAthleteProfile(
     };
   }
 
-  // 2. Check if Public Profile is enabled by athlete
-  const isPublicEnabled = (await getSetting("public_profile_enabled", "false", athleteId)) === "true";
+  // 2. Check if Public Profile is enabled by athlete or primary fallback
+  const isPublicEnabled =
+    (await getSetting("public_profile_enabled", "false", athleteId)) === "true" ||
+    (await getSetting("public_profile_enabled", "false", "athlete_primary")) === "true";
 
-  const showPmc = (await getSetting("public_profile_show_pmc", "true", athleteId)) === "true";
-  const showVolume = (await getSetting("public_profile_show_volume", "true", athleteId)) === "true";
-  const showTrail = (await getSetting("public_profile_show_trail", "true", athleteId)) === "true";
-  const showRecent = (await getSetting("public_profile_show_recent", "true", athleteId)) === "true";
+  const showPmc = (await getSetting("public_profile_show_pmc", "true", athleteId)) !== "false";
+  const showVolume = (await getSetting("public_profile_show_volume", "true", athleteId)) !== "false";
+  const showTrail = (await getSetting("public_profile_show_trail", "true", athleteId)) !== "false";
+  const showRecent = (await getSetting("public_profile_show_recent", "true", athleteId)) !== "false";
   const showHr = (await getSetting("public_profile_show_hr", "false", athleteId)) === "true";
 
   if (!isPublicEnabled) {
@@ -226,7 +273,7 @@ export async function getPublicAthleteProfile(
         sql: `
           SELECT date, ctl, atl, tsb, ramp_rate 
           FROM daily_metrics 
-          WHERE athlete_id = ? 
+          WHERE athlete_id = ? OR athlete_id = 'athlete_primary'
           ORDER BY date DESC LIMIT 1;
         `,
         args: [athleteId],
@@ -244,7 +291,7 @@ export async function getPublicAthleteProfile(
               COALESCE(SUM(duration_seconds), 0) as total_dur,
               COALESCE(SUM(elevation_gain), 0) as total_elev
             FROM activities 
-            WHERE athlete_id = ?;
+            WHERE athlete_id = ? OR athlete_id = 'athlete_primary';
           `,
           args: [athleteId],
         }),
@@ -252,7 +299,7 @@ export async function getPublicAthleteProfile(
           sql: `
             SELECT sport_type, COUNT(*) as count, COALESCE(SUM(distance_meters), 0) as dist
             FROM activities 
-            WHERE athlete_id = ?
+            WHERE athlete_id = ? OR athlete_id = 'athlete_primary'
             GROUP BY sport_type;
           `,
           args: [athleteId],
@@ -263,7 +310,7 @@ export async function getPublicAthleteProfile(
               strftime('%Y-%W', datetime(start_time / 1000, 'unixepoch')) as week_id,
               SUM(distance_meters) as week_dist
             FROM activities
-            WHERE athlete_id = ? AND start_time >= (strftime('%s', 'now') - 8 * 7 * 86400) * 1000
+            WHERE (athlete_id = ? OR athlete_id = 'athlete_primary') AND start_time >= (strftime('%s', 'now') - 8 * 7 * 86400) * 1000
             GROUP BY week_id
             ORDER BY week_id ASC;
           `,
@@ -282,7 +329,7 @@ export async function getPublicAthleteProfile(
             COALESCE(SUM(CASE WHEN elevation_gain > 150 THEN elevation_gain ELSE 0 END), 0) as hilly_elev,
             COALESCE(SUM(CASE WHEN elevation_gain > 150 THEN distance_meters ELSE 0 END), 0) as hilly_dist
           FROM activities 
-          WHERE athlete_id = ?;
+          WHERE athlete_id = ? OR athlete_id = 'athlete_primary';
         `,
         args: [athleteId],
       })
@@ -296,7 +343,7 @@ export async function getPublicAthleteProfile(
             id, name, sport_type, start_time, distance_meters, duration_seconds,
             elevation_gain, avg_pace_sec, avg_hr, max_hr, gps_track
           FROM activities 
-          WHERE athlete_id = ?
+          WHERE athlete_id = ? OR athlete_id = 'athlete_primary'
           ORDER BY start_time DESC LIMIT 6;
         `,
         args: [athleteId],

@@ -283,10 +283,16 @@ export async function saveCorosToken(
 
 export async function getCorosToken(athleteId: string = "athlete_primary"): Promise<AuthTokenRecord | null> {
   const db = getDb();
-  const res = await db.execute({
+  let res = await db.execute({
     sql: `SELECT * FROM auth_tokens WHERE athlete_id = ? OR id = ? ORDER BY updated_at DESC LIMIT 1`,
     args: [athleteId, athleteId],
   });
+
+  if (res.rows.length === 0) {
+    res = await db.execute({
+      sql: `SELECT * FROM auth_tokens ORDER BY updated_at DESC LIMIT 1`,
+    });
+  }
 
   if (res.rows.length === 0) return null;
   return res.rows[0] as unknown as AuthTokenRecord;

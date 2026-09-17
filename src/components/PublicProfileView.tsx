@@ -7,20 +7,20 @@ import {
   Check,
   Lock,
   Activity,
-  Zap,
   Mountain,
-  Compass,
   TrendingUp,
   Heart,
   Clock,
-  ExternalLink,
   ChevronRight,
   ShieldCheck,
   Footprints,
   Bike,
   Dumbbell,
+  Copy,
 } from "lucide-react";
-import { PublicProfileData, PublicActivityItem } from "@/lib/public-profile";
+import { PublicProfileData } from "@/lib/public-profile";
+import { useTranslation } from "@/lib/i18n/context";
+import { LanguageToggle } from "./LanguageToggle";
 
 interface PublicProfileViewProps {
   data: PublicProfileData;
@@ -33,7 +33,7 @@ function formatPace(secPerKm: number): string {
   return `${mins}:${secs < 10 ? "0" : ""}${secs} /km`;
 }
 
-function formatDuration(totalSeconds: number): string {
+function formatDuration(totalSeconds: number, language: string): string {
   if (!totalSeconds || totalSeconds <= 0) return "0m";
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -44,10 +44,10 @@ function formatDuration(totalSeconds: number): string {
   return `${minutes}m ${seconds}s`;
 }
 
-function formatDate(timestamp: number): string {
+function formatDate(timestamp: number, language: string): string {
   if (!timestamp) return "";
   const d = new Date(timestamp);
-  return d.toLocaleDateString("id-ID", {
+  return d.toLocaleDateString(language === "id" ? "id-ID" : "en-US", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -66,13 +66,55 @@ function getSportIcon(sport: string) {
   return <Footprints className="h-4 w-4 text-orange-600" />;
 }
 
+function getFormZoneLabel(zone: string, language: string): string {
+  if (language === "id") {
+    switch (zone) {
+      case "fresh":
+        return "Segar • Siap Lomba";
+      case "optimal":
+        return "Zona Latihan Optimal";
+      case "grey":
+        return "Zona Abu-abu / Netral";
+      case "overreaching":
+        return "Risiko Tinggi Overreaching";
+      case "transition":
+      default:
+        return "Transisi / Detraining";
+    }
+  }
+  switch (zone) {
+    case "fresh":
+      return "Fresh • Race Ready";
+    case "optimal":
+      return "Optimal Training Zone";
+    case "grey":
+      return "Neutral / Grey Zone";
+    case "overreaching":
+      return "High Risk Overreaching";
+    case "transition":
+    default:
+      return "Transition / Detraining";
+  }
+}
+
+function getSportLabel(sport: string, language: string): string {
+  const s = (sport || "").toLowerCase();
+  if (s.includes("trail")) return "Trail Run";
+  if (s.includes("bike") || s.includes("cycle")) return language === "id" ? "Sepeda" : "Cycling";
+  if (s.includes("gym") || s.includes("strength")) return "Strength / Gym";
+  if (s.includes("treadmill") || s.includes("indoor")) return "Treadmill";
+  return "Road Run";
+}
+
 export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) => {
+  const { language } = useTranslation();
+  const isEn = language === "en";
   const [copied, setCopied] = useState(false);
 
   // If profile not found or private
   if (!data.found || !data.isPublic) {
     return (
-      <div className="min-h-screen bg-[#F6F4EE] text-zinc-950 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[#F6F4EE] text-zinc-950 flex flex-col items-center justify-center p-4 selection:bg-orange-500 selection:text-white">
         <div className="max-w-md w-full p-6 sm:p-8 rounded-2xl bg-white border-2 border-zinc-950 shadow-[6px_6px_0px_0px_#09090b] text-center space-y-5">
           <div className="h-16 w-16 mx-auto rounded-2xl bg-zinc-100 border-2 border-zinc-950 flex items-center justify-center text-zinc-950 shadow-[3px_3px_0px_0px_#09090b]">
             <Lock className="h-8 w-8 stroke-[2.5]" />
@@ -80,21 +122,30 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
 
           <div className="space-y-1.5">
             <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-              Profil Bersifat Privat
+              {isEn ? "This Profile is Private" : "Profil Bersifat Privat"}
             </h1>
             <p className="text-xs sm:text-sm font-medium text-zinc-600 leading-relaxed">
-              Atlet <span className="font-mono font-bold text-zinc-900">@{data.nickname}</span> belum mengaktifkan profil publik atau membatasi akses telemetrinya.
+              {isEn ? (
+                <>
+                  Athlete <span className="font-mono font-bold text-zinc-900">@{data.nickname}</span> has not enabled their public profile or has restricted telemetry access.
+                </>
+              ) : (
+                <>
+                  Atlet <span className="font-mono font-bold text-zinc-900">@{data.nickname}</span> belum mengaktifkan profil publik atau membatasi akses telemetrinya.
+                </>
+              )}
             </p>
           </div>
 
-          <div className="pt-2">
+          <div className="flex items-center justify-center gap-3 pt-2">
             <Link
               href="/"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-sm border-2 border-zinc-950 shadow-[3px_3px_0px_0px_#09090b] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
-              <span>Buka ALLTERRAIN</span>
+              <span>{isEn ? "Open ALLTERRAIN" : "Buka ALLTERRAIN"}</span>
               <ChevronRight className="h-4 w-4 stroke-[3]" />
             </Link>
+            <LanguageToggle />
           </div>
         </div>
       </div>
@@ -106,8 +157,10 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: `${data.nickname} — Athletic Profile | ALLTERRAIN`,
-          text: `Lihat profil kebugaran dan telemetri latihan @${data.nickname} di ALLTERRAIN.`,
+          title: `@${data.nickname} — Athletic Profile | ALLTERRAIN`,
+          text: isEn
+            ? `View @${data.nickname}'s athletic telemetry and training passport on ALLTERRAIN.`
+            : `Lihat profil kebugaran dan telemetri latihan @${data.nickname} di ALLTERRAIN.`,
           url,
         });
         return;
@@ -127,7 +180,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
     <div className="min-h-screen bg-[#F6F4EE] text-zinc-950 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-40 bg-[#F6F4EE]/90 backdrop-blur-md border-b-2 border-zinc-950 px-4 sm:px-8 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2 group">
             <span className="h-7 w-7 rounded-lg bg-zinc-950 text-orange-400 font-mono font-black text-xs flex items-center justify-center border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] group-hover:bg-orange-500 group-hover:text-white transition-colors">
               ▲LT
@@ -135,13 +188,16 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
             <span className="font-black text-sm tracking-wider uppercase">ALLTERRAIN</span>
           </Link>
 
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-black text-xs border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] cursor-pointer active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
-          >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> : <Share2 className="h-3.5 w-3.5" />}
-            <span>{copied ? "Tersalin!" : "Bagikan"}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-black text-xs border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] cursor-pointer active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" /> : <Share2 className="h-3.5 w-3.5" />}
+              <span>{copied ? (isEn ? "Copied!" : "Tersalin!") : (isEn ? "Share" : "Bagikan")}</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -166,19 +222,19 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                 </span>
               </div>
               <p className="text-xs sm:text-sm font-medium text-zinc-600 mt-1">
-                Endurance & Mountain Telemetry Passport
+                {isEn ? "Endurance & Mountain Telemetry Passport" : "Paspor Telemetri Lari & Pegunungan"}
               </p>
             </div>
           </div>
 
-          {/* Quick Share Pill */}
+          {/* Quick Share Action */}
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleShare}
               className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-black text-xs flex items-center justify-center gap-2 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] cursor-pointer active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
-              <Share2 className="h-3.5 w-3.5" />
-              <span>{copied ? "Tautan Berhasil Disalin!" : "Salin Profil"}</span>
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+              <span>{copied ? (isEn ? "Link Copied!" : "Tautan Disalin!") : (isEn ? "Copy Profile Link" : "Salin Profil")}</span>
             </button>
           </div>
         </section>
@@ -186,21 +242,23 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
         {/* 2. PMC Fitness & Readiness Snapshot (Conditional) */}
         {data.settings.showPmc && data.pmc && (
           <section className="p-5 sm:p-6 rounded-2xl bg-white border-2 border-zinc-950 shadow-[5px_5px_0px_0px_#09090b] space-y-4">
-            <div className="flex items-center justify-between border-b-2 border-dashed border-zinc-200 pb-3">
+            <div className="flex items-center justify-between border-b-2 border-dashed border-zinc-200 pb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-orange-100 border-2 border-zinc-950 text-zinc-950">
                   <Activity className="h-4 w-4 stroke-[2.5]" />
                 </div>
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-wider text-zinc-950">
-                    Kebugaran & Kesiapan (PMC Engine)
+                    {isEn ? "Fitness & Readiness (PMC Engine)" : "Kebugaran & Kesiapan (PMC Engine)"}
                   </h2>
-                  <p className="text-[11px] text-zinc-500 font-medium">Bannister Impulse-Response Model</p>
+                  <p className="text-[11px] text-zinc-500 font-medium">
+                    {isEn ? "Bannister Impulse-Response Model" : "Model Impulse-Response Eric Banister"}
+                  </p>
                 </div>
               </div>
 
               <div className={`px-2.5 py-1 rounded-lg text-xs font-black border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] ${data.pmc.formZone.color}`}>
-                {data.pmc.formZone.label}
+                {getFormZoneLabel(data.pmc.formZone.zone, language)}
               </div>
             </div>
 
@@ -214,7 +272,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                   {data.pmc.ctl}
                 </span>
                 <span className="text-[10px] text-orange-700 font-medium block mt-0.5">
-                  Beban 42 Hari
+                  {isEn ? "42-Day Chronic Load" : "Beban 42 Hari"}
                 </span>
               </div>
 
@@ -227,7 +285,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                   {data.pmc.atl}
                 </span>
                 <span className="text-[10px] text-rose-700 font-medium block mt-0.5">
-                  Beban 7 Hari
+                  {isEn ? "7-Day Acute Load" : "Beban 7 Hari"}
                 </span>
               </div>
 
@@ -240,7 +298,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                   {data.pmc.tsb > 0 ? `+${data.pmc.tsb}` : data.pmc.tsb}
                 </span>
                 <span className="text-[10px] text-emerald-700 font-medium block mt-0.5">
-                  Kesiapan Lomba
+                  {isEn ? "Race Readiness" : "Kesiapan Lomba"}
                 </span>
               </div>
 
@@ -253,7 +311,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                   {data.pmc.rampRate > 0 ? `+${data.pmc.rampRate}` : data.pmc.rampRate}/w
                 </span>
                 <span className="text-[10px] text-cyan-700 font-medium block mt-0.5">
-                  Akselerasi Beban
+                  {isEn ? "Load Velocity" : "Akselerasi Beban"}
                 </span>
               </div>
             </div>
@@ -269,38 +327,48 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
               </div>
               <div>
                 <h2 className="text-sm font-black uppercase tracking-wider text-zinc-950">
-                  Volume & Akumulasi Latihan
+                  {isEn ? "Volume & Mileage Aggregates" : "Volume & Akumulasi Latihan"}
                 </h2>
-                <p className="text-[11px] text-zinc-500 font-medium">Rekapitulasi Jarak, Elevasi & Konsistensi</p>
+                <p className="text-[11px] text-zinc-500 font-medium">
+                  {isEn ? "Distance, Elevation Gain & Consistency Summary" : "Rekapitulasi Jarak, Elevasi & Konsistensi"}
+                </p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3.5 rounded-xl bg-zinc-50 border-2 border-zinc-950">
-                <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block">Total Jarak</span>
+                <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block">
+                  {isEn ? "Total Distance" : "Total Jarak"}
+                </span>
                 <span className="text-2xl font-black text-zinc-950 font-mono block mt-0.5">
                   {data.volume.totalDistanceKm} <span className="text-xs font-sans text-zinc-500">KM</span>
                 </span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-zinc-50 border-2 border-zinc-950">
-                <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block">Elevasi (D+)</span>
+                <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block">
+                  {isEn ? "Elevation (D+)" : "Elevasi (D+)"}
+                </span>
                 <span className="text-2xl font-black text-zinc-950 font-mono block mt-0.5">
                   {data.volume.totalElevationM.toLocaleString()} <span className="text-xs font-sans text-zinc-500">M</span>
                 </span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-zinc-50 border-2 border-zinc-950">
-                <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block">Waktu Latihan</span>
+                <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block">
+                  {isEn ? "Training Time" : "Waktu Latihan"}
+                </span>
                 <span className="text-2xl font-black text-zinc-950 font-mono block mt-0.5">
-                  {data.volume.totalDurationHours} <span className="text-xs font-sans text-zinc-500">Jam</span>
+                  {data.volume.totalDurationHours} <span className="text-xs font-sans text-zinc-500">{isEn ? "Hrs" : "Jam"}</span>
                 </span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-zinc-50 border-2 border-zinc-950">
-                <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block">Total Sesi</span>
+                <span className="text-[10px] font-mono font-bold uppercase text-zinc-500 block">
+                  {isEn ? "Total Workouts" : "Total Sesi"}
+                </span>
                 <span className="text-2xl font-black text-zinc-950 font-mono block mt-0.5">
-                  {data.volume.totalWorkouts} <span className="text-xs font-sans text-zinc-500">Workout</span>
+                  {data.volume.totalWorkouts} <span className="text-xs font-sans text-zinc-500">{isEn ? "Sessions" : "Workout"}</span>
                 </span>
               </div>
             </div>
@@ -309,7 +377,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
             {data.volume.sportBreakdown.length > 0 && (
               <div className="pt-2">
                 <div className="text-[10px] font-mono font-bold uppercase text-zinc-500 mb-2">
-                  Distribusi Disiplin Olahraga
+                  {isEn ? "Sport Discipline Breakdown" : "Distribusi Disiplin Olahraga"}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {data.volume.sportBreakdown.map((item) => (
@@ -318,7 +386,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                       className="px-3 py-1.5 rounded-xl bg-zinc-100 border-2 border-zinc-950 text-xs font-black flex items-center gap-1.5"
                     >
                       {getSportIcon(item.sport)}
-                      <span>{item.label}:</span>
+                      <span>{getSportLabel(item.sport, language)}:</span>
                       <span className="font-mono text-orange-600">{item.distanceKm} km</span>
                       <span className="text-zinc-500 font-normal">({item.pct}%)</span>
                     </div>
@@ -338,46 +406,48 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
               </div>
               <div>
                 <h2 className="text-sm font-black uppercase tracking-wider text-zinc-950">
-                  Data Trail & Pegunungan (Mountain Dynamics)
+                  {isEn ? "Mountain Dynamics & Trail Suite" : "Data Trail & Pegunungan (Mountain Dynamics)"}
                 </h2>
-                <p className="text-[11px] text-zinc-500 font-medium">Metrik Vertikal & Kapasitas Mendaki</p>
+                <p className="text-[11px] text-zinc-500 font-medium">
+                  {isEn ? "Vertical Ascent Velocity & Climbing Capacity" : "Metrik Vertikal & Kapasitas Mendaki"}
+                </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-xl bg-amber-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                 <span className="text-[10px] font-mono font-bold uppercase text-amber-800 block">
-                  Rekor Peak VAM
+                  {isEn ? "Peak VAM Record" : "Rekor Peak VAM"}
                 </span>
                 <span className="text-2xl font-black text-amber-950 font-mono block mt-0.5">
                   {data.trail.maxVam} <span className="text-xs font-sans text-amber-700">m/h</span>
                 </span>
                 <span className="text-[10px] text-amber-700 font-medium block mt-0.5">
-                  Kecepatan Menanjak Maksimal
+                  {isEn ? "Max Vertical Ascent Rate" : "Kecepatan Menanjak Maksimal"}
                 </span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-emerald-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                 <span className="text-[10px] font-mono font-bold uppercase text-emerald-800 block">
-                  Trail Elevation (D+)
+                  {isEn ? "Trail Elevation (D+)" : "Trail Elevation (D+)"}
                 </span>
                 <span className="text-2xl font-black text-emerald-950 font-mono block mt-0.5">
                   {data.trail.totalTrailElevM.toLocaleString()} <span className="text-xs font-sans text-emerald-700">M</span>
                 </span>
                 <span className="text-[10px] text-emerald-700 font-medium block mt-0.5">
-                  Tanjakan Vertikal Trail
+                  {isEn ? "Cumulative Trail Vert" : "Tanjakan Vertikal Trail"}
                 </span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-cyan-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
                 <span className="text-[10px] font-mono font-bold uppercase text-cyan-800 block">
-                  Climb Density
+                  {isEn ? "Climb Density" : "Climb Density"}
                 </span>
                 <span className="text-2xl font-black text-cyan-950 font-mono block mt-0.5">
                   {data.trail.climbDensity} <span className="text-xs font-sans text-cyan-700">m D+/km</span>
                 </span>
                 <span className="text-[10px] text-cyan-700 font-medium block mt-0.5">
-                  Rasio Kemiringan Rute
+                  {isEn ? "Route Steepness Density" : "Rasio Kemiringan Rute"}
                 </span>
               </div>
             </div>
@@ -393,9 +463,11 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
               </div>
               <div>
                 <h2 className="text-sm font-black uppercase tracking-wider text-zinc-950">
-                  Sesi Latihan Terkini
+                  {isEn ? "Recent Training Sessions" : "Sesi Latihan Terkini"}
                 </h2>
-                <p className="text-[11px] text-zinc-500 font-medium">6 Aktivitas Terakhir (Disaring & Aman)</p>
+                <p className="text-[11px] text-zinc-500 font-medium">
+                  {isEn ? "Latest 6 Workouts (Sanitized & Privacy Protected)" : "6 Aktivitas Terakhir (Disaring & Aman)"}
+                </p>
               </div>
             </div>
 
@@ -415,7 +487,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                         <div className="min-w-0">
                           <h3 className="text-xs font-black text-zinc-950 truncate">{act.name}</h3>
                           <span className="text-[10px] font-mono text-zinc-500 block">
-                            {formatDate(act.startTime)}
+                            {formatDate(act.startTime, language)} • {formatDuration(act.durationSeconds, language)}
                           </span>
                         </div>
                       </div>
@@ -433,7 +505,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                     {/* Metric Pills */}
                     <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-200 text-center font-mono">
                       <div className="bg-white p-1.5 rounded-lg border border-zinc-200">
-                        <span className="text-[9px] text-zinc-500 block font-sans">Jarak</span>
+                        <span className="text-[9px] text-zinc-500 block font-sans">{isEn ? "Distance" : "Jarak"}</span>
                         <span className="text-xs font-black text-zinc-950">{distKm} km</span>
                       </div>
                       <div className="bg-white p-1.5 rounded-lg border border-zinc-200">
@@ -441,7 +513,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                         <span className="text-xs font-black text-zinc-950">{formatPace(act.avgPaceSec)}</span>
                       </div>
                       <div className="bg-white p-1.5 rounded-lg border border-zinc-200">
-                        <span className="text-[9px] text-zinc-500 block font-sans">D+ Vert</span>
+                        <span className="text-[9px] text-zinc-500 block font-sans">{isEn ? "D+ Vert" : "D+ Vert"}</span>
                         <span className="text-xs font-black text-zinc-950">{Math.round(act.elevationGain)}m</span>
                       </div>
                     </div>
@@ -450,8 +522,8 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
                     {data.settings.showHr && act.avgHr && (
                       <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-rose-700 bg-rose-50 px-2 py-1 rounded border border-rose-200">
                         <Heart className="h-3 w-3 fill-rose-500 text-rose-500" />
-                        <span>Rata-rata: {act.avgHr} bpm</span>
-                        {act.maxHr ? <span>(Maks: {act.maxHr})</span> : null}
+                        <span>{isEn ? "Avg:" : "Rata-rata:"} {act.avgHr} bpm</span>
+                        {act.maxHr ? <span>({isEn ? "Max:" : "Maks:"} {act.maxHr})</span> : null}
                       </div>
                     )}
                   </div>
@@ -465,10 +537,12 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
         <section className="p-6 rounded-2xl bg-zinc-950 text-white border-2 border-zinc-950 shadow-[5px_5px_0px_0px_#09090b] flex flex-col sm:flex-row items-center justify-between gap-5 text-center sm:text-left">
           <div className="space-y-1">
             <h3 className="text-base font-black tracking-tight text-white flex items-center justify-center sm:justify-start gap-2">
-              <span>Mau analisis performa COROS seperti ini?</span>
+              <span>{isEn ? "Want to analyze your COROS telemetry like this?" : "Mau analisis performa COROS seperti ini?"}</span>
             </h3>
             <p className="text-xs text-zinc-400 max-w-md leading-relaxed">
-              Hubungkan jam COROS Anda di ALLTERRAIN untuk melihat kurva PMC Bannister, estimasi VAM, dan analisis pemulihan lengkap.
+              {isEn
+                ? "Connect your COROS account on ALLTERRAIN to unlock Bannister PMC modeling, historical VAM climbing rates, and AI training coach insights."
+                : "Hubungkan jam COROS Anda di ALLTERRAIN untuk melihat kurva PMC Bannister, estimasi VAM, dan analisis pemulihan lengkap."}
             </p>
           </div>
 
@@ -476,7 +550,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ data }) =>
             href="/"
             className="px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs border-2 border-white shadow-[2px_2px_0px_0px_#ffffff] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none shrink-0"
           >
-            Hubungkan Akun COROS
+            {isEn ? "Connect COROS Account" : "Hubungkan Akun COROS"}
           </Link>
         </section>
       </main>

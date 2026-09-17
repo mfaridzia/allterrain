@@ -95,10 +95,14 @@ export async function GET(req: NextRequest) {
   const detectedLthr = Math.round(detectedMaxHr * 0.88);
 
   let effectiveNickname = athleteNicknameStr;
-  if (!effectiveNickname && athleteId && athleteId !== "athlete_primary") {
+  if (!effectiveNickname) {
     try {
-      const userRes = await fetchAndSaveAthleteUserInfo(athleteId);
-      if (userRes.nickname) effectiveNickname = userRes.nickname;
+      const userRes = await fetchAndSaveAthleteUserInfo(athleteId || "athlete_primary");
+      if (userRes.nickname) {
+        effectiveNickname = userRes.nickname;
+        await setSetting("athlete_nickname", effectiveNickname, athleteId || "athlete_primary");
+        await setSetting("athlete_nickname", effectiveNickname, "athlete_primary");
+      }
     } catch {}
   }
 
@@ -238,23 +242,34 @@ export async function POST(req: NextRequest) {
     if (body.periodizationRaceElev !== undefined) {
       await setSetting("periodization_race_elev", String(body.periodizationRaceElev), athleteId);
     }
+    if (body.athleteNickname) {
+      const cleanNick = String(body.athleteNickname).trim();
+      await setSetting("athlete_nickname", cleanNick, athleteId);
+      await setSetting("athlete_nickname", cleanNick, "athlete_primary");
+    }
     if (body.publicProfileEnabled !== undefined) {
       await setSetting("public_profile_enabled", String(body.publicProfileEnabled), athleteId);
+      await setSetting("public_profile_enabled", String(body.publicProfileEnabled), "athlete_primary");
     }
     if (body.publicProfileShowPmc !== undefined) {
       await setSetting("public_profile_show_pmc", String(body.publicProfileShowPmc), athleteId);
+      await setSetting("public_profile_show_pmc", String(body.publicProfileShowPmc), "athlete_primary");
     }
     if (body.publicProfileShowVolume !== undefined) {
       await setSetting("public_profile_show_volume", String(body.publicProfileShowVolume), athleteId);
+      await setSetting("public_profile_show_volume", String(body.publicProfileShowVolume), "athlete_primary");
     }
     if (body.publicProfileShowTrail !== undefined) {
       await setSetting("public_profile_show_trail", String(body.publicProfileShowTrail), athleteId);
+      await setSetting("public_profile_show_trail", String(body.publicProfileShowTrail), "athlete_primary");
     }
     if (body.publicProfileShowRecent !== undefined) {
       await setSetting("public_profile_show_recent", String(body.publicProfileShowRecent), athleteId);
+      await setSetting("public_profile_show_recent", String(body.publicProfileShowRecent), "athlete_primary");
     }
     if (body.publicProfileShowHr !== undefined) {
       await setSetting("public_profile_show_hr", String(body.publicProfileShowHr), athleteId);
+      await setSetting("public_profile_show_hr", String(body.publicProfileShowHr), "athlete_primary");
     }
 
     return NextResponse.json({ success: true });
