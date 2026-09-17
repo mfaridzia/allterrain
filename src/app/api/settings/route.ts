@@ -1,27 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSetting, setSetting, deleteSetting, getDb } from "@/lib/db";
 import { getCurrentAthleteId } from "@/lib/session";
-import { fetchAndSaveAthleteUserInfo } from "@/lib/coros-mcp";
-
-async function resolveAthleteId(req: NextRequest): Promise<string> {
-  const current = await getCurrentAthleteId(req);
-  if (current && current !== "athlete_primary") {
-    return current;
-  }
-  try {
-    const db = getDb();
-    const tokenRes = await db.execute({
-      sql: `SELECT athlete_id, id FROM auth_tokens WHERE athlete_id IS NOT NULL AND athlete_id != 'athlete_primary' ORDER BY updated_at DESC LIMIT 1;`,
-    });
-    if (tokenRes.rows.length > 0) {
-      return String(tokenRes.rows[0].athlete_id || tokenRes.rows[0].id);
-    }
-  } catch {}
-  return current || "athlete_primary";
-}
 
 export async function GET(req: NextRequest) {
-  const athleteId = await resolveAthleteId(req);
+  const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
 
   const defaultProvider = process.env.AI_PROVIDER || (process.env.GROQ_API_KEY ? "groq" : "groq");
   const defaultModel = process.env.AI_MODEL_NAME || (defaultProvider === "groq" ? "openai/gpt-oss-120b" : defaultProvider === "deepseek" ? "deepseek-chat" : "gemini-2.5-flash");
@@ -48,13 +30,6 @@ export async function GET(req: NextRequest) {
     periodizationRaceDate,
     periodizationRaceDistStr,
     periodizationRaceElevStr,
-    publicProfileEnabledStr,
-    publicProfileShowPmcStr,
-    publicProfileShowVolumeStr,
-    publicProfileShowTrailStr,
-    publicProfileShowRecentStr,
-    publicProfileShowHrStr,
-    athleteNicknameStr,
   ] = await Promise.all([
     getSetting("ai_provider", defaultProvider, athleteId),
     getSetting("ai_model_name", defaultModel, athleteId),
@@ -76,13 +51,6 @@ export async function GET(req: NextRequest) {
     getSetting("periodization_race_date", "", athleteId),
     getSetting("periodization_race_dist", "60", athleteId),
     getSetting("periodization_race_elev", "5400", athleteId),
-    getSetting("public_profile_enabled", "false", athleteId),
-    getSetting("public_profile_show_pmc", "true", athleteId),
-    getSetting("public_profile_show_volume", "true", athleteId),
-    getSetting("public_profile_show_trail", "true", athleteId),
-    getSetting("public_profile_show_recent", "true", athleteId),
-    getSetting("public_profile_show_hr", "false", athleteId),
-    getSetting("athlete_nickname", "", athleteId),
   ]);
 
   const hasGeminiKey = !!geminiKey;
@@ -110,18 +78,6 @@ export async function GET(req: NextRequest) {
   const detectedMaxHr = Number(maxHrRes.rows[0]?.peak_max_hr) || 185;
   const detectedRestingHr = Number(rhrRes.rows[0]?.avg_rhr) || 50;
   const detectedLthr = Math.round(detectedMaxHr * 0.88);
-
-  let effectiveNickname = athleteNicknameStr;
-  if (!effectiveNickname) {
-    try {
-      const userRes = await fetchAndSaveAthleteUserInfo(athleteId || "athlete_primary");
-      if (userRes.nickname) {
-        effectiveNickname = userRes.nickname;
-        await setSetting("athlete_nickname", effectiveNickname, athleteId || "athlete_primary");
-        await setSetting("athlete_nickname", effectiveNickname, "athlete_primary");
-      }
-    } catch {}
-  }
 
   return NextResponse.json({
     aiProvider,
@@ -160,21 +116,12 @@ export async function GET(req: NextRequest) {
       raceDist: Number(periodizationRaceDistStr || "60"),
       raceElev: Number(periodizationRaceElevStr || "5400"),
     },
-    publicProfile: {
-      enabled: publicProfileEnabledStr === "true",
-      showPmc: publicProfileShowPmcStr === "true",
-      showVolume: publicProfileShowVolumeStr === "true",
-      showTrail: publicProfileShowTrailStr === "true",
-      showRecent: publicProfileShowRecentStr === "true",
-      showHr: publicProfileShowHrStr === "true",
-      nickname: effectiveNickname || "athlete",
-    },
   });
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const athleteId = await resolveAthleteId(req);
+    const athleteId = (await getCurrentAthleteId(req)) || "athlete_primary";
     const body = await req.json();
 
     if (body.clearKey) {
@@ -258,35 +205,6 @@ export async function POST(req: NextRequest) {
     }
     if (body.periodizationRaceElev !== undefined) {
       await setSetting("periodization_race_elev", String(body.periodizationRaceElev), athleteId);
-    }
-    if (body.athleteNickname) {
-      const cleanNick = String(body.athleteNickname).trim();
-      await setSetting("athlete_nickname", cleanNick, athleteId);
-      await setSetting("athlete_nickname", cleanNick, "athlete_primary");
-    }
-    if (body.publicProfileEnabled !== undefined) {
-      await setSetting("public_profile_enabled", String(body.publicProfileEnabled), athleteId);
-      await setSetting("public_profile_enabled", String(body.publicProfileEnabled), "athlete_primary");
-    }
-    if (body.publicProfileShowPmc !== undefined) {
-      await setSetting("public_profile_show_pmc", String(body.publicProfileShowPmc), athleteId);
-      await setSetting("public_profile_show_pmc", String(body.publicProfileShowPmc), "athlete_primary");
-    }
-    if (body.publicProfileShowVolume !== undefined) {
-      await setSetting("public_profile_show_volume", String(body.publicProfileShowVolume), athleteId);
-      await setSetting("public_profile_show_volume", String(body.publicProfileShowVolume), "athlete_primary");
-    }
-    if (body.publicProfileShowTrail !== undefined) {
-      await setSetting("public_profile_show_trail", String(body.publicProfileShowTrail), athleteId);
-      await setSetting("public_profile_show_trail", String(body.publicProfileShowTrail), "athlete_primary");
-    }
-    if (body.publicProfileShowRecent !== undefined) {
-      await setSetting("public_profile_show_recent", String(body.publicProfileShowRecent), athleteId);
-      await setSetting("public_profile_show_recent", String(body.publicProfileShowRecent), "athlete_primary");
-    }
-    if (body.publicProfileShowHr !== undefined) {
-      await setSetting("public_profile_show_hr", String(body.publicProfileShowHr), athleteId);
-      await setSetting("public_profile_show_hr", String(body.publicProfileShowHr), "athlete_primary");
     }
 
     return NextResponse.json({ success: true });

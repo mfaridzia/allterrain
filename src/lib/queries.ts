@@ -135,7 +135,7 @@ export function useUpdateSettingsMutation() {
     mutationFn: async (payload: any) => {
       const res = await fetch("/api/settings", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...getSessionHeaders() },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();

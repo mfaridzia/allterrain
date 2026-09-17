@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Info, ExternalLink, Trash2, Heart, Share2, Copy, Shield } from "lucide-react";
+import { Settings, X, Key, Cpu, Check, AlertCircle, RefreshCw, Info, ExternalLink, Trash2, Heart } from "lucide-react";
 import { useAppSettings, useUpdateSettingsMutation } from "@/lib/queries";
 import { useTranslation } from "@/lib/i18n/context";
 import { calculateAthleteHrZones, HrZoneCalcMethod } from "@/lib/analytics";
@@ -129,18 +129,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [athleteMaxHr, setAthleteMaxHr] = useState<string>("");
   const [athleteRestingHr, setAthleteRestingHr] = useState<string>("");
   const [athleteLthr, setAthleteLthr] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"ai" | "physiology" | "public">("ai");
+  const [activeTab, setActiveTab] = useState<"ai" | "physiology">("ai");
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
-
-  // Public Profile State
-  const [publicProfileEnabled, setPublicProfileEnabled] = useState<boolean>(false);
-  const [publicProfileShowPmc, setPublicProfileShowPmc] = useState<boolean>(true);
-  const [publicProfileShowVolume, setPublicProfileShowVolume] = useState<boolean>(true);
-  const [publicProfileShowTrail, setPublicProfileShowTrail] = useState<boolean>(true);
-  const [publicProfileShowRecent, setPublicProfileShowRecent] = useState<boolean>(true);
-  const [publicProfileShowHr, setPublicProfileShowHr] = useState<boolean>(false);
-  const [athleteNickname, setAthleteNickname] = useState<string>("");
-  const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   const [dynamicModels, setDynamicModels] = useState<Record<string, { id: string; label: string }[]>>({});
   const [isFetchingModels, setIsFetchingModels] = useState<boolean>(false);
@@ -174,15 +164,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         setAthleteLthr(String(settingsData.athleteLthr));
       } else {
         setAthleteLthr("");
-      }
-      if (settingsData.publicProfile) {
-        setPublicProfileEnabled(Boolean(settingsData.publicProfile.enabled));
-        setPublicProfileShowPmc(settingsData.publicProfile.showPmc !== false);
-        setPublicProfileShowVolume(settingsData.publicProfile.showVolume !== false);
-        setPublicProfileShowTrail(settingsData.publicProfile.showTrail !== false);
-        setPublicProfileShowRecent(settingsData.publicProfile.showRecent !== false);
-        setPublicProfileShowHr(Boolean(settingsData.publicProfile.showHr));
-        setAthleteNickname(settingsData.publicProfile.nickname || "");
       }
     }
   }, [settingsData, language]);
@@ -345,16 +326,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         }
       }
 
-      if (activeTab === "public") {
-        payload.athleteNickname = athleteNickname;
-        payload.publicProfileEnabled = publicProfileEnabled;
-        payload.publicProfileShowPmc = publicProfileShowPmc;
-        payload.publicProfileShowVolume = publicProfileShowVolume;
-        payload.publicProfileShowTrail = publicProfileShowTrail;
-        payload.publicProfileShowRecent = publicProfileShowRecent;
-        payload.publicProfileShowHr = publicProfileShowHr;
-      }
-
       await updateSettingsMutation.mutateAsync(payload);
 
       setSavedSuccess(true);
@@ -362,54 +333,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
       console.error(err);
-    }
-  };
-
-  const handleTogglePublicEnabled = async (newVal: boolean) => {
-    setPublicProfileEnabled(newVal);
-    try {
-      await updateSettingsMutation.mutateAsync({
-        publicProfileEnabled: newVal,
-        publicProfileShowPmc,
-        publicProfileShowVolume,
-        publicProfileShowTrail,
-        publicProfileShowRecent,
-        publicProfileShowHr,
-        athleteNickname,
-      });
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 2000);
-    } catch (e) {
-      console.error("Auto-save publicProfileEnabled failed:", e);
-    }
-  };
-
-  const handleTogglePublicOption = async (
-    key: "pmc" | "volume" | "trail" | "recent" | "hr",
-    newVal: boolean
-  ) => {
-    if (key === "pmc") setPublicProfileShowPmc(newVal);
-    if (key === "volume") setPublicProfileShowVolume(newVal);
-    if (key === "trail") setPublicProfileShowTrail(newVal);
-    if (key === "recent") setPublicProfileShowRecent(newVal);
-    if (key === "hr") setPublicProfileShowHr(newVal);
-
-    const updated = {
-      publicProfileEnabled,
-      publicProfileShowPmc: key === "pmc" ? newVal : publicProfileShowPmc,
-      publicProfileShowVolume: key === "volume" ? newVal : publicProfileShowVolume,
-      publicProfileShowTrail: key === "trail" ? newVal : publicProfileShowTrail,
-      publicProfileShowRecent: key === "recent" ? newVal : publicProfileShowRecent,
-      publicProfileShowHr: key === "hr" ? newVal : publicProfileShowHr,
-      athleteNickname,
-    };
-
-    try {
-      await updateSettingsMutation.mutateAsync(updated);
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 2000);
-    } catch (e) {
-      console.error("Auto-save public option failed:", e);
     }
   };
 
@@ -442,11 +365,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         </div>
 
         {/* Segmented Tab Controls */}
-        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-zinc-100 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-100 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
           <button
             type="button"
             onClick={() => setActiveTab("ai")}
-            className={`py-2 px-1.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+            className={`py-2 px-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === "ai"
                 ? "bg-zinc-950 text-white shadow-[1.5px_1.5px_0px_0px_#09090b]"
                 : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/70"
@@ -458,7 +381,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <button
             type="button"
             onClick={() => setActiveTab("physiology")}
-            className={`py-2 px-1.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+            className={`py-2 px-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === "physiology"
                 ? "bg-zinc-950 text-white shadow-[1.5px_1.5px_0px_0px_#09090b]"
                 : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/70"
@@ -466,18 +389,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           >
             <Heart className="h-3.5 w-3.5 text-rose-500 stroke-[2.5]" />
             <span className="truncate">{t("settingsModal.tabHrTargets", "HR Targets")}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("public")}
-            className={`py-2 px-1.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
-              activeTab === "public"
-                ? "bg-zinc-950 text-white shadow-[1.5px_1.5px_0px_0px_#09090b]"
-                : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200/70"
-            }`}
-          >
-            <Share2 className="h-3.5 w-3.5 text-orange-500 stroke-[2.5]" />
-            <span className="truncate">{language === "en" ? "Public Share" : "Profil Publik"}</span>
           </button>
         </div>
 
@@ -978,190 +889,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {activeTab === "public" && (
-            <div className="space-y-4 pt-1">
-              {/* Athlete Nickname Banner */}
-              <div className="p-3.5 rounded-xl bg-orange-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-800">
-                    {t("publicProfile.nicknameLabel", "COROS Athlete Nickname")}
-                  </div>
-                  <div className="text-sm sm:text-base font-black text-zinc-950 font-mono flex items-center gap-1.5 mt-0.5">
-                    <span>@{athleteNickname || "athlete"}</span>
-                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-orange-200 text-orange-950 border border-orange-400">
-                      COROS Verified
-                    </span>
-                  </div>
-                </div>
-                <div className="h-10 w-10 rounded-xl bg-orange-500 text-white font-black flex items-center justify-center border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] text-sm uppercase">
-                  {(athleteNickname || "AT").slice(0, 2)}
-                </div>
-              </div>
-
-              {/* Master Switch */}
-              <div className="p-4 rounded-xl bg-white border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b]">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <div className="text-xs sm:text-sm font-black text-zinc-950">
-                      {t("publicProfile.enableSwitch", "Aktifkan Profil Publik")}
-                    </div>
-                    <div className="text-[11px] sm:text-xs font-medium text-zinc-600 mt-0.5 leading-relaxed">
-                      {t("publicProfile.enableHint", "Jika aktif, siapa saja yang memiliki tautan dapat melihat ringkasan performa dan konsistensi latihan Anda.")}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={publicProfileEnabled}
-                    onClick={() => handleTogglePublicEnabled(!publicProfileEnabled)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-zinc-950 transition-colors duration-200 ease-in-out ${
-                      publicProfileEnabled ? "bg-emerald-500" : "bg-zinc-200"
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white border border-zinc-950 shadow transition duration-200 ease-in-out mt-0.5 ${
-                        publicProfileEnabled ? "translate-x-5" : "translate-x-0.5"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Share URL & Quick Actions if Enabled */}
-                {publicProfileEnabled && (
-                  <div className="mt-4 pt-3 border-t-2 border-dashed border-zinc-200">
-                    <div className="text-[10px] font-mono font-black uppercase text-zinc-500 mb-1.5">
-                      {language === "en" ? "Public Profile Link" : "Tautan Profil Publik"}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 px-3 py-2 rounded-lg bg-zinc-100 border-2 border-zinc-950 text-xs font-mono font-bold text-zinc-800 truncate select-all">
-                        {typeof window !== "undefined" ? `${window.location.origin}/u/${encodeURIComponent(athleteNickname || "athlete")}` : `/u/${athleteNickname || "athlete"}`}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const url = typeof window !== "undefined" ? `${window.location.origin}/u/${encodeURIComponent(athleteNickname || "athlete")}` : `/u/${athleteNickname || "athlete"}`;
-                          navigator.clipboard.writeText(url);
-                          setCopiedLink(true);
-                          setTimeout(() => setCopiedLink(false), 2000);
-                        }}
-                        className="px-3 py-2 rounded-lg bg-zinc-950 text-white hover:bg-zinc-800 text-xs font-black flex items-center gap-1.5 border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] cursor-pointer"
-                      >
-                        {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                        <span>{copiedLink ? t("common.copied", "Tersalin!") : t("common.copy", "Salin")}</span>
-                      </button>
-                      <a
-                        href={`/u/${encodeURIComponent(athleteNickname || "athlete")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-lg bg-white hover:bg-zinc-100 text-zinc-950 text-xs font-black flex items-center justify-center border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]"
-                        title={t("publicProfile.openProfile", "Buka Profil")}
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Granular Toggles */}
-              {publicProfileEnabled && (
-                <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] space-y-3">
-                  <div className="text-xs font-black uppercase tracking-wider text-zinc-900 flex items-center gap-1.5">
-                    <Shield className="h-3.5 w-3.5 text-orange-600" />
-                    <span>{t("publicProfile.metricsToShare", "Metrik yang Ditampilkan ke Publik")}</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {/* PMC */}
-                    <label className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-zinc-200/50 cursor-pointer transition-colors border border-zinc-200 bg-white">
-                      <input
-                        type="checkbox"
-                        checked={publicProfileShowPmc}
-                        onChange={(e) => handleTogglePublicOption("pmc", e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
-                      />
-                      <div className="text-xs">
-                        <span className="font-black text-zinc-950 block">{t("publicProfile.showPmc", "Tingkat Kebugaran & PMC")}</span>
-                        <span className="text-zinc-600 text-[11px] block mt-0.5">
-                          {language === "en" ? "CTL score, ATL fatigue, Form Zone status & 7-day Ramp Rate." : "Skor CTL, ATL, status Form Zone & Ramp Rate kebugaran jangka panjang."}
-                        </span>
-                      </div>
-                    </label>
-
-                    {/* Volume */}
-                    <label className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-zinc-200/50 cursor-pointer transition-colors border border-zinc-200 bg-white">
-                      <input
-                        type="checkbox"
-                        checked={publicProfileShowVolume}
-                        onChange={(e) => handleTogglePublicOption("volume", e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
-                      />
-                      <div className="text-xs">
-                        <span className="font-black text-zinc-950 block">{t("publicProfile.showVolume", "Volume & Agregat")}</span>
-                        <span className="text-zinc-600 text-[11px] block mt-0.5">
-                          {language === "en" ? "Total distance (KM), elevation gain (D+), training hours, and weekly bars." : "Total kilometer, akumulasi elevasi D+, total jam latihan, dan tren mingguan."}
-                        </span>
-                      </div>
-                    </label>
-
-                    {/* Trail */}
-                    <label className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-zinc-200/50 cursor-pointer transition-colors border border-zinc-200 bg-white">
-                      <input
-                        type="checkbox"
-                        checked={publicProfileShowTrail}
-                        onChange={(e) => handleTogglePublicOption("trail", e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
-                      />
-                      <div className="text-xs">
-                        <span className="font-black text-zinc-950 block">{t("publicProfile.showTrail", "Data Trail & Fisiologi")}</span>
-                        <span className="text-zinc-600 text-[11px] block mt-0.5">
-                          {language === "en" ? "Peak VAM ascent speed (m/h) and trail climbing density." : "Rekor VAM (kecepatan vertikal m/h) dan densitas tanjakan trail."}
-                        </span>
-                      </div>
-                    </label>
-
-                    {/* Recent Feed */}
-                    <label className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-zinc-200/50 cursor-pointer transition-colors border border-zinc-200 bg-white">
-                      <input
-                        type="checkbox"
-                        checked={publicProfileShowRecent}
-                        onChange={(e) => handleTogglePublicOption("recent", e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
-                      />
-                      <div className="text-xs">
-                        <span className="font-black text-zinc-950 block">{t("publicProfile.showRecent", "Feed Aktivitas Terkini")}</span>
-                        <span className="text-zinc-600 text-[11px] block mt-0.5">
-                          {language === "en" ? "Latest 6 recorded workouts with mini route silhouette outline." : "Daftar 6 sesi workout terakhir dengan siluet rute mini SVG."}
-                        </span>
-                      </div>
-                    </label>
-
-                    {/* HR */}
-                    <label className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-zinc-200/50 cursor-pointer transition-colors border border-amber-300 bg-amber-50/50">
-                      <input
-                        type="checkbox"
-                        checked={publicProfileShowHr}
-                        onChange={(e) => handleTogglePublicOption("hr", e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-2 border-zinc-950 text-zinc-950 accent-zinc-950 focus:ring-0 cursor-pointer"
-                      />
-                      <div className="text-xs">
-                        <span className="font-black text-zinc-950 block">{t("publicProfile.showHr", "Data Detak Jantung / HR")}</span>
-                        <span className="text-amber-800 text-[11px] font-medium block mt-0.5">
-                          {t("publicProfile.hrWarning", "Nonaktif secara default demi menjaga kerahasiaan fisiologis dari kompetitor.")}
-                        </span>
-                      </div>
-                    </label>
-                  </div>
-
-                  {/* Safe Privacy Notice */}
-                  <div className="mt-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-300 text-[11px] text-emerald-900 font-medium leading-relaxed">
-                    {t("publicProfile.privacyNotice", "Zero-Config & Aman: Hanya agregat dan siluet rute yang dibagikan. Koordinat titik rumah atau start/finish presisi GPS tidak akan pernah diekspos.")}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
