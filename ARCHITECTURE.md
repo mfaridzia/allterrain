@@ -70,7 +70,7 @@ Data is stored locally on-disk at `./data/coros_athlete.db` using `@libsql/clien
 | `auth_tokens` | Stores COROS OAuth 2.0 access & refresh tokens, expiration timestamps, scopes, and athlete profile metadata. | `id` (athlete_id) |
 | `sessions` | Serverless multi-tenant session storage mapping session cookies/headers to `athlete_id`. | `session_id` |
 | `oauth_states` | Ephemeral store for PKCE `code_verifier` and security states during the OAuth handshake. | `state` |
-| `activities` | Workout sessions (road runs, trail runs, track, bike, gym/strength) including distance, duration, elevation, heart rate, VAM, TE, and raw sensor streams. | `id` (standard `act_${coros_id}`), UNIQUE `(athlete_id, coros_id)` |
+| `activities` | Workout sessions (road runs, trail runs, track, bike, gym/strength) including distance, duration, elevation, heart rate, VAM, TE, authentic 1km `lap_splits` (extracted from COROS FIT files), and raw sensor streams. | `id` (standard `act_${coros_id}`), UNIQUE `(athlete_id, coros_id)` |
 | `daily_metrics` | Daily time-series records of Training Load, CTL, ATL, TSB, ACWR, Monotony, Strain, HRV rMSSD, and Sleep data. | `(athlete_id, date)` |
 | `chat_messages` | Full conversational memory history with the context-aware AI Training Coach. | `id` (UUID) |
 | `user_settings` | BYOK configuration (LLM API keys, chosen models, VAM calibrations, athlete body mass, threshold pace). | `(athlete_id, key)` |

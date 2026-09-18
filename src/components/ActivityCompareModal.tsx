@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   X,
   ArrowRight,
@@ -36,6 +36,7 @@ import {
   formatDurationTime,
   generateActivityComparison,
   ActivityComparisonAnalysis,
+  LapSplitItem,
 } from "@/lib/analytics";
 
 interface ActivityCompareModalProps {
@@ -57,10 +58,73 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
   const [activeTab, setActiveTab] = useState<"pace" | "hr" | "elevation">("pace");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  // Analysis result
+  // Authentic COROS lap splits state
+  const [lapsA, setLapsA] = useState<LapSplitItem[] | null>(activityA.lapSplits || null);
+  const [lapsB, setLapsB] = useState<LapSplitItem[] | null>(activityB.lapSplits || null);
+  const [isLoadingLaps, setIsLoadingLaps] = useState(false);
+
+  useEffect(() => {
+    setLapsA(activityA.lapSplits || null);
+  }, [activityA.id, activityA.lapSplits]);
+
+  useEffect(() => {
+    setLapsB(activityB.lapSplits || null);
+  }, [activityB.id, activityB.lapSplits]);
+
+  // Asynchronously fetch authentic laps from /api/activities/track if not preloaded
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLaps = async () => {
+      const needA = !activityA.lapSplits && !lapsA;
+      const needB = !activityB.lapSplits && !lapsB;
+
+      if (!needA && !needB) return;
+
+      setIsLoadingLaps(true);
+      try {
+        const promises: Promise<any>[] = [];
+        if (needA) {
+          promises.push(
+            fetch(`/api/activities/track?id=${encodeURIComponent(activityA.id)}`)
+              .then((r) => r.json())
+              .then((data) => {
+                if (isMounted && data.success && Array.isArray(data.laps)) {
+                  setLapsA(data.laps);
+                }
+              })
+              .catch(() => {})
+          );
+        }
+        if (needB) {
+          promises.push(
+            fetch(`/api/activities/track?id=${encodeURIComponent(activityB.id)}`)
+              .then((r) => r.json())
+              .then((data) => {
+                if (isMounted && data.success && Array.isArray(data.laps)) {
+                  setLapsB(data.laps);
+                }
+              })
+              .catch(() => {})
+          );
+        }
+        await Promise.all(promises);
+      } finally {
+        if (isMounted) setIsLoadingLaps(false);
+      }
+    };
+
+    fetchLaps();
+    return () => {
+      isMounted = false;
+    };
+  }, [activityA.id, activityB.id, activityA.lapSplits, activityB.lapSplits]);
+
+  // Analysis result calculated using authentic COROS laps
   const analysis: ActivityComparisonAnalysis = useMemo(() => {
-    return generateActivityComparison(activityA, activityB);
-  }, [activityA, activityB]);
+    const mergedA = { ...activityA, lapSplits: lapsA ?? activityA.lapSplits };
+    const mergedB = { ...activityB, lapSplits: lapsB ?? activityB.lapSplits };
+    return generateActivityComparison(mergedA, mergedB);
+  }, [activityA, activityB, lapsA, lapsB]);
 
   // Candidates to swap Activity B with
   const candidateActivities = useMemo(() => {
@@ -98,6 +162,15 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
                 <span className="text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-950 border border-zinc-950 shrink-0">
                   Overlaid Analysis
                 </span>
+                {analysis.isAuthenticSplits ? (
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-950 border border-emerald-500 shrink-0">
+                    Authentic COROS Laps
+                  </span>
+                ) : isLoadingLaps ? (
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-950 border border-amber-500 shrink-0 animate-pulse">
+                    Parsing Laps...
+                  </span>
+                ) : null}
               </div>
               <p className="text-[11px] sm:text-xs text-zinc-600 mt-0.5 line-clamp-2 sm:line-clamp-none">
                 Compare physiological adaptations, pacing splits, and cardiovascular economy between sessions.
@@ -505,12 +578,14 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
                 KM-by-KM Split Matrix
               </h4>
               <span className="text-[11px] text-zinc-500 font-medium">
-                Negative delta (green) indicates faster / lower HR in Session A
+                {analysis.isAuthenticSplits
+                  ? "Authentic 1km splits extracted from COROS workout file"
+                  : "Negative delta (green) indicates faster / lower HR in Session A"}
               </span>
             </div>
-            <div className="border-2 border-zinc-950 rounded-xl overflow-x-auto shadow-[2px_2px_0px_0px_#09090b]">
+            <div className="border-2 border-zinc-950 rounded-xl overflow-x-auto max-h-[380px] shadow-[2px_2px_0px_0px_#09090b]">
               <table className="w-full min-w-[500px] text-left text-xs">
-                <thead className="bg-[#FAF9F5] border-b-2 border-zinc-950 font-black text-zinc-800">
+                <thead className="sticky top-0 bg-[#FAF9F5] border-b-2 border-zinc-950 font-black text-zinc-800 z-10">
                   <tr>
                     <th className="p-2.5">Split</th>
                     <th className="p-2.5 text-sky-800">Pace (A)</th>
@@ -522,7 +597,7 @@ export const ActivityCompareModal: React.FC<ActivityCompareModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 font-mono font-bold">
-                  {analysis.splits.slice(0, 12).map((s) => (
+                  {analysis.splits.map((s) => (
                     <tr key={s.km} className="hover:bg-zinc-50/80">
                       <td className="p-2.5 font-black text-zinc-950">KM {s.km}</td>
                       <td className="p-2.5 text-sky-700">{s.formattedPaceA || "-"}</td>

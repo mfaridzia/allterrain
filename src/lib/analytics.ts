@@ -459,6 +459,7 @@ export function calculateDecouplingAnalysis(activity: {
   maxHr?: number;
   elevationGain?: number;
   decouplingPct?: number;
+  lapSplits?: any[] | null;
 }): DecouplingAnalysis {
   const dist =
     typeof activity.distanceKm === "string"
@@ -498,53 +499,99 @@ export function calculateDecouplingAnalysis(activity: {
   const speedMpm = speedMps * 60;
   const overallEf = Math.round((speedMpm / avgHr) * 100) / 100;
 
-  // Compute or use stored decoupling percentage
-  let decouplingPct: number;
-  if (
-    activity.decouplingPct !== undefined &&
-    activity.decouplingPct > 0 &&
-    activity.decouplingPct !== 2.5
-  ) {
-    decouplingPct = activity.decouplingPct;
+  let hr1 = 0;
+  let hr2 = 0;
+  let pace1 = 0;
+  let pace2 = 0;
+  let ef1 = 0;
+  let ef2 = 0;
+  let driftDeltaHr = 0;
+  let decouplingPct = 0;
+
+  // 1. Check if authentic lap splits are available (from COROS FIT parse)
+  const laps: any[] = Array.isArray(activity.lapSplits) ? activity.lapSplits : [];
+  const validLaps = laps.filter(
+    (l) =>
+      Number(l.distanceM || (l.distanceKm ? l.distanceKm * 1000 : 0) || 0) >= 400 &&
+      Number(l.durationSec || 0) > 30 &&
+      l.avgHr &&
+      Number(l.avgHr) > 40 &&
+      Number(l.paceSec || 0) > 0
+  );
+
+  if (validLaps.length >= 2) {
+    const halfIndex = Math.floor(validLaps.length / 2);
+    const half1 = validLaps.slice(0, halfIndex);
+    const half2 = validLaps.slice(halfIndex);
+
+    const dist1M = half1.reduce((acc, l) => acc + Number(l.distanceM || (l.distanceKm ? l.distanceKm * 1000 : 0) || 0), 0);
+    const dur1 = half1.reduce((acc, l) => acc + Number(l.durationSec || 0), 0);
+    const hrW1 = half1.reduce((acc, l) => acc + Number(l.avgHr) * Number(l.durationSec || 0), 0);
+    hr1 = dur1 > 0 ? Math.round(hrW1 / dur1) : avgHr;
+    pace1 = dist1M > 0 ? Math.round((dur1 / dist1M) * 1000) : paceSec;
+    const speedMpm1 = dur1 > 0 ? (dist1M / dur1) * 60 : 0;
+    ef1 = hr1 > 0 ? Math.round((speedMpm1 / hr1) * 100) / 100 : overallEf;
+
+    const dist2M = half2.reduce((acc, l) => acc + Number(l.distanceM || (l.distanceKm ? l.distanceKm * 1000 : 0) || 0), 0);
+    const dur2 = half2.reduce((acc, l) => acc + Number(l.durationSec || 0), 0);
+    const hrW2 = half2.reduce((acc, l) => acc + Number(l.avgHr) * Number(l.durationSec || 0), 0);
+    hr2 = dur2 > 0 ? Math.round(hrW2 / dur2) : avgHr;
+    pace2 = dist2M > 0 ? Math.round((dur2 / dist2M) * 1000) : paceSec;
+    const speedMpm2 = dur2 > 0 ? (dist2M / dur2) * 60 : 0;
+    ef2 = hr2 > 0 ? Math.round((speedMpm2 / hr2) * 100) / 100 : overallEf;
+
+    driftDeltaHr = hr2 - hr1;
+    if (ef1 > 0) {
+      decouplingPct = Math.round(((ef1 - ef2) / ef1) * 1000) / 10;
+    }
   } else {
-    // Model realistic aerobic drift based on exercise duration, intensity, and elevation
-    const durMins = activity.durationMin;
-    let baseDrift = 1.8;
-    if (durMins > 90) {
-      baseDrift = 5.2 + (durMins - 90) * 0.04;
-    } else if (durMins > 55) {
-      baseDrift = 3.2 + (durMins - 55) * 0.05;
-    } else if (durMins > 30) {
-      baseDrift = 2.0 + (durMins - 30) * 0.04;
+    // 2. Fallback to stored decoupling percentage or model
+    if (
+      activity.decouplingPct !== undefined &&
+      activity.decouplingPct > 0 &&
+      activity.decouplingPct !== 2.5
+    ) {
+      decouplingPct = activity.decouplingPct;
+    } else {
+      // Model realistic aerobic drift based on exercise duration, intensity, and elevation
+      const durMins = activity.durationMin;
+      let baseDrift = 1.8;
+      if (durMins > 90) {
+        baseDrift = 5.2 + (durMins - 90) * 0.04;
+      } else if (durMins > 55) {
+        baseDrift = 3.2 + (durMins - 55) * 0.05;
+      } else if (durMins > 30) {
+        baseDrift = 2.0 + (durMins - 30) * 0.04;
+      }
+
+      // HR intensity factor (drifts faster above 80% HRmax or ~155 bpm)
+      if (avgHr > 165) baseDrift += 2.2;
+      else if (avgHr > 155) baseDrift += 1.2;
+      else if (avgHr < 135) baseDrift -= 0.6;
+
+      // Trail elevation cost
+      if (elevGain > 150) {
+        baseDrift += (elevGain / 300) * 0.8;
+      }
+
+      // Deterministic variation based on distance & duration
+      const seed = Math.sin(durSec * 0.13 + dist * 7.1) * 0.4;
+      decouplingPct = Math.max(0.5, Math.round((baseDrift + seed) * 10) / 10);
     }
 
-    // HR intensity factor (drifts faster above 80% HRmax or ~155 bpm)
-    if (avgHr > 165) baseDrift += 2.2;
-    else if (avgHr > 155) baseDrift += 1.2;
-    else if (avgHr < 135) baseDrift -= 0.6;
+    // Calculate first half vs second half split metrics from ratio
+    const driftRatio = decouplingPct / 100;
+    ef1 = Math.round(overallEf * (1 + driftRatio / 2) * 100) / 100;
+    ef2 = Math.round(overallEf * (1 - driftRatio / 2) * 100) / 100;
 
-    // Trail elevation cost
-    if (elevGain > 150) {
-      baseDrift += (elevGain / 300) * 0.8;
-    }
+    const hrShift = Math.max(1, Math.round((avgHr * driftRatio) / 2));
+    hr1 = Math.round(avgHr - hrShift * 0.8);
+    hr2 = Math.round(avgHr + hrShift * 1.2);
+    driftDeltaHr = hr2 - hr1;
 
-    // Deterministic variation based on distance & duration
-    const seed = Math.sin(durSec * 0.13 + dist * 7.1) * 0.4;
-    decouplingPct = Math.max(0.5, Math.round((baseDrift + seed) * 10) / 10);
+    pace1 = paceSec > 0 ? Math.round(paceSec * (1 - driftRatio * 0.15)) : 0;
+    pace2 = paceSec > 0 ? Math.round(paceSec * (1 + driftRatio * 0.15)) : 0;
   }
-
-  // Calculate first half vs second half split metrics
-  const driftRatio = decouplingPct / 100;
-  const ef1 = Math.round(overallEf * (1 + driftRatio / 2) * 100) / 100;
-  const ef2 = Math.round(overallEf * (1 - driftRatio / 2) * 100) / 100;
-
-  const hrShift = Math.max(1, Math.round((avgHr * driftRatio) / 2));
-  const hr1 = Math.round(avgHr - hrShift * 0.8);
-  const hr2 = Math.round(avgHr + hrShift * 1.2);
-  const driftDeltaHr = hr2 - hr1;
-
-  const pace1 = paceSec > 0 ? Math.round(paceSec * (1 - driftRatio * 0.15)) : 0;
-  const pace2 = paceSec > 0 ? Math.round(paceSec * (1 + driftRatio * 0.15)) : 0;
 
   // Classify aerobic coupling status (Intervals.icu / Friel criteria)
   if (decouplingPct <= 3.5) {
@@ -1734,6 +1781,20 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
   };
 }
 
+export interface LapSplitItem {
+  lapIndex: number;
+  distanceM: number;
+  distanceKm: number;
+  durationSec: number;
+  paceSec: number;
+  formattedPace: string;
+  avgHr?: number;
+  maxHr?: number;
+  avgCadence?: number;
+  elevationGainM?: number;
+  elevationLossM?: number;
+}
+
 export interface ActivitySplitPoint {
   km: number;
   // Activity A
@@ -1765,6 +1826,7 @@ export interface ActivityComparisonAnalysis {
   efficiencyFactorA: number;
   efficiencyFactorB: number;
   efficiencyGainPct: number;
+  isAuthenticSplits: boolean;
   splits: ActivitySplitPoint[];
   summaryVerdict: {
     headline: string;
@@ -1776,8 +1838,46 @@ export interface ActivityComparisonAnalysis {
 }
 
 /**
- * Deterministically synthesizes KM-by-KM split comparisons between two activities
- * based on their distance, pace, elevation, HR, and cardiac decoupling.
+ * Calculate authentic Aerobic Decoupling (Pa:HR) by comparing
+ * the Efficiency Factor (Speed/HR) of the 1st half vs 2nd half of real laps.
+ */
+export function calculateDecouplingFromLaps(laps: any[]): number | null {
+  if (!Array.isArray(laps)) return null;
+  const validLaps = laps.filter(
+    (l) => Number(l.distanceM || l.distanceKm * 1000 || 0) >= 400 && Number(l.durationSec || 0) > 30 && l.avgHr && Number(l.avgHr) > 40 && Number(l.paceSec || 0) > 0
+  );
+  if (validLaps.length < 2) return null;
+
+  const halfIndex = Math.floor(validLaps.length / 2);
+  const half1 = validLaps.slice(0, halfIndex);
+  const half2 = validLaps.slice(halfIndex);
+
+  const dist1 = half1.reduce((acc, l) => acc + Number(l.distanceM || l.distanceKm * 1000 || 0), 0);
+  const dur1 = half1.reduce((acc, l) => acc + Number(l.durationSec || 0), 0);
+  const hrWeighted1 = half1.reduce((acc, l) => acc + Number(l.avgHr) * Number(l.durationSec || 0), 0);
+  const avgHr1 = dur1 > 0 ? hrWeighted1 / dur1 : 0;
+
+  const dist2 = half2.reduce((acc, l) => acc + Number(l.distanceM || l.distanceKm * 1000 || 0), 0);
+  const dur2 = half2.reduce((acc, l) => acc + Number(l.durationSec || 0), 0);
+  const hrWeighted2 = half2.reduce((acc, l) => acc + Number(l.avgHr) * Number(l.durationSec || 0), 0);
+  const avgHr2 = dur2 > 0 ? hrWeighted2 / dur2 : 0;
+
+  if (dur1 <= 0 || dur2 <= 0 || avgHr1 <= 0 || avgHr2 <= 0) return null;
+
+  const speed1 = dist1 / dur1; // m/s
+  const speed2 = dist2 / dur2; // m/s
+
+  const ef1 = speed1 / avgHr1;
+  const ef2 = speed2 / avgHr2;
+
+  if (ef1 <= 0) return null;
+  const decoupling = ((ef1 - ef2) / ef1) * 100;
+  return Math.round(decoupling * 10) / 10;
+}
+
+/**
+ * Head-to-head comparison between two running activities
+ * using authentic COROS lap splits when available.
  */
 export function generateActivityComparison(
   actA: any,
@@ -1793,8 +1893,16 @@ export function generateActivityComparison(
   const elevB = actB.elevationGain || 0;
   const loadA = actA.trainingLoad || 0;
   const loadB = actB.trainingLoad || 0;
-  const decA = actA.decouplingPct || 0;
-  const decB = actB.decouplingPct || 0;
+
+  const lapsA: any[] = Array.isArray(actA.lapSplits) ? actA.lapSplits : [];
+  const lapsB: any[] = Array.isArray(actB.lapSplits) ? actB.lapSplits : [];
+  const isAuthenticSplits = lapsA.length > 0 || lapsB.length > 0;
+
+  // Calculate real decoupling if authentic laps are present
+  const authenticDecouplingA = calculateDecouplingFromLaps(lapsA);
+  const authenticDecouplingB = calculateDecouplingFromLaps(lapsB);
+  const decA = authenticDecouplingA !== null ? authenticDecouplingA : (actA.decouplingPct || 0);
+  const decB = authenticDecouplingB !== null ? authenticDecouplingB : (actB.decouplingPct || 0);
 
   // Efficiency factor = Speed (m/min) / HR
   const speedMpmA = paceA > 0 ? 60000 / paceA : 0;
@@ -1804,14 +1912,15 @@ export function generateActivityComparison(
   const efficiencyGainPct =
     efB > 0 ? Math.round(((efA - efB) / efB) * 1000) / 10 : 0;
 
-  // Max KM to simulate splits
-  const maxKm = Math.min(42, Math.max(1, Math.round(Math.max(distA, distB))));
+  // Max KM to display splits: use max length of authentic laps, or distance
+  const maxLapsCount = Math.max(lapsA.length, lapsB.length);
+  const maxKm = Math.min(
+    100,
+    Math.max(1, maxLapsCount > 0 ? maxLapsCount : Math.round(Math.max(distA, distB)))
+  );
   const splits: ActivitySplitPoint[] = [];
 
   for (let k = 1; k <= maxKm; k++) {
-    const hasA = k <= Math.ceil(distA);
-    const hasB = k <= Math.ceil(distB);
-
     let kPaceA: number | undefined;
     let kHrA: number | undefined;
     let kElevA: number | undefined;
@@ -1820,25 +1929,31 @@ export function generateActivityComparison(
     let kHrB: number | undefined;
     let kElevB: number | undefined;
 
-    // Simulate realistic fatigue drift and pace pacing strategy
-    if (hasA) {
-      const progress = distA > 0 ? k / distA : 0.5;
-      const fatigueFactor = 1 + (progress - 0.5) * ((decA || 3.5) / 100) * 0.8;
-      const cadenceNoise = Math.sin(k * 1.7) * 4;
-      kPaceA = Math.max(180, Math.round(paceA * fatigueFactor + cadenceNoise));
-      const hrDrift = Math.round(hrA * (1 + (progress - 0.5) * 0.06) + Math.cos(k * 2.1) * 2);
-      kHrA = Math.max(100, Math.min(205, hrDrift));
-      kElevA = Math.round((elevA / Math.max(1, distA)) * (1 + Math.sin(k * 1.3) * 0.6));
+    const lapA = lapsA[k - 1];
+    const lapB = lapsB[k - 1];
+
+    // Activity A Split
+    if (lapA) {
+      kPaceA = lapA.paceSec;
+      kHrA = lapA.avgHr;
+      kElevA = lapA.elevationGainM ?? Math.round(elevA / Math.max(1, distA));
+    } else if (k <= Math.ceil(distA)) {
+      // Clean fallback without artificial noise
+      kPaceA = paceA;
+      kHrA = hrA;
+      kElevA = Math.round(elevA / Math.max(1, distA));
     }
 
-    if (hasB) {
-      const progress = distB > 0 ? k / distB : 0.5;
-      const fatigueFactor = 1 + (progress - 0.5) * ((decB || 5.0) / 100) * 0.8;
-      const cadenceNoise = Math.cos(k * 1.9) * 5;
-      kPaceB = Math.max(180, Math.round(paceB * fatigueFactor + cadenceNoise));
-      const hrDrift = Math.round(hrB * (1 + (progress - 0.5) * 0.08) + Math.sin(k * 2.4) * 2);
-      kHrB = Math.max(100, Math.min(205, hrDrift));
-      kElevB = Math.round((elevB / Math.max(1, distB)) * (1 + Math.sin(k * 1.3) * 0.6));
+    // Activity B Split
+    if (lapB) {
+      kPaceB = lapB.paceSec;
+      kHrB = lapB.avgHr;
+      kElevB = lapB.elevationGainM ?? Math.round(elevB / Math.max(1, distB));
+    } else if (k <= Math.ceil(distB)) {
+      // Clean fallback without artificial noise
+      kPaceB = paceB;
+      kHrB = hrB;
+      kElevB = Math.round(elevB / Math.max(1, distB));
     }
 
     const paceDiffSec =
@@ -1869,7 +1984,7 @@ export function generateActivityComparison(
   let description = "Both workouts demonstrated similar physiological work and cardiovascular demand.";
 
   if (isFaster && isMoreEfficient) {
-    headline = "Clear Aerobic Adaption & Speed Gain ⚡";
+    headline = "Clear Aerobic Adaptation & Speed Gain ⚡";
     description = `You maintained ${Math.abs(Math.round(paceB - paceA))}s/km faster pace while gaining +${efficiencyGainPct}% higher aerobic efficiency (Speed/HR ratio).`;
   } else if (isFaster) {
     headline = "Faster Pace & Higher Running Output 🏃‍♂️";
@@ -1892,6 +2007,7 @@ export function generateActivityComparison(
     efficiencyFactorA: efA,
     efficiencyFactorB: efB,
     efficiencyGainPct,
+    isAuthenticSplits,
     splits,
     summaryVerdict: {
       headline,

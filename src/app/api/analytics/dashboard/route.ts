@@ -733,6 +733,16 @@ export async function GET(req: NextRequest) {
       efficiencyFactor: Number(a.efficiency_factor || 0),
       aerobicTe: Number(a.aerobic_te || 0),
       anaerobicTe: Number(a.anaerobic_te || 0),
+      lapSplits: a.lap_splits
+        ? (() => {
+            try {
+              const parsed = JSON.parse(a.lap_splits);
+              return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+            } catch {
+              return null;
+            }
+          })()
+        : null,
     })),
   }, {
     headers: {

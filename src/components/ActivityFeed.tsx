@@ -27,6 +27,7 @@ import {
   calculateDecouplingAnalysis,
   formatDurationTime,
   formatDurationReadable,
+  LapSplitItem,
 } from "@/lib/analytics";
 import { useTranslation } from "@/lib/i18n/context";
 import { ActivityShareModal } from "./ActivityShareModal";
@@ -52,6 +53,7 @@ export interface ActivityItem {
   efficiencyFactor: number;
   aerobicTe: number;
   anaerobicTe: number;
+  lapSplits?: LapSplitItem[] | null;
 }
 
 interface ActivityFeedProps {

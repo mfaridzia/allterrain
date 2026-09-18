@@ -522,7 +522,7 @@ export async function syncCorosData(
               anaerobic_te = excluded.anaerobic_te,
               max_hr = excluded.max_hr,
               vam_meters_per_hour = excluded.vam_meters_per_hour,
-              decoupling_pct = excluded.decoupling_pct,
+              decoupling_pct = CASE WHEN activities.lap_splits IS NOT NULL AND activities.decoupling_pct > 0 THEN activities.decoupling_pct ELSE excluded.decoupling_pct END,
               efficiency_factor = excluded.efficiency_factor,
               raw_data = excluded.raw_data
           `,

@@ -11,6 +11,64 @@ interface LatLng {
   lng: number;
 }
 
+export interface LapSplitItem {
+  lapIndex: number;
+  distanceM: number;
+  distanceKm: number;
+  durationSec: number;
+  paceSec: number;
+  formattedPace: string;
+  avgHr?: number;
+  maxHr?: number;
+  avgCadence?: number;
+  elevationGainM?: number;
+  elevationLossM?: number;
+}
+
+function formatPaceSec(secPerKm: number): string {
+  if (!secPerKm || isNaN(secPerKm) || secPerKm <= 0 || !isFinite(secPerKm)) return "--:--";
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.round(secPerKm % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Calculate genuine Aerobic Decoupling (Pa:HR) by comparing
+ * the Efficiency Factor (Speed/HR) of the 1st half vs 2nd half of real laps.
+ */
+function calculateDecouplingFromLaps(laps: LapSplitItem[]): number | null {
+  const validLaps = laps.filter(
+    (l) => l.distanceM >= 400 && l.durationSec > 30 && l.avgHr && l.avgHr > 40 && l.paceSec > 0
+  );
+  if (validLaps.length < 2) return null;
+
+  const halfIndex = Math.floor(validLaps.length / 2);
+  const half1 = validLaps.slice(0, halfIndex);
+  const half2 = validLaps.slice(halfIndex);
+
+  const dist1 = half1.reduce((acc, l) => acc + l.distanceM, 0);
+  const dur1 = half1.reduce((acc, l) => acc + l.durationSec, 0);
+  const hrWeighted1 = half1.reduce((acc, l) => acc + l.avgHr! * l.durationSec, 0);
+  const avgHr1 = dur1 > 0 ? hrWeighted1 / dur1 : 0;
+
+  const dist2 = half2.reduce((acc, l) => acc + l.distanceM, 0);
+  const dur2 = half2.reduce((acc, l) => acc + l.durationSec, 0);
+  const hrWeighted2 = half2.reduce((acc, l) => acc + l.avgHr! * l.durationSec, 0);
+  const avgHr2 = dur2 > 0 ? hrWeighted2 / dur2 : 0;
+
+  if (dur1 <= 0 || dur2 <= 0 || avgHr1 <= 0 || avgHr2 <= 0) return null;
+
+  const speed1 = dist1 / dur1; // m/s
+  const speed2 = dist2 / dur2; // m/s
+
+  const ef1 = speed1 / avgHr1;
+  const ef2 = speed2 / avgHr2;
+
+  if (ef1 <= 0) return null;
+  const decoupling = ((ef1 - ef2) / ef1) * 100;
+  return Math.round(decoupling * 10) / 10;
+}
+
 /**
  * Ramer-Douglas-Peucker (RDP) trajectory simplification algorithm
  */
@@ -57,7 +115,7 @@ export async function GET(req: NextRequest) {
   try {
     // 1. Check if activity exists in database
     const actRes = await db.execute({
-      sql: `SELECT id, coros_id, sport_type, raw_data, gps_track, athlete_id FROM activities WHERE id = ? LIMIT 1`,
+      sql: `SELECT id, coros_id, sport_type, raw_data, gps_track, lap_splits, decoupling_pct, athlete_id FROM activities WHERE id = ? LIMIT 1`,
       args: [activityId],
     });
 
@@ -67,34 +125,49 @@ export async function GET(req: NextRequest) {
 
     const act = actRes.rows[0] as any;
 
-    // 2. Return cached GPS track if already parsed
+    // 2. Fast path: If both GPS track and lap_splits are already cached, return immediately
+    let cachedGps: LatLng[] | null = null;
+    let cachedLaps: LapSplitItem[] | null = null;
+
     if (act.gps_track) {
       try {
-        const cached = JSON.parse(act.gps_track);
-        if (Array.isArray(cached) && cached.length > 2) {
-          return NextResponse.json({
-            success: true,
-            isRealGps: true,
-            points: cached,
-            cached: true,
-          });
+        const parsed = JSON.parse(act.gps_track);
+        if (Array.isArray(parsed) && parsed.length > 2) {
+          cachedGps = parsed;
         }
       } catch {}
     }
 
-    // 3. Skip indoor / strength sports with no GPS
+    if (act.lap_splits) {
+      try {
+        const parsed = JSON.parse(act.lap_splits);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          cachedLaps = parsed;
+        }
+      } catch {}
+    }
+
+    if (cachedGps && cachedLaps) {
+      return NextResponse.json({
+        success: true,
+        isRealGps: true,
+        points: cachedGps,
+        laps: cachedLaps,
+        decouplingPct: Number(act.decoupling_pct || 0),
+        cached: true,
+        isAuthentic: true,
+      });
+    }
+
+    // 3. Skip indoor / gym workouts without sensors
     const sportType = String(act.sport_type || "").toLowerCase();
-    if (
-      sportType.includes("strength") ||
-      sportType.includes("gym") ||
-      sportType.includes("indoor") ||
-      sportType.includes("treadmill")
-    ) {
+    if (sportType === "strength" || sportType === "gym" || sportType === "weight") {
       return NextResponse.json({
         success: true,
         isRealGps: false,
         points: null,
-        reason: "indoor_workout",
+        laps: null,
+        reason: "strength_workout",
       });
     }
 
@@ -121,19 +194,30 @@ export async function GET(req: NextRequest) {
       targetAthleteId
     );
 
-    const fitUrlMatch = typeof mcpText === "string" ? mcpText.match(/https:\/\/s3\.coros\.com\/fit\/[^\s\)\n]+\.fit/i) : null;
+    const fitUrlMatch = typeof mcpText === "string" ? mcpText.match(/https?:\/\/[^\s"'<>]+\.fit/i) : null;
     if (!fitUrlMatch) {
+      // If FIT file URL is unavailable but we had cached GPS, return it
+      if (cachedGps) {
+        return NextResponse.json({
+          success: true,
+          isRealGps: true,
+          points: cachedGps,
+          laps: cachedLaps,
+          cached: true,
+        });
+      }
       return NextResponse.json({
         success: true,
         isRealGps: false,
         points: null,
+        laps: null,
         reason: "fit_url_unavailable",
       });
     }
 
     const fitUrl = fitUrlMatch[0];
 
-    // 6. Download FIT file binary
+    // 6. Download FIT file binary from S3
     const fitRes = await fetch(fitUrl);
     if (!fitRes.ok) {
       throw new Error(`Failed to download FIT file from S3: ${fitRes.statusText}`);
@@ -142,8 +226,8 @@ export async function GET(req: NextRequest) {
     const arrayBuffer = await fitRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // 7. Parse FIT file with fit-file-parser
-    const rawGpsPoints: LatLng[] = await new Promise((resolve, reject) => {
+    // 7. Parse FIT file with fit-file-parser (extracting GPS points, authentic laps, and records)
+    const fitResult: { gpsPoints: LatLng[]; laps: LapSplitItem[] } = await new Promise((resolve, reject) => {
       const fitParser = new FitParser({
         force: true,
         mode: "list",
@@ -153,7 +237,11 @@ export async function GET(req: NextRequest) {
         if (err) {
           return reject(err);
         }
+
         const records = data?.records || [];
+        const rawLaps = data?.laps || [];
+
+        // Extract GPS points
         const pts: LatLng[] = [];
         for (const r of records) {
           if (r.position_lat != null && r.position_long != null) {
@@ -163,45 +251,151 @@ export async function GET(req: NextRequest) {
             });
           }
         }
-        resolve(pts);
+
+        // Extract authentic laps
+        const parsedLaps: LapSplitItem[] = [];
+
+        if (rawLaps.length > 0) {
+          rawLaps.forEach((lap: any, idx: number) => {
+            const distM = Number(lap.total_distance || 0);
+            const durSec = Number(lap.total_timer_time || lap.total_elapsed_time || 0);
+            const distKm = distM / 1000;
+            const paceSec = distKm > 0 && durSec > 0 ? Math.round(durSec / distKm) : 0;
+            let avgCadence = lap.avg_cadence ? Math.round(lap.avg_cadence) : undefined;
+            if (avgCadence && avgCadence < 120) {
+              avgCadence = avgCadence * 2; // Normalize stride cycles to spm
+            }
+
+            parsedLaps.push({
+              lapIndex: idx + 1,
+              distanceM: Math.round(distM),
+              distanceKm: Math.round(distKm * 100) / 100,
+              durationSec: Math.round(durSec),
+              paceSec,
+              formattedPace: formatPaceSec(paceSec),
+              avgHr: lap.avg_heart_rate ? Math.round(lap.avg_heart_rate) : undefined,
+              maxHr: lap.max_heart_rate ? Math.round(lap.max_heart_rate) : undefined,
+              avgCadence,
+              elevationGainM: lap.total_ascent ? Math.round(lap.total_ascent) : 0,
+              elevationLossM: lap.total_descent ? Math.round(lap.total_descent) : 0,
+            });
+          });
+        } else if (records.length > 0) {
+          // Fallback: If FIT has no separate lap messages, generate authentic 1-km splits from records
+          let currentLapStartDist = 0;
+          let currentLapStartTime = new Date(records[0].timestamp).getTime();
+          let currentLapIndex = 1;
+          let hrSum = 0;
+          let hrCount = 0;
+          let maxHr = 0;
+          let gainSum = 0;
+          let lastAlt = records[0].altitude || 0;
+
+          for (let i = 0; i < records.length; i++) {
+            const r = records[i];
+            const dist = Number(r.distance || 0);
+            const hr = Number(r.heart_rate || 0);
+            const alt = Number(r.altitude || 0);
+
+            if (hr > 0) {
+              hrSum += hr;
+              hrCount++;
+              if (hr > maxHr) maxHr = hr;
+            }
+            if (alt > lastAlt) {
+              gainSum += alt - lastAlt;
+            }
+            lastAlt = alt;
+
+            const lapDist = dist - currentLapStartDist;
+            const isLast = i === records.length - 1;
+
+            if (lapDist >= 1000 || (isLast && lapDist >= 200)) {
+              const curTime = new Date(r.timestamp).getTime();
+              const durSec = Math.max(1, Math.round((curTime - currentLapStartTime) / 1000));
+              const distKm = lapDist / 1000;
+              const paceSec = Math.round(durSec / distKm);
+
+              parsedLaps.push({
+                lapIndex: currentLapIndex++,
+                distanceM: Math.round(lapDist),
+                distanceKm: Math.round(distKm * 100) / 100,
+                durationSec: durSec,
+                paceSec,
+                formattedPace: formatPaceSec(paceSec),
+                avgHr: hrCount > 0 ? Math.round(hrSum / hrCount) : undefined,
+                maxHr: maxHr > 0 ? maxHr : undefined,
+                elevationGainM: Math.round(gainSum),
+                elevationLossM: 0,
+              });
+
+              currentLapStartDist = dist;
+              currentLapStartTime = curTime;
+              hrSum = 0;
+              hrCount = 0;
+              maxHr = 0;
+              gainSum = 0;
+            }
+          }
+        }
+
+        resolve({ gpsPoints: pts, laps: parsedLaps });
       });
     });
 
-    if (!rawGpsPoints || rawGpsPoints.length < 5) {
-      // Record empty in DB to avoid retrying continuously
+    const { gpsPoints: rawGpsPoints, laps } = fitResult;
+
+    // 8. Simplify trajectory using RDP if GPS points exist
+    let simplifiedGps: LatLng[] = [];
+    if (rawGpsPoints && rawGpsPoints.length >= 5) {
+      simplifiedGps = simplifyRdp(rawGpsPoints, 0.00004);
+    }
+
+    // 9. Calculate authentic Aerobic Decoupling (Pa:HR) from real laps
+    const authenticDecoupling = calculateDecouplingFromLaps(laps);
+
+    // 10. Cache GPS track, lap_splits, and real decoupling in database
+    const updates: string[] = [];
+    const args: any[] = [];
+
+    if (simplifiedGps.length > 0) {
+      updates.push("gps_track = ?");
+      args.push(JSON.stringify(simplifiedGps));
+    }
+    if (laps.length > 0) {
+      updates.push("lap_splits = ?");
+      args.push(JSON.stringify(laps));
+    }
+    if (authenticDecoupling !== null) {
+      updates.push("decoupling_pct = ?");
+      args.push(authenticDecoupling);
+    }
+
+    if (updates.length > 0) {
+      args.push(act.id);
       await db.execute({
-        sql: `UPDATE activities SET gps_track = ? WHERE id = ?`,
-        args: ["[]", act.id],
-      });
-      return NextResponse.json({
-        success: true,
-        isRealGps: false,
-        points: null,
-        reason: "no_gps_points_in_fit",
+        sql: `UPDATE activities SET ${updates.join(", ")} WHERE id = ?`,
+        args,
       });
     }
 
-    // 8. Simplify trajectory using RDP (0.00004 deg approx 4m tolerance)
-    const simplified = simplifyRdp(rawGpsPoints, 0.00004);
-
-    // 9. Cache in database
-    await db.execute({
-      sql: `UPDATE activities SET gps_track = ? WHERE id = ?`,
-      args: [JSON.stringify(simplified), act.id],
-    });
-
     return NextResponse.json({
       success: true,
-      isRealGps: true,
-      points: simplified,
+      isRealGps: simplifiedGps.length > 0,
+      points: simplifiedGps.length > 0 ? simplifiedGps : null,
+      laps: laps.length > 0 ? laps : null,
+      decouplingPct: authenticDecoupling ?? Number(act.decoupling_pct || 0),
       cached: false,
+      isAuthentic: laps.length > 0,
     });
   } catch (err: any) {
-    console.error("Failed to fetch/parse activity GPS track:", err);
+    console.error("Failed to fetch/parse activity GPS track & laps:", err);
     return NextResponse.json({
       success: false,
       isRealGps: false,
-      error: err.message || "Failed to process GPS track",
+      points: null,
+      laps: null,
+      error: err.message || "Failed to process GPS track & laps",
     });
   }
 }
