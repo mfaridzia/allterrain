@@ -520,25 +520,33 @@ export function calculateDecouplingAnalysis(activity: {
   );
 
   if (validLaps.length >= 2) {
-    const halfIndex = Math.floor(validLaps.length / 2);
-    const half1 = validLaps.slice(0, halfIndex);
-    const half2 = validLaps.slice(halfIndex);
+    // Joe Friel Warmup Discard: For endurance workouts >= 4 laps, discard the 1st lap
+    // to eliminate initial cardiac lag (where HR is abnormally low while warming up)
+    const steadyLaps = validLaps.length >= 4 ? validLaps.slice(1) : validLaps;
+    const halfIndex = Math.floor(steadyLaps.length / 2);
+    const half1 = steadyLaps.slice(0, halfIndex);
+    const half2 = steadyLaps.slice(halfIndex);
 
     const dist1M = half1.reduce((acc, l) => acc + Number(l.distanceM || (l.distanceKm ? l.distanceKm * 1000 : 0) || 0), 0);
     const dur1 = half1.reduce((acc, l) => acc + Number(l.durationSec || 0), 0);
     const hrW1 = half1.reduce((acc, l) => acc + Number(l.avgHr) * Number(l.durationSec || 0), 0);
+    const elev1 = half1.reduce((acc, l) => acc + Number(l.elevationGainM || 0), 0);
     hr1 = dur1 > 0 ? Math.round(hrW1 / dur1) : avgHr;
     pace1 = dist1M > 0 ? Math.round((dur1 / dist1M) * 1000) : paceSec;
-    const speedMpm1 = dur1 > 0 ? (dist1M / dur1) * 60 : 0;
-    ef1 = hr1 > 0 ? Math.round((speedMpm1 / hr1) * 100) / 100 : overallEf;
+    // Grade-Adjusted flat equivalent distance (Minetti / ITRA: 1m D+ = ~8.5m flat energy cost)
+    const gapDist1M = dist1M + Math.max(0, elev1) * 8.5;
+    const gapSpeedMpm1 = dur1 > 0 ? (gapDist1M / dur1) * 60 : 0;
+    ef1 = hr1 > 0 ? Math.round((gapSpeedMpm1 / hr1) * 100) / 100 : overallEf;
 
     const dist2M = half2.reduce((acc, l) => acc + Number(l.distanceM || (l.distanceKm ? l.distanceKm * 1000 : 0) || 0), 0);
     const dur2 = half2.reduce((acc, l) => acc + Number(l.durationSec || 0), 0);
     const hrW2 = half2.reduce((acc, l) => acc + Number(l.avgHr) * Number(l.durationSec || 0), 0);
+    const elev2 = half2.reduce((acc, l) => acc + Number(l.elevationGainM || 0), 0);
     hr2 = dur2 > 0 ? Math.round(hrW2 / dur2) : avgHr;
     pace2 = dist2M > 0 ? Math.round((dur2 / dist2M) * 1000) : paceSec;
-    const speedMpm2 = dur2 > 0 ? (dist2M / dur2) * 60 : 0;
-    ef2 = hr2 > 0 ? Math.round((speedMpm2 / hr2) * 100) / 100 : overallEf;
+    const gapDist2M = dist2M + Math.max(0, elev2) * 8.5;
+    const gapSpeedMpm2 = dur2 > 0 ? (gapDist2M / dur2) * 60 : 0;
+    ef2 = hr2 > 0 ? Math.round((gapSpeedMpm2 / hr2) * 100) / 100 : overallEf;
 
     driftDeltaHr = hr2 - hr1;
     if (ef1 > 0) {
@@ -1844,34 +1852,50 @@ export interface ActivityComparisonAnalysis {
 export function calculateDecouplingFromLaps(laps: any[]): number | null {
   if (!Array.isArray(laps)) return null;
   const validLaps = laps.filter(
-    (l) => Number(l.distanceM || l.distanceKm * 1000 || 0) >= 400 && Number(l.durationSec || 0) > 30 && l.avgHr && Number(l.avgHr) > 40 && Number(l.paceSec || 0) > 0
+    (l) => Number(l.distanceM || (l.distanceKm ? l.distanceKm * 1000 : 0) || 0) >= 400 && Number(l.durationSec || 0) > 30 && l.avgHr && Number(l.avgHr) > 40 && Number(l.paceSec || 0) > 0
   );
   if (validLaps.length < 2) return null;
 
-  const halfIndex = Math.floor(validLaps.length / 2);
-  const half1 = validLaps.slice(0, halfIndex);
-  const half2 = validLaps.slice(halfIndex);
+  // Joe Friel Warmup Discard: For endurance workouts >= 4 laps (e.g. >= 4km), discard the 1st lap
+  // to eliminate initial cardiac lag (where HR is abnormally low while warming up)
+  const steadyLaps = validLaps.length >= 4 ? validLaps.slice(1) : validLaps;
+  const halfIndex = Math.floor(steadyLaps.length / 2);
+  const half1 = steadyLaps.slice(0, halfIndex);
+  const half2 = steadyLaps.slice(halfIndex);
 
-  const dist1 = half1.reduce((acc, l) => acc + Number(l.distanceM || l.distanceKm * 1000 || 0), 0);
-  const dur1 = half1.reduce((acc, l) => acc + Number(l.durationSec || 0), 0);
-  const hrWeighted1 = half1.reduce((acc, l) => acc + Number(l.avgHr) * Number(l.durationSec || 0), 0);
-  const avgHr1 = dur1 > 0 ? hrWeighted1 / dur1 : 0;
+  const calcHalfMetrics = (half: any[]) => {
+    let totalDurSec = 0;
+    let weightedHrSum = 0;
+    let totalDistM = 0;
+    let totalElevGainM = 0;
 
-  const dist2 = half2.reduce((acc, l) => acc + Number(l.distanceM || l.distanceKm * 1000 || 0), 0);
-  const dur2 = half2.reduce((acc, l) => acc + Number(l.durationSec || 0), 0);
-  const hrWeighted2 = half2.reduce((acc, l) => acc + Number(l.avgHr) * Number(l.durationSec || 0), 0);
-  const avgHr2 = dur2 > 0 ? hrWeighted2 / dur2 : 0;
+    for (const l of half) {
+      const dur = Number(l.durationSec || 0);
+      const hr = Number(l.avgHr || 0);
+      const dist = Number(l.distanceM || (l.distanceKm ? l.distanceKm * 1000 : 0) || 0);
+      const elev = Number(l.elevationGainM || 0);
 
-  if (dur1 <= 0 || dur2 <= 0 || avgHr1 <= 0 || avgHr2 <= 0) return null;
+      totalDurSec += dur;
+      weightedHrSum += hr * dur;
+      totalDistM += dist;
+      totalElevGainM += elev;
+    }
 
-  const speed1 = dist1 / dur1; // m/s
-  const speed2 = dist2 / dur2; // m/s
+    const avgHr = totalDurSec > 0 ? weightedHrSum / totalDurSec : 0;
+    // Grade-Adjusted flat equivalent distance (Minetti / ITRA: 1m D+ = ~8.5m flat energy cost)
+    const gapDistM = totalDistM + Math.max(0, totalElevGainM) * 8.5;
+    const gapSpeedMps = totalDurSec > 0 ? gapDistM / totalDurSec : 0;
+    const ef = avgHr > 0 ? (gapSpeedMps * 60) / avgHr : 0;
 
-  const ef1 = speed1 / avgHr1;
-  const ef2 = speed2 / avgHr2;
+    return { totalDurSec, avgHr, ef };
+  };
 
-  if (ef1 <= 0) return null;
-  const decoupling = ((ef1 - ef2) / ef1) * 100;
+  const m1 = calcHalfMetrics(half1);
+  const m2 = calcHalfMetrics(half2);
+
+  if (m1.ef <= 0 || m2.ef <= 0 || m1.avgHr <= 0 || m2.avgHr <= 0) return null;
+
+  const decoupling = ((m1.ef - m2.ef) / m1.ef) * 100;
   return Math.round(decoupling * 10) / 10;
 }
 

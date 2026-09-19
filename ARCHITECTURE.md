@@ -267,15 +267,19 @@ $$\text{Training Strain} = \left(\sum_{i=1}^{7} \text{Load}_i\right) \times \tex
 
 ### 4.5 Aerobic Decoupling ($Pa:HR$ / Cardiac Drift %) — Joe Friel
 
-Evaluates aerobic endurance stability by comparing speed-to-heart rate efficiency between the first and second halves of a workout:
+Evaluates aerobic endurance stability by comparing speed-to-heart rate efficiency between the first and second halves of steady aerobic workouts:
 
-$$\text{EF}_1 = \frac{\text{Speed}_{\text{half 1}} \ (\text{m/s})}{\text{HR}_{\text{half 1}} \ (\text{bpm})}, \quad \text{EF}_2 = \frac{\text{Speed}_{\text{half 2}} \ (\text{m/s})}{\text{HR}_{\text{half 2}} \ (\text{bpm})}$$
+$$\text{EF}_1 = \frac{\text{GAP Speed}_{\text{steady half 1}} \ (\text{m/s})}{\text{HR}_{\text{steady half 1}} \ (\text{bpm})}, \quad \text{EF}_2 = \frac{\text{GAP Speed}_{\text{steady half 2}} \ (\text{m/s})}{\text{HR}_{\text{steady half 2}} \ (\text{bpm})}$$
 
 $$\text{Decoupling \%} = \left(\frac{\text{EF}_1 - \text{EF}_2}{\text{EF}_1}\right) \times 100\%$$
 
+- **Joe Friel Warm-up Discard Protocol:** For activities with $\ge 4$ splits (e.g. $\ge 4$ km), Lap 1 (~first 10 min) is excluded from the first half to eliminate cardiovascular lag (resting HR ramping up to steady state).
+- **Grade-Adjusted Elevation Correction (Minetti 2002):** Distance is normalized using metabolic gradient cost ($\text{GAP Dist} = \text{Distance} + \text{D+} \times 8.5\text{m}$) so uphills in the second half are not falsely penalized as cardiovascular collapse.
 - **Clinical Interpretation:**
-  - $\le 5.0\%$: Solid aerobic base (*Aerobic Base Solid*).
-  - $> 5.0\%$: Meaningful *Cardiac Drift* (dehydration, glycogen depletion, or thermoregulatory fatigue).
+  - $\le 3.5\%$: Optimal Aerobic Coupling.
+  - $3.5\% - 5.0\%$: Solid Aerobic Base (*Aerobic Base Solid*).
+  - $5.1\% - 8.0\%$: Moderate Natural Drift (normal heat/terrain fatigue).
+  - $> 8.0\%$: High Cardiac Drift (dehydration, glycogen depletion, or thermoregulatory strain).
 
 ---
 

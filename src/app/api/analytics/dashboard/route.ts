@@ -11,6 +11,7 @@ import {
   calculateWeeklyZoneProgression,
   calculateAthleteHrZones,
   estimateActivityHrZones,
+  calculateDecouplingFromLaps,
   HrZoneCalcMethod,
   PmcPoint,
 } from "@/lib/analytics";
@@ -729,20 +730,35 @@ export async function GET(req: NextRequest) {
       elevationGain: Math.round(Number(a.elevation_gain || 0)),
       elevationLoss: Math.round(Number(a.elevation_loss || 0)),
       vam: Number(a.vam_meters_per_hour || 0),
-      decouplingPct: Number(a.decoupling_pct || 0),
       efficiencyFactor: Number(a.efficiency_factor || 0),
       aerobicTe: Number(a.aerobic_te || 0),
       anaerobicTe: Number(a.anaerobic_te || 0),
-      lapSplits: a.lap_splits
-        ? (() => {
-            try {
-              const parsed = JSON.parse(a.lap_splits);
-              return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
-            } catch {
-              return null;
+      ...(() => {
+        let parsedLaps: any[] | null = null;
+        if (a.lap_splits) {
+          try {
+            const parsed = JSON.parse(a.lap_splits);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              parsedLaps = parsed;
             }
-          })()
-        : null,
+          } catch {}
+        }
+        const realDecoupling = parsedLaps ? calculateDecouplingFromLaps(parsedLaps) : null;
+        const effectiveDecoupling = realDecoupling ?? Number(a.decoupling_pct || 0);
+
+        // Opportunistically persist corrected decoupling to DB if changed
+        if (realDecoupling !== null && realDecoupling !== Number(a.decoupling_pct || 0)) {
+          db.execute({
+            sql: `UPDATE activities SET decoupling_pct = ? WHERE id = ?`,
+            args: [realDecoupling, a.id],
+          }).catch(() => {});
+        }
+
+        return {
+          decouplingPct: effectiveDecoupling,
+          lapSplits: parsedLaps,
+        };
+      })(),
     })),
   }, {
     headers: {

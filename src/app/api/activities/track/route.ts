@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { callCorosMcpTool } from "@/lib/coros-mcp";
 import { getCurrentAthleteId } from "@/lib/session";
+import { calculateDecouplingFromLaps, LapSplitItem } from "@/lib/analytics";
 // @ts-ignore
 import FitParserModule from "fit-file-parser";
 const FitParser = (FitParserModule as any).default || FitParserModule;
@@ -11,62 +12,11 @@ interface LatLng {
   lng: number;
 }
 
-export interface LapSplitItem {
-  lapIndex: number;
-  distanceM: number;
-  distanceKm: number;
-  durationSec: number;
-  paceSec: number;
-  formattedPace: string;
-  avgHr?: number;
-  maxHr?: number;
-  avgCadence?: number;
-  elevationGainM?: number;
-  elevationLossM?: number;
-}
-
 function formatPaceSec(secPerKm: number): string {
   if (!secPerKm || isNaN(secPerKm) || secPerKm <= 0 || !isFinite(secPerKm)) return "--:--";
   const m = Math.floor(secPerKm / 60);
   const s = Math.round(secPerKm % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
-/**
- * Calculate genuine Aerobic Decoupling (Pa:HR) by comparing
- * the Efficiency Factor (Speed/HR) of the 1st half vs 2nd half of real laps.
- */
-function calculateDecouplingFromLaps(laps: LapSplitItem[]): number | null {
-  const validLaps = laps.filter(
-    (l) => l.distanceM >= 400 && l.durationSec > 30 && l.avgHr && l.avgHr > 40 && l.paceSec > 0
-  );
-  if (validLaps.length < 2) return null;
-
-  const halfIndex = Math.floor(validLaps.length / 2);
-  const half1 = validLaps.slice(0, halfIndex);
-  const half2 = validLaps.slice(halfIndex);
-
-  const dist1 = half1.reduce((acc, l) => acc + l.distanceM, 0);
-  const dur1 = half1.reduce((acc, l) => acc + l.durationSec, 0);
-  const hrWeighted1 = half1.reduce((acc, l) => acc + l.avgHr! * l.durationSec, 0);
-  const avgHr1 = dur1 > 0 ? hrWeighted1 / dur1 : 0;
-
-  const dist2 = half2.reduce((acc, l) => acc + l.distanceM, 0);
-  const dur2 = half2.reduce((acc, l) => acc + l.durationSec, 0);
-  const hrWeighted2 = half2.reduce((acc, l) => acc + l.avgHr! * l.durationSec, 0);
-  const avgHr2 = dur2 > 0 ? hrWeighted2 / dur2 : 0;
-
-  if (dur1 <= 0 || dur2 <= 0 || avgHr1 <= 0 || avgHr2 <= 0) return null;
-
-  const speed1 = dist1 / dur1; // m/s
-  const speed2 = dist2 / dur2; // m/s
-
-  const ef1 = speed1 / avgHr1;
-  const ef2 = speed2 / avgHr2;
-
-  if (ef1 <= 0) return null;
-  const decoupling = ((ef1 - ef2) / ef1) * 100;
-  return Math.round(decoupling * 10) / 10;
 }
 
 /**
