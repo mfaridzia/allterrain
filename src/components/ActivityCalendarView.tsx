@@ -25,6 +25,12 @@ import {
 import { ActivityItem } from "./ActivityFeed";
 import { formatPace, formatDurationReadable } from "@/lib/analytics";
 import { useTranslation } from "@/lib/i18n/context";
+import dynamic from "next/dynamic";
+
+const MonthlyRecapShareModal = dynamic(
+  () => import("@/components/MonthlyRecapShareModal").then((mod) => mod.MonthlyRecapShareModal),
+  { ssr: false }
+);
 
 interface ActivityCalendarViewProps {
   activities: ActivityItem[];
@@ -55,6 +61,7 @@ export function ActivityCalendarView({
   const [currentYear, setCurrentYear] = useState<number>(initialDate.getFullYear());
   const [currentMonth, setCurrentMonth] = useState<number>(initialDate.getMonth()); // 0-indexed (0 = Jan, 8 = Sep)
   const [viewMode, setViewMode] = useState<"month" | "week">("month");
+  const [isSharingMonthlyRecap, setIsSharingMonthlyRecap] = useState(false);
   
   // For week view: state for the selected week anchor date (defaults to today or latest activity)
   const [selectedWeekAnchor, setSelectedWeekAnchor] = useState<Date>(() => {
@@ -570,31 +577,43 @@ export function ActivityCalendarView({
             </div>
           </div>
 
-          {/* Sport Breakdown Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-black">
-            <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-700 border border-zinc-300">
-              {monthlyStats.count} {t("activities.sessions", "sessions")}
-            </span>
-            {monthlyStats.roadCount > 0 && (
-              <span className="px-2 py-0.5 rounded-md bg-orange-100 text-orange-900 border border-orange-300">
-                {monthlyStats.roadCount} Road
+          {/* Sport Breakdown Pills & Share Monthly Recap Button */}
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full lg:w-auto">
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-black">
+              <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-700 border border-zinc-300">
+                {monthlyStats.count} {t("activities.sessions", "sessions")}
               </span>
-            )}
-            {monthlyStats.trailCount > 0 && (
-              <span className="px-2 py-0.5 rounded-md bg-cyan-100 text-cyan-900 border border-cyan-300">
-                {monthlyStats.trailCount} Trail
-              </span>
-            )}
-            {monthlyStats.bikeCount > 0 && (
-              <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
-                {monthlyStats.bikeCount} Bike
-              </span>
-            )}
-            {monthlyStats.strengthCount > 0 && (
-              <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 border border-purple-300">
-                {monthlyStats.strengthCount} Gym
-              </span>
-            )}
+              {monthlyStats.roadCount > 0 && (
+                <span className="px-2 py-0.5 rounded-md bg-orange-100 text-orange-900 border border-orange-300">
+                  {monthlyStats.roadCount} Road
+                </span>
+              )}
+              {monthlyStats.trailCount > 0 && (
+                <span className="px-2 py-0.5 rounded-md bg-cyan-100 text-cyan-900 border border-cyan-300">
+                  {monthlyStats.trailCount} Trail
+                </span>
+              )}
+              {monthlyStats.bikeCount > 0 && (
+                <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
+                  {monthlyStats.bikeCount} Bike
+                </span>
+              )}
+              {monthlyStats.strengthCount > 0 && (
+                <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 border border-purple-300">
+                  {monthlyStats.strengthCount} Gym
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsSharingMonthlyRecap(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-xs border-2 border-zinc-950 shadow-[2px_2px_0px_0px_#09090b] active:translate-x-[1px] active:translate-y-[1px] transition-all ml-auto sm:ml-2 cursor-pointer"
+              title={t("activities.shareRecap", "Share Monthly Recap")}
+            >
+              <Share2 className="h-3.5 w-3.5 stroke-[2.5]" />
+              <span>{t("activities.shareRecap", "Share Recap")}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -932,6 +951,16 @@ export function ActivityCalendarView({
             })}
           </div>
         </div>
+      )}
+      {/* Monthly Recap Share Modal */}
+      {isSharingMonthlyRecap && (
+        <MonthlyRecapShareModal
+          isOpen={isSharingMonthlyRecap}
+          onClose={() => setIsSharingMonthlyRecap(false)}
+          year={currentYear}
+          month={currentMonth}
+          activities={activities}
+        />
       )}
     </div>
   );

@@ -244,6 +244,11 @@ export const translations = {
       sessions: "sessions",
       monthlyVolume: "Monthly Volume",
       weekNumber: "Week",
+      shareRecap: "Share Monthly Recap",
+      monthToDate: "Month-to-Date (MTD)",
+      fullMonthRecap: "Full Month Recap",
+      inProgress: "In Progress",
+      completed: "Completed",
     },
     featuresPage: {
       heroTitle: "Inside the Engine: AllTerrain Methodology",
@@ -535,6 +540,11 @@ export const translations = {
       sessions: "sesi",
       monthlyVolume: "Volume Bulanan",
       weekNumber: "Minggu",
+      shareRecap: "Bagikan Rekap Bulanan",
+      monthToDate: "Bulan Berjalan (MTD)",
+      fullMonthRecap: "Rekap 1 Bulan Penuh",
+      inProgress: "Sedang Berjalan",
+      completed: "Selesai",
     },
     featuresPage: {
       heroTitle: "Di Balik Layar: Metodologi Sains AllTerrain",

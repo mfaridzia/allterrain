@@ -57,6 +57,10 @@ const ActivityCalendarView = dynamic(
   () => import("@/components/ActivityCalendarView").then((mod) => mod.ActivityCalendarView),
   { ssr: false }
 );
+const MonthlyRecapShareModal = dynamic(
+  () => import("@/components/MonthlyRecapShareModal").then((mod) => mod.MonthlyRecapShareModal),
+  { ssr: false }
+);
 
 export default function ActivitiesPage() {
   const router = useRouter();
@@ -79,6 +83,7 @@ export default function ActivitiesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
   const [sharingActivity, setSharingActivity] = useState<ActivityItem | null>(null);
+  const [sharingMonthRecap, setSharingMonthRecap] = useState<{ year: number; month: number } | null>(null);
   // Compare Activities state (Checkbox multi-selection & Active comparison modal pair)
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [activeComparePair, setActiveComparePair] = useState<{
@@ -399,6 +404,23 @@ export default function ActivitiesPage() {
                 ▼
               </div>
             </div>
+
+            {timeFilter.startsWith("month:") && (
+              <button
+                type="button"
+                onClick={() => {
+                  const parts = timeFilter.replace("month:", "").split("-").map(Number);
+                  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                    setSharingMonthRecap({ year: parts[0], month: parts[1] - 1 });
+                  }
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-black text-xs border border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer"
+                title={t("activities.shareRecap", "Share Monthly Recap")}
+              >
+                <Share2 className="h-3 w-3 stroke-[2.5]" />
+                <span>{t("activities.shareRecap", "Share Recap")}</span>
+              </button>
+            )}
 
             {/* Quick Preset: 6 Months */}
             <button
@@ -1295,6 +1317,16 @@ export default function ActivitiesPage() {
             setActiveComparePair((prev) => (prev ? { ...prev, actB: newB } : null))
           }
           onClose={() => setActiveComparePair(null)}
+        />
+      )}
+      {/* Monthly Recap Share Modal */}
+      {sharingMonthRecap && (
+        <MonthlyRecapShareModal
+          isOpen={!!sharingMonthRecap}
+          onClose={() => setSharingMonthRecap(null)}
+          year={sharingMonthRecap.year}
+          month={sharingMonthRecap.month}
+          activities={activities}
         />
       )}
     </div>

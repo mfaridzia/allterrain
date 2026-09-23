@@ -234,6 +234,7 @@ When maintaining or extending this interface, adhere to these rules:
   - Activity Feed & Inspector: `src/components/ActivityFeed.tsx`
   - Activity Compare Modal: `src/components/ActivityCompareModal.tsx`
   - Social Share Card Modal: `src/components/ActivityShareModal.tsx`
+  - Monthly Recap Share Modal: `src/components/MonthlyRecapShareModal.tsx`
   - Topographic Geospatial Map: `src/components/TrailMap.tsx`
   - AI Coach Drawer: `src/components/AiCoachDrawer.tsx`
   - BYOK Settings: `src/components/SettingsModal.tsx`
