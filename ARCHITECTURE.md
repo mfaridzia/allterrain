@@ -109,7 +109,13 @@ Supports comprehensive telemetry across major endurance and fitness disciplines:
 - **Gym / Strength Training:** Duration, workout sets, TRIMP load, peak HR, and aerobic/anaerobic training effect without erroneous pace calculations.
 
 ### 3.4 Calendar Month & Multi-Sport Logbook (`/activities`)
-- **Dynamic Calendar Month Extraction:** Extracts distinct months (e.g. *Agustus 2026*, *Juli 2026*) dynamically from recorded activities.
+- **Dual View Modes (List vs. Calendar Grid):** Seamless toggle between traditional paginated table view and an interactive athletic calendar grid.
+- **Athletic ISO Calendar Grid (Month & Week Focus):**
+  - **Month Grid Mode:** 7-column Monday-to-Sunday layout with an 8th column dedicated to **Weekly Totals** (Distance, D+ elevation gain, training hours, TRIMP load, and session count).
+  - **Week Focus Mode:** Expanded 7-column microcycle breakdown providing detailed day-by-day workout inspection, pacing, HR, and quick action drawers.
+  - **Sport Color-Coded Chips:** Interactive neo-brutalist chips (Orange for Road, Cyan for Trail, Emerald for Bike, Purple for Gym) displaying distance, D+ climb, and pace. Clicking any chip opens the full workout telemetry inspector drawer.
+  - **Rest Day Indicators:** Visual markers for recovery days to help monitor microcycle adaptation.
+- **Dynamic Calendar Month Extraction & Navigation:** Month-by-month navigation controls (`‹`, `›`, `Today`), with quick-jump dropdowns and real-time monthly volume aggregation.
 - **Dynamic KPI Summary Cards:** Selecting a specific month automatically recalculates total distance, elevation D+, training hours, TRIMP load, and sport breakdown for that specific month alone.
 - **Multi-Select Sport Filter:** Independent or combined selection of `Road Run`, `Trail Run`, `Sepeda`, and `Gym / Strength`.
 - **Quick Presets:** Instant range toggles for `Semua Waktu`, `6 Bulan`, `1 Tahun`, and `1-Click Reset Semua Filter`.

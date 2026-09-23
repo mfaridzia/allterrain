@@ -43,6 +43,8 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useDashboardData } from "@/lib/queries";
 
+import { useTranslation } from "@/lib/i18n/context";
+
 const ActivityShareModal = dynamic(
   () => import("@/components/ActivityShareModal").then((mod) => mod.ActivityShareModal),
   { ssr: false }
@@ -51,11 +53,18 @@ const ActivityCompareModal = dynamic(
   () => import("@/components/ActivityCompareModal").then((mod) => mod.ActivityCompareModal),
   { ssr: false }
 );
+const ActivityCalendarView = dynamic(
+  () => import("@/components/ActivityCalendarView").then((mod) => mod.ActivityCalendarView),
+  { ssr: false }
+);
 
 export default function ActivitiesPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { data: dashboardData, isLoading: loading } = useDashboardData();
   const activities: ActivityItem[] = dashboardData?.activities || [];
+
+  const [displayMode, setDisplayMode] = useState<"list" | "calendar">("list");
 
   useEffect(() => {
     if (dashboardData && !dashboardData.connected) {
@@ -498,21 +507,55 @@ export default function ActivitiesPage() {
               )}
             </div>
 
-            {/* Sort Selector */}
-            <div className="flex items-center gap-1.5 bg-[#FAF9F5] px-3 py-2 rounded-xl border-2 border-zinc-950 text-xs font-bold text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b] self-start sm:self-auto">
-              <SlidersHorizontal className="h-3.5 w-3.5 text-zinc-600 stroke-[2.5]" />
-              <span className="text-[11px] text-zinc-500 font-sans">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e: any) => setSortBy(e.target.value)}
-                className="bg-transparent text-zinc-950 text-xs font-black focus:outline-none cursor-pointer pr-1"
-              >
-                <option value="date_desc">Newest First</option>
-                <option value="date_asc">Oldest First</option>
-                <option value="dist_desc">Longest Distance</option>
-                <option value="gain_desc">Highest Elevation (D+)</option>
-                <option value="load_desc">Highest Training Load</option>
-              </select>
+            <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+              {/* View Switcher: List vs Calendar */}
+              <div className="flex items-center gap-1 bg-[#FAF9F5] p-1 rounded-xl border-2 border-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+                <button
+                  type="button"
+                  onClick={() => setDisplayMode("list")}
+                  className={`px-3 py-1.5 text-xs font-black rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                    displayMode === "list"
+                      ? "bg-zinc-950 text-white shadow-[1px_1px_0px_0px_#09090b]"
+                      : "text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100"
+                  }`}
+                  title={t("activities.listView", "List View")}
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  <span>{t("activities.listView", "List")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDisplayMode("calendar")}
+                  className={`px-3 py-1.5 text-xs font-black rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                    displayMode === "calendar"
+                      ? "bg-amber-400 text-zinc-950 shadow-[1px_1px_0px_0px_#09090b]"
+                      : "text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100"
+                  }`}
+                  title={t("activities.calendarView", "Calendar Grid")}
+                >
+                  <Calendar className="h-3.5 w-3.5 stroke-[2.5]" />
+                  <span>{t("activities.calendarView", "Calendar")}</span>
+                </button>
+              </div>
+
+              {/* Sort Selector */}
+              {displayMode === "list" && (
+                <div className="flex items-center gap-1.5 bg-[#FAF9F5] px-3 py-2 rounded-xl border-2 border-zinc-950 text-xs font-bold text-zinc-950 shadow-[1.5px_1.5px_0px_0px_#09090b]">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-zinc-600 stroke-[2.5]" />
+                  <span className="text-[11px] text-zinc-500 font-sans">Sort by:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e: any) => setSortBy(e.target.value)}
+                    className="bg-transparent text-zinc-950 text-xs font-black focus:outline-none cursor-pointer pr-1"
+                  >
+                    <option value="date_desc">Newest First</option>
+                    <option value="date_asc">Oldest First</option>
+                    <option value="dist_desc">Longest Distance</option>
+                    <option value="gain_desc">Highest Elevation (D+)</option>
+                    <option value="load_desc">Highest Training Load</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
@@ -616,8 +659,17 @@ export default function ActivitiesPage() {
           </div>
         </div>
 
-        {/* Activities Table / List */}
-        <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 sm:p-6 space-y-4 shadow-[4px_4px_0px_0px_#09090b]">
+        {displayMode === "calendar" ? (
+          <ActivityCalendarView
+            activities={filteredAndSorted}
+            onSelectActivity={setSelectedActivity}
+            onToggleCompare={toggleCompare}
+            compareIds={compareIds}
+            onShareActivity={setSharingActivity}
+          />
+        ) : (
+          /* Activities Table / List */
+          <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 sm:p-6 space-y-4 shadow-[4px_4px_0px_0px_#09090b]">
           {loading ? (
             <div className="py-16 text-center text-zinc-600 flex flex-col items-center justify-center gap-3">
               <RefreshCw className="h-6 w-6 animate-spin text-orange-600 stroke-[2.5]" />
@@ -876,6 +928,7 @@ export default function ActivitiesPage() {
             </div>
           )}
         </div>
+      )}
       </main>
 
       {/* Activity Detail Modal / Inspector */}
