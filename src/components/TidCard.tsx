@@ -11,6 +11,7 @@ interface TidCardProps {
   z4z5Pct: number;
   isPolarized: boolean;
   avgDecoupling: number;
+  windowDays?: number;
   onOpenZonesTab?: () => void;
 }
 
@@ -20,13 +21,14 @@ export const TidCard: React.FC<TidCardProps> = ({
   z4z5Pct,
   isPolarized,
   avgDecoupling,
+  windowDays = 28,
   onOpenZonesTab,
 }) => {
   const { language, t } = useTranslation();
   const isDecouplingSolid = avgDecoupling <= 5.0;
 
   return (
-    <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
+    <div className="h-full rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -35,7 +37,12 @@ export const TidCard: React.FC<TidCardProps> = ({
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-black text-zinc-950 tracking-tight truncate">Intensity & Drift</h3>
-            <p className="text-[11px] font-mono text-zinc-600 font-semibold truncate">80/20 Rule • Decoupling</p>
+            <p
+              className="text-[11px] font-mono text-zinc-600 font-semibold leading-tight cursor-help"
+              title={t("tid.subtitleLong", language === "en" ? "Weekly volume breakdown across intensity zones (Rolling 4 Weeks)" : "Proporsi volume latihan mingguan di tiap zona (4 Minggu Terakhir)")}
+            >
+              {t("tid.subtitle", language === "en" ? "80/20 Rule • Rolling 4 Weeks" : "Pola 80/20 • 4 Minggu Terakhir")}
+            </p>
           </div>
         </div>
 
@@ -95,47 +102,52 @@ export const TidCard: React.FC<TidCardProps> = ({
         </div>
       </div>
 
-      {/* Aerobic Decoupling Card */}
-      <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-between mt-auto shadow-[2px_2px_0px_0px_#09090b]">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-900">
-            <Heart className="h-3.5 w-3.5 text-rose-600 fill-rose-100 stroke-[2.5] shrink-0" />
-            <MetricTooltip term="decoupling">
-              <span>Aerobic Decoupling (Pa:HR)</span>
-            </MetricTooltip>
+      {/* Bottom Section: Decoupling Card & Progression Shortcut */}
+      <div className="space-y-3 mt-auto pt-1">
+        {/* Aerobic Decoupling Card */}
+        <div className="p-3 rounded-xl bg-[#FAF9F5] border-2 border-zinc-950 flex items-center justify-between shadow-[2px_2px_0px_0px_#09090b]">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-900">
+              <Heart className="h-3.5 w-3.5 text-rose-600 fill-rose-100 stroke-[2.5] shrink-0" />
+              <MetricTooltip term="decoupling">
+                <span>Aerobic Decoupling (Pa:HR)</span>
+              </MetricTooltip>
+            </div>
+            <p className="text-[10px] text-zinc-600 font-medium">
+              {t("tid.cardiacDriftSub", language === "en" ? "Cardiac drift (Last 4 Weeks)" : "Cardiac drift (4 Minggu Terakhir)")}
+            </p>
           </div>
-          <p className="text-[10px] text-zinc-600 font-medium">Cardiac drift in 2nd half</p>
+
+          <div className="text-right shrink-0">
+            <div className="text-xl font-black font-mono text-zinc-950">
+              {avgDecoupling}%
+            </div>
+            <span className={`text-[10px] font-mono font-bold block ${isDecouplingSolid ? "text-emerald-700" : "text-amber-700"}`}>
+              {isDecouplingSolid ? "Solid Base (<5%)" : "Drift (>5%)"}
+            </span>
+          </div>
         </div>
 
-        <div className="text-right shrink-0">
-          <div className="text-xl font-black font-mono text-zinc-950">
-            {avgDecoupling}%
-          </div>
-          <span className={`text-[10px] font-mono font-bold block ${isDecouplingSolid ? "text-emerald-700" : "text-amber-700"}`}>
-            {isDecouplingSolid ? "Solid Base (<5%)" : "Drift (>5%)"}
+        {/* Shortcut to Weekly Zone Progression Tab */}
+        <button
+          type="button"
+          onClick={() => {
+            if (onOpenZonesTab) {
+              onOpenZonesTab();
+            } else {
+              const el = document.getElementById("suite-tabs");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }
+          }}
+          className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 border-2 border-zinc-950 text-[11px] font-black text-zinc-900 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer text-left group"
+        >
+          <span className="flex items-center gap-1.5">
+            <Layers className="h-3.5 w-3.5 text-violet-700 stroke-[2.5]" />
+            <span>{t("tid.weeklyZoneTrend", language === "en" ? "Weekly Zone Hours Trend" : "Tren Jam per Zona (Weekly)")}</span>
           </span>
-        </div>
+          <span className="text-zinc-600 font-bold group-hover:text-zinc-950 group-hover:translate-x-0.5 transition-transform">→</span>
+        </button>
       </div>
-
-      {/* Shortcut to Weekly Zone Progression Tab */}
-      <button
-        type="button"
-        onClick={() => {
-          if (onOpenZonesTab) {
-            onOpenZonesTab();
-          } else {
-            const el = document.getElementById("suite-tabs");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-          }
-        }}
-        className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 border-2 border-zinc-950 text-[11px] font-black text-zinc-900 shadow-[1.5px_1.5px_0px_0px_#09090b] transition-all cursor-pointer text-left group"
-      >
-        <span className="flex items-center gap-1.5">
-          <Layers className="h-3.5 w-3.5 text-violet-700 stroke-[2.5]" />
-          <span>{t("tid.weeklyZoneTrend", language === "en" ? "Weekly Zone Hours Trend" : "Tren Jam per Zona (Weekly)")}</span>
-        </span>
-        <span className="text-zinc-600 font-bold group-hover:text-zinc-950 group-hover:translate-x-0.5 transition-transform">→</span>
-      </button>
     </div>
   );
 };

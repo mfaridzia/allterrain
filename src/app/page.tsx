@@ -148,9 +148,9 @@ export default function DashboardPage() {
             <TrainingReadinessCard readiness={activeModeData.readiness} />
 
             {/* Middle Grid: Injury Risk & Load Balance + Intensity & Recovery */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
               {/* ACWR & Monotony / Strain */}
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 flex flex-col h-full">
                 <AcwrCard
                   acwr={activeModeData.acwr?.acwr || 1.0}
                   status={activeModeData.acwr?.status || "sweet_spot"}
@@ -163,13 +163,14 @@ export default function DashboardPage() {
               </div>
 
               {/* TID 80/20 & Decoupling */}
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 flex flex-col h-full">
                 <TidCard
                   z1z2Pct={dashboardData.tid?.z1z2Pct || 80}
                   z3Pct={dashboardData.tid?.z3Pct || 15}
                   z4z5Pct={dashboardData.tid?.z4z5Pct || 5}
                   isPolarized={dashboardData.tid?.isPolarized ?? true}
                   avgDecoupling={dashboardData.trail?.avgDecoupling || 3.5}
+                  windowDays={dashboardData.tid?.windowDays || 28}
                   onOpenZonesTab={() => {
                     setActiveTab("zones");
                     setTimeout(() => {
@@ -183,7 +184,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Recovery Radar */}
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 flex flex-col h-full">
                 <RecoveryRadar
                   recoveryScore={dashboardData.current?.recoveryScore || 82}
                   hrvRmssd={dashboardData.current?.hrvRmssd || 68}

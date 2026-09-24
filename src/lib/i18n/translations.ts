@@ -104,7 +104,8 @@ export const translations = {
     },
     tid: {
       title: "Training Intensity Distribution",
-      subtitle: "Weekly volume breakdown across intensity zones",
+      subtitle: "80/20 Rule • Rolling 4 Weeks",
+      subtitleLong: "Weekly volume breakdown across intensity zones (Rolling 4 Weeks)",
       polarized: "Polarized (80/20)",
       pyramidal: "Pyramidal",
       thresholdHeavy: "Threshold Heavy",
@@ -400,7 +401,8 @@ export const translations = {
     },
     tid: {
       title: "Distribusi Intensitas Latihan",
-      subtitle: "Proporsi volume latihan mingguan di tiap zona",
+      subtitle: "Pola 80/20 • 4 Minggu Terakhir",
+      subtitleLong: "Proporsi volume latihan mingguan di tiap zona (4 Minggu Terakhir)",
       polarized: "Polarized (80/20)",
       pyramidal: "Pyramidal",
       thresholdHeavy: "Threshold Heavy",

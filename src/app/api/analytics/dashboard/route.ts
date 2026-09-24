@@ -350,6 +350,10 @@ export async function GET(req: NextRequest) {
   rolling7dUtc.setUTCDate(todayUtcRef.getUTCDate() - 6);
   const rolling7dStartStr = rolling7dUtc.toISOString().split("T")[0];
 
+  const rolling28dUtc = new Date(todayUtcRef);
+  rolling28dUtc.setUTCDate(todayUtcRef.getUTCDate() - 27);
+  const rolling28dStartStr = rolling28dUtc.toISOString().split("T")[0];
+
   let thisWeekGain = 0;
   let thisWeekDistM = 0;
   let thisWeekLoad = 0;
@@ -357,6 +361,13 @@ export async function GET(req: NextRequest) {
   let rolling7dDistM = 0;
   let trailOnlyGain = 0;
   let trailOnlyDistM = 0;
+
+  // Rolling 28-day (4-week mesocycle) accumulators for responsive TID & Decoupling
+  let z1z2Seconds28d = 0;
+  let z3Seconds28d = 0;
+  let z4z5Seconds28d = 0;
+  let rolling28dDecouplingSum = 0;
+  let rolling28dDecouplingCount = 0;
 
   for (const act of activities) {
     const isTrail = act.sport_type === "trail_run" || Number(act.elevation_gain || 0) > 150;
@@ -418,19 +429,43 @@ export async function GET(req: NextRequest) {
     z1z2Seconds += actZones.z1 + actZones.z2;
     z3Seconds += actZones.z3;
     z4z5Seconds += actZones.z4 + actZones.z5;
+
+    // Accumulate to rolling 28-day window (Sports Science gold standard for mesocycle TID & drift)
+    if (actDate >= rolling28dStartStr && actDate <= localTodayStr) {
+      z1z2Seconds28d += actZones.z1 + actZones.z2;
+      z3Seconds28d += actZones.z3;
+      z4z5Seconds28d += actZones.z4 + actZones.z5;
+
+      if (decoupling > 0) {
+        rolling28dDecouplingSum += decoupling;
+        rolling28dDecouplingCount++;
+      }
+    }
   }
 
-  const totalTidSec = Math.max(1, z1z2Seconds + z3Seconds + z4z5Seconds);
+  // Determine effective TID seconds (prefer rolling 28-day window; fallback to all-time if no recent data)
+  const total28dSec = z1z2Seconds28d + z3Seconds28d + z4z5Seconds28d;
+  const use28d = total28dSec > 0;
+  const effectiveZ1Z2 = use28d ? z1z2Seconds28d : z1z2Seconds;
+  const effectiveZ3 = use28d ? z3Seconds28d : z3Seconds;
+  const effectiveZ4Z5 = use28d ? z4z5Seconds28d : z4z5Seconds;
+  const effectiveTidTotal = Math.max(1, effectiveZ1Z2 + effectiveZ3 + effectiveZ4Z5);
+
   const tid = {
-    z1z2Pct: Math.round((z1z2Seconds / totalTidSec) * 100),
-    z3Pct: Math.round((z3Seconds / totalTidSec) * 100),
-    z4z5Pct: Math.round((z4z5Seconds / totalTidSec) * 100),
-    isPolarized: z1z2Seconds / totalTidSec >= 0.75,
+    z1z2Pct: Math.round((effectiveZ1Z2 / effectiveTidTotal) * 100),
+    z3Pct: Math.round((effectiveZ3 / effectiveTidTotal) * 100),
+    z4z5Pct: Math.round((effectiveZ4Z5 / effectiveTidTotal) * 100),
+    isPolarized: effectiveZ1Z2 / effectiveTidTotal >= 0.75,
+    windowDays: 28,
   };
 
   const avgVam = totalVamCount > 0 ? Math.round(totalVamSum / totalVamCount) : 330;
   const avgDecoupling =
-    totalDecouplingCount > 0 ? Math.round((totalDecouplingSum / totalDecouplingCount) * 10) / 10 : 3.5;
+    rolling28dDecouplingCount > 0
+      ? Math.round((rolling28dDecouplingSum / rolling28dDecouplingCount) * 10) / 10
+      : totalDecouplingCount > 0
+      ? Math.round((totalDecouplingSum / totalDecouplingCount) * 10) / 10
+      : 3.5;
 
   // Road Race Predictor: use real COROS EvoLab metrics if cached, else derive from CTL
   let racePredictor = {

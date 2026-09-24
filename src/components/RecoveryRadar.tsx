@@ -47,7 +47,7 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
   }
 
   return (
-    <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
+    <div className="h-full rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -63,7 +63,9 @@ export const RecoveryRadar: React.FC<RecoveryProps> = ({
                 </span>
               )}
             </h3>
-            <p className="text-[11px] font-mono text-zinc-600 font-semibold truncate">HRV • Resting HR • Sleep</p>
+            <p className="text-[11px] font-mono text-zinc-600 font-semibold leading-tight" title="HRV • Resting HR • Sleep">
+              HRV • Resting HR • Sleep
+            </p>
           </div>
         </div>
 

@@ -38,7 +38,7 @@ export const AcwrCard: React.FC<AcwrCardProps> = ({
   const gaugePercent = Math.min(100, Math.max(0, ((acwr - 0.5) / 1.5) * 100));
 
   return (
-    <div className="rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
+    <div className="h-full rounded-2xl bg-white border-2 border-zinc-950 p-5 space-y-4 shadow-[4px_4px_0px_0px_#09090b] flex flex-col justify-between">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -47,7 +47,9 @@ export const AcwrCard: React.FC<AcwrCardProps> = ({
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-black text-zinc-950 tracking-tight truncate">Injury Risk & Load</h3>
-            <p className="text-[11px] font-mono text-zinc-600 font-semibold truncate">ACWR • Monotony • Strain</p>
+            <p className="text-[11px] font-mono text-zinc-600 font-semibold leading-tight" title="ACWR • Monotony • Strain">
+              ACWR • Monotony • Strain
+            </p>
           </div>
         </div>
 
