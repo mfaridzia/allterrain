@@ -576,13 +576,32 @@ export async function GET(req: NextRequest) {
   const intervalsMonotony = calculateMonotonyAndStrain(intervalsPast7);
 
   const todayRow = effectiveDailyRows.find((d) => String(d.date) === localTodayStr);
-  const effectiveTodayLoad = todayRow ? Number(todayRow.training_load || 0) : Number(latestDaily?.training_load || 0);
+  const corosTodayActivityLoad = dailyCorosLoadMap.get(localTodayStr) || 0;
+  const effectiveTodayLoad = todayRow ? Number(todayRow.training_load || 0) : corosTodayActivityLoad;
+
+  const intervalsTodayPoint = intervalsPmc.find((p: PmcPoint) => p.date === localTodayStr);
+  const intervalsTodayLoad = intervalsTodayPoint ? intervalsTodayPoint.load : (dailyRtssMap.get(localTodayStr) || 0);
+
+  const hasActivityToday =
+    corosTodayActivityLoad > 0 ||
+    intervalsTodayLoad > 0 ||
+    activities.some((act) => {
+      const startTime = Number(act.start_time || 0);
+      const dStr = new Intl.DateTimeFormat("en-CA", {
+        timeZone: userTimezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date(startTime));
+      return dStr === localTodayStr;
+    });
 
   const corosReadiness = calculateTrainingReadiness({
     ctl,
     atl,
     tsb,
     todayLoad: effectiveTodayLoad,
+    hasActivityToday,
     acwr: acwrData.acwr,
     recoveryScore: Number(latestDaily?.recovery_score || 82),
     hrvStatus: String(latestDaily?.hrv_status || "NORMAL"),
@@ -626,12 +645,12 @@ export async function GET(req: NextRequest) {
     scaleDescription: `Heart-rate impulse scale matching your COROS watch screen (Base Fitness: ${Math.round(ctl)}).`,
   };
 
-  const intervalsTodayLoad = latestIntervals?.load || 0;
   const intervalsReadiness = calculateTrainingReadiness({
     ctl: latestIntervals?.ctl ?? 0,
     atl: latestIntervals?.atl ?? 0,
     tsb: intervalsTsb,
     todayLoad: intervalsTodayLoad,
+    hasActivityToday,
     acwr: intervalsAcwr.acwr,
     recoveryScore: Number(latestDaily?.recovery_score || 82),
     hrvStatus: String(latestDaily?.hrv_status || "NORMAL"),

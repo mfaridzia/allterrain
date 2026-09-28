@@ -1537,6 +1537,7 @@ export interface TrainingReadinessParams {
   atl: number;
   tsb: number;
   todayLoad: number;
+  hasActivityToday?: boolean;
   acwr: number;
   recoveryScore?: number;
   hrvStatus?: string;
@@ -1583,6 +1584,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
     atl,
     tsb,
     todayLoad,
+    hasActivityToday,
     acwr,
     recoveryScore = 75,
     hrvStatus = "NORMAL",
@@ -1594,8 +1596,13 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
   const maxHr = athleteMaxHr && athleteMaxHr >= 100 && athleteMaxHr <= 240 ? athleteMaxHr : 185;
 
   // Determine whether the prescribed target session applies to today or tomorrow
-  // If the athlete has already logged a workout today (todayLoad >= 30), the prescription targets tomorrow.
-  const targetTiming: "today" | "tomorrow" = (todayLoad || 0) >= 30 ? "tomorrow" : "today";
+  // If the athlete has already logged a workout today (hasActivityToday or todayLoad >= 15), the prescription targets tomorrow.
+  const hasWorkedOutToday =
+    hasActivityToday !== undefined
+      ? hasActivityToday || (todayLoad || 0) >= 15
+      : (todayLoad || 0) >= 15;
+
+  const targetTiming: "today" | "tomorrow" = hasWorkedOutToday ? "tomorrow" : "today";
 
   // Safe Load Ceiling from Gabbett ACWR Governor:
   // To keep ACWR <= 1.3: ChronicLoad * 1.3
@@ -1712,7 +1719,7 @@ export function calculateTrainingReadiness(params: TrainingReadinessParams): Tra
       },
       governor: {
         maxSafeLoadTomorrow: safeLoadCeiling,
-        nextQualityWindow: "Prime Window Open Now",
+        nextQualityWindow: targetTiming === "tomorrow" ? "Tomorrow" : "Prime Window Open Now",
         scientificRationale:
           "Positive TSB combined with low acute strain maximizes neuromuscular rate of force development (RFD) and cardiac stroke volume (Coggan & Allen).",
       },
