@@ -15,7 +15,7 @@ flowchart TD
         UI["Rugged Neo-Brutalist Sports Instrument UI"]
         PMC_View["Performance Science PMC Engine (CTL, ATL, TSB, Standard rTSS)"]
         Physio_View["Decoupling (Pa:HR), TID 80/20 & Efficiency Factor"]
-        Trail_View["Trail & Mountain Suite (VAM m/h, D+/D-, ADS, Fueling)"]
+        Trail_View["Trail & Mountain Suite (VAM, D+/D-, Uphill Score, ADS, Fueling)"]
         GPX_View["GPX Course & Cut-Off Time Simulator + Leaflet GIS"]
         Logbook_View["Multi-Sport Logbook (Calendar Month & Sport Filters)"]
         Share_View["Social Media Share Card Generator (9:16 Story / 1:1 Feed)"]
@@ -63,6 +63,13 @@ flowchart TD
 
 Data is stored locally on-disk at `./data/coros_athlete.db` using `@libsql/client` configured with **WAL (*Write-Ahead Logging*)** for local development, or connected seamlessly to **Turso Edge Database** via `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` in serverless/production deployments.
 
+> **Applying schema changes to Turso:** `initSchema()` runs the idempotent `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ADD COLUMN` batch on first connection, so new nullable columns are added automatically. To avoid a cold-start race when a query references a brand-new column before `initSchema()` completes, apply them explicitly before deploying:
+> ```bash
+> npm run db:migrate   # reads TURSO_DATABASE_URL / TURSO_AUTH_TOKEN from .env.local or the shell
+> curl -X POST "https://<prod-host>/api/ops/migrate?key=$OPS_SECRET_KEY"
+> ```
+> The ops endpoint awaits `initSchema()` and verifies `climb_segments`, `ascent_time_sec`, and `climbs_analyzed_at` via `PRAGMA table_info(activities)`; it is owner/secret-gated in production and safe to call repeatedly.
+
 ### 2.1 Table Specifications (`src/lib/db.ts`)
 
 | Table Name | Description | Primary Key / Unique |
@@ -70,7 +77,7 @@ Data is stored locally on-disk at `./data/coros_athlete.db` using `@libsql/clien
 | `auth_tokens` | Stores COROS OAuth 2.0 access & refresh tokens, expiration timestamps, scopes, and athlete profile metadata. | `id` (athlete_id) |
 | `sessions` | Serverless multi-tenant session storage mapping session cookies/headers to `athlete_id`. | `session_id` |
 | `oauth_states` | Ephemeral store for PKCE `code_verifier` and security states during the OAuth handshake. | `state` |
-| `activities` | Workout sessions (road runs, trail runs, track, bike, gym/strength) including distance, duration, elevation, heart rate, VAM, TE, authentic 1km `lap_splits` (extracted from COROS FIT files), and raw sensor streams. | `id` (standard `act_${coros_id}`), UNIQUE `(athlete_id, coros_id)` |
+| `activities` | Workout sessions (road runs, trail runs, track, bike, gym/strength) including distance, duration, elevation, heart rate, VAM, TE, authentic 1km `lap_splits` and `climb_segments` (extracted from COROS FIT files), and raw sensor streams. | `id` (standard `act_${coros_id}`), UNIQUE `(athlete_id, coros_id)` |
 | `daily_metrics` | Daily time-series records of Training Load, CTL, ATL, TSB, ACWR, Monotony, Strain, HRV rMSSD, and Sleep data. | `(athlete_id, date)` |
 | `chat_messages` | Full conversational memory history with the context-aware AI Training Coach. | `id` (UUID) |
 | `user_settings` | BYOK configuration (LLM API keys, chosen models, VAM calibrations, athlete body mass, threshold pace). | `(athlete_id, key)` |
@@ -155,6 +162,7 @@ Supports comprehensive telemetry across major endurance and fitness disciplines:
 - **Climb Density Profiling:** Categorization of elevation gain per horizontal distance ($m D+/km$) inspired by Kilian Jornet and *Uphill Athlete*.
 - **Aerobic Deficiency Syndrome (ADS) Diagnostic:** Diagnostic gap analysis between Aerobic Threshold (AeT) and Anaerobic Threshold (AnT).
 - **Scientific Fueling & Hydration Planner:** Evidence-based exogenous carbohydrate ($g/h$), water intake ($L/h$), and sodium replenishment ($mg/h$) targets.
+- **Uphill Score (Hill Strength & Hill Endurance):** FIT-derived climb segmentation with VAM normalised to LTHR and reference grade, aggregated into a 0–100 composite with confidence, 28-day delta, and 8-week trend. Backfilled through `/api/activities/backfill-climbs`; road cycling and strength sessions are excluded.
 
 ### 3.9 GPX Course & Cut-Off Time (COT) Simulator (`/trail-planner`)
 - **Client-Side GPX Parser:** Instant extraction of GPS coordinates (`<trkpt>`) and official checkpoint aid stations (`<wpt>`).
@@ -395,6 +403,47 @@ An isolated, unlinked command center at route `/ops` (backed by `/api/ops/stats`
 - **Isolated Shell Architecture:** Operates on an independent standalone neo-brutalist console shell completely detached from the consumer AllTerrain dashboard.
 - **Real-Time Telemetry:** Tracks total registered athlete accounts (`auth_tokens`), active athletes in the last 7 days, global synced workouts, total distance (km), total vertical climb (m D+), active sessions, and database ping latency.
 
+### 4.14 Uphill Score — Hill Strength & Hill Endurance (`src/lib/analytics.ts`)
+
+An evidence-informed, internal climb-performance model. It is **not** Garmin's proprietary Hill Score and does not use Garmin's unverified regression coefficients.
+
+**Data scope & eligibility**
+- Only `run`, `trail_run`, and `track_run` sessions. Bike and strength sessions are excluded in both the FIT extraction route and the dashboard aggregator.
+- Activity gates: D+ ≥ 100 m and duration ≥ 10 min.
+- Climb-segment gates: ≥ 30 m net gain, ≥ 300 m distance, ≥ 3% sustained grade for ≥ 60 s.
+- The score requires ≥ 3 eligible climbs in a rolling 90-day window.
+
+**Climb extraction (`extractClimbSegments`)**
+1. Build a monotonic `(time, distance, altitude, HR)` stream from FIT records; prefer barometric `enhanced_altitude`.
+2. Smooth altitude (7-point moving average) and compute a centred 60-second grade window.
+3. Enter a candidate climb at grade ≥ 2.5%, tolerating up to two non-climb samples; expand to the local base and summit.
+4. Merge candidates separated by < 200 m / < 60 s.
+5. Reject altimeter oscillation: **net gain must be ≥ 30 m and ≥ 60% of accumulated positive gain**.
+6. Store per-climb VAM (ascent-only time), pace, GAP, average/max HR, HR drift, ascent fraction, and a 0.54–1.0 quality weight.
+
+**Normalisation**
+- **GAP:** Minetti et al. (2002) polynomial running cost, clamped to ±45% grade: `Cr(i) = 155.4i⁵ − 30.4i⁴ − 43.3i³ + 46.3i² + 19.5i + 3.6` J·kg⁻¹·m⁻¹.
+- **Intensity:** square-root-compressed HR-reserve scaling (`%HRR ≈ %VO2R`, Swain 1994): `factor = clamp(sqrt(1 / clamp((avgHR − restHR)/(LTHR − restHR), 0.55, 1.15)), 0.85, 1.20)`. Compression avoids extrapolating easy hikes (≈65% LTHR) to threshold VAM.
+- **Grade:** reference-grade correction `(grade / 10)^0.30`, grade clamped to 5–20%.
+- **Endurance retention:** multiply the endurance percentile by `clamp(1 + HRdrift/100, 0.85, 1.05)`.
+
+**Aggregation**
+- **Hill Strength:** P80 of normalised VAM for climbs of 2–15 min at ≥ 6% grade, requiring at least 3 qualifying climbs. Climbs with average HR below 75% LTHR are excluded from Strength (they still count for Endurance and volume).
+- **Hill Endurance:** P75 for climbs ≥ 15 min.
+- Both percentiles are duration-weighted, capped at 60 minutes per climb so one very long easy hike cannot dominate.
+- **Composite:** `0.55 × Strength + 0.45 × Endurance`; if only one component exists, that component is used.
+- **Volume sufficiency:** the composite is multiplied by `clamp(0.92 + 0.08 × log10(max(gain,100)/1000) / log10(8), 0.92, 1.00)`, where `gain` is total climb gain in the window. It discounts low volume but never inflates the score (1,000 m → 0.92; 8,000 m+ → 1.00).
+- **Score mapping:** log-linear anchors. Strength 300–1300 m/h → 5–100; Endurance 250–1050 m/h → 5–100.
+- **Bands:** Recreational < 30, Developing 30–49, Trained 50–69, Advanced 70–84, Elite ≥ 85.
+
+**Confidence & presentation**
+- `confidence = sampleCoverage(min(sample/8,1)) × recency × mean(quality)`, where recency decays from 1.0 (≤ 14 days) to 0.7 (≥ 90 days) and `sample` counts climbs actually used by Strength or Endurance.
+- Status: `insufficient` (< 3 climbs), `provisional` (confidence < 60%), `established` (≥ 60%).
+- Dashboard payload adds a 28-day delta (90-day score now vs 90-day score 28 days ago), an 8-week rolling trend (90-day windows sampled weekly), and the five highest-gain climbs.
+- VO2max is displayed only as aerobic context; it is not an input to the score.
+- Cached per activity in `activities.climb_segments` / `ascent_time_sec` / `climbs_analyzed_at`; populated lazily by `POST /api/activities/backfill-climbs`.
+- Formula version: `UPHILL_FORMULA_VERSION = "1.2.0"`. Full rationale: [`docs/UPHILL_SCORE.md`](./docs/UPHILL_SCORE.md).
+
 ---
 
 ## 5. Scientific References & Citations
@@ -411,3 +460,5 @@ An isolated, unlinked command center at route `/ops` (backed by `/api/ops/stats`
 10. **House, S., Johnston, S., & Jornet, K. (2019).** *Training for the Uphill Athlete: A Manual for Mountain Runners and Ski Mountaineers.* Patagonia Books.
 11. **Bompa, T. O., & Buzzichelli, C. (2018).** *Periodization: Theory and Methodology of Training.* Human Kinetics.
 12. **Koop, J. (2016).** *Training Essentials for Ultrarunning.* VP.
+13. **Swain, D. P., et al. (1994).** *Relationship between % heart rate reserve and % VO2 reserve during treadmill exercise.* Medicine & Science in Sports & Exercise, 26(5), 630-635.
+14. **Coyle, E. F. (2001).** *Cardiovascular drift during prolonged exercise and the effects of dehydration.* International Journal of Sports Medicine, 22(S2), 45-50.

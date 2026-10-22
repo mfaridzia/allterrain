@@ -2578,3 +2578,665 @@ export function formatDurationReadable(totalSeconds: number): string {
   }
   return `${m}m ${s}s`;
 }
+
+// ============================================================================
+// UPHILL SCORE — Hill Strength & Hill Endurance
+// Evidence-informed heuristic: Minetti (2002) energy cost for grade adjustment,
+// HR-reserve intensity normalisation (Swain 1994), cardiac drift (Coyle 2001).
+// The weighting/anchors are internal calibration, not a published formula.
+// ============================================================================
+
+export const UPHILL_FORMULA_VERSION = "1.2.0";
+
+export interface ClimbSegment {
+  idx: number;
+  startDistM: number;
+  endDistM: number;
+  distanceM: number;
+  gainM: number;
+  lossM: number;
+  durationSec: number;
+  ascentTimeSec: number;
+  avgGradePct: number;
+  maxGradePct: number;
+  vamMh: number;
+  paceSecPerKm: number;
+  gapPaceSecPerKm: number;
+  avgHr: number;
+  maxHr: number;
+  hrDriftPct: number;
+  ascentFraction: number;
+  isSteep: boolean;
+  isLong: boolean;
+  quality: number;
+}
+
+export interface ScoredClimb extends ClimbSegment {
+  activityId: string;
+  activityName: string;
+  startTime: number; // epoch ms
+}
+
+export type UphillStatus = "established" | "provisional" | "insufficient";
+
+export interface UphillTrendPoint {
+  weekStart: string;
+  score: number | null;
+  strength: number | null;
+  endurance: number | null;
+}
+
+export interface UphillBestClimb {
+  activityId: string;
+  activityName: string;
+  startTime: number;
+  gainM: number;
+  distanceM: number;
+  avgGradePct: number;
+  vamMh: number;
+  gapPaceSecPerKm: number;
+}
+
+export interface UphillScoreResult {
+  score: number | null;
+  strength: number | null;
+  endurance: number | null;
+  band: "recreational" | "developing" | "trained" | "advanced" | "elite";
+  confidence: number;
+  status: UphillStatus;
+  sampleClimbs: number;
+  volumeGainM: number;
+  delta28d: number | null;
+  lastClimbAt: number | null;
+  formulaVersion: string;
+  trend: UphillTrendPoint[];
+  bestClimbs: UphillBestClimb[];
+}
+
+const DAY_MS = 86400000;
+
+/**
+ * Minetti et al. (2002) polynomial energy cost of running (J/kg/m).
+ * Valid for grades -45%..+45%; clamped outside that range.
+ */
+export function minettiRunCost(grade: number): number {
+  const g = Math.max(-0.45, Math.min(0.45, grade));
+  return (
+    155.4 * Math.pow(g, 5) -
+    30.4 * Math.pow(g, 4) -
+    43.3 * Math.pow(g, 3) +
+    46.3 * Math.pow(g, 2) +
+    19.5 * g +
+    3.6
+  );
+}
+
+function movingAverage(values: number[], window: number): number[] {
+  if (window <= 1) return values.slice();
+  const half = Math.floor(window / 2);
+  const out = new Array<number>(values.length);
+  for (let i = 0; i < values.length; i++) {
+    let sum = 0;
+    let count = 0;
+    for (let k = Math.max(0, i - half); k <= Math.min(values.length - 1, i + half); k++) {
+      sum += values[k];
+      count++;
+    }
+    out[i] = count > 0 ? sum / count : values[i];
+  }
+  return out;
+}
+
+function toEpochSeconds(value: unknown): number {
+  if (value instanceof Date) return value.getTime() / 1000;
+  if (typeof value === "number") {
+    return value > 1e11 ? value / 1000 : value;
+  }
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    return isNaN(parsed) ? NaN : parsed / 1000;
+  }
+  return NaN;
+}
+
+export interface FitRecordLike {
+  timestamp?: Date | string | number;
+  distance?: number;
+  altitude?: number;
+  enhanced_altitude?: number;
+  enhancedAltitude?: number;
+  heart_rate?: number;
+  heartRate?: number;
+  [key: string]: unknown;
+}
+
+/**
+ * Detects sustained uphill segments from FIT records and computes
+ * climbing metrics (VAM, GAP, HR drift, quality) for each segment.
+ */
+export function extractClimbSegments(records: FitRecordLike[]): ClimbSegment[] {
+  if (!Array.isArray(records) || records.length < 30) return [];
+
+  const points: Array<{
+    t: number;
+    d: number;
+    alt: number;
+    hr: number;
+    enhancedAlt: boolean;
+  }> = [];
+  let lastDist = -Infinity;
+
+  for (const r of records) {
+    const t = toEpochSeconds(r?.timestamp);
+    const d = Number(r?.distance);
+    const altRaw = r?.enhanced_altitude ?? r?.altitude ?? r?.enhancedAltitude;
+    const alt = Number(altRaw);
+    const hr = Number(r?.heart_rate ?? r?.heartRate ?? 0) || 0;
+
+    if (!isFinite(t) || !isFinite(d) || !isFinite(alt)) continue;
+    if (d < lastDist - 1) continue;
+    if (d === lastDist && points.length > 0) continue;
+
+    lastDist = d;
+    points.push({
+      t,
+      d,
+      alt,
+      hr: hr > 0 && hr < 260 ? hr : 0,
+      enhancedAlt: r?.enhanced_altitude != null || r?.enhancedAltitude != null,
+    });
+  }
+
+  if (points.length < 30) return [];
+
+  const rawAlt = points.map((p) => p.alt);
+  const smoothAlt = movingAverage(rawAlt, 7);
+  const altitudeRange = Math.max(...smoothAlt) - Math.min(...smoothAlt);
+  if (altitudeRange < 5) return [];
+
+  const n = points.length;
+  const grade = new Array<number>(n).fill(0);
+
+  // Centered 60-second grade window
+  let left = 0;
+  let right = 0;
+  for (let i = 0; i < n; i++) {
+    while (left < i && points[i].t - points[left].t > 30) left++;
+    if (right < i) right = i;
+    while (right + 1 < n && points[right + 1].t - points[i].t <= 30) right++;
+    const distDelta = points[right].d - points[left].d;
+    if (distDelta >= 5) {
+      grade[i] = (smoothAlt[right] - smoothAlt[left]) / distDelta;
+    }
+  }
+
+  const isUp = grade.map((g) => g >= 0.025);
+  const runs: Array<[number, number]> = [];
+
+  let i = 0;
+  while (i < n) {
+    if (!isUp[i]) {
+      i++;
+      continue;
+    }
+
+    const start = i;
+    let end = i;
+    let gap = 0;
+    let j = i + 1;
+    for (; j < n; j++) {
+      if (isUp[j]) {
+        end = j;
+        gap = 0;
+      } else {
+        gap++;
+        if (gap > 2) break;
+      }
+    }
+
+    // Expand boundaries to the local base and local summit
+    let expandedStart = start;
+    for (let k = Math.max(0, start - 12); k <= start; k++) {
+      if (smoothAlt[k] <= smoothAlt[expandedStart]) expandedStart = k;
+    }
+    let expandedEnd = end;
+    for (let k = end; k <= Math.min(n - 1, end + 12); k++) {
+      if (smoothAlt[k] >= smoothAlt[expandedEnd]) expandedEnd = k;
+    }
+
+    runs.push([expandedStart, expandedEnd]);
+    i = j;
+  }
+
+  // Merge climbs separated by a short descent (<200 m and <60 s)
+  const merged: Array<[number, number]> = [];
+  for (const run of runs) {
+    const prev = merged[merged.length - 1];
+    if (prev) {
+      const gapDist = points[run[0]].d - points[prev[1]].d;
+      const gapSec = points[run[0]].t - points[prev[1]].t;
+      if (gapDist < 200 && gapSec < 60) {
+        prev[1] = run[1];
+        continue;
+      }
+    }
+    merged.push([run[0], run[1]]);
+  }
+
+  const accumulatedGain = (from: number, to: number): number => {
+    let gain = 0;
+    let reference = smoothAlt[from];
+    for (let k = from + 1; k <= to; k++) {
+      if (smoothAlt[k] > reference + 0.5) {
+        gain += smoothAlt[k] - reference;
+        reference = smoothAlt[k];
+      } else if (smoothAlt[k] < reference) {
+        reference = smoothAlt[k];
+      }
+    }
+    return gain;
+  };
+
+  const timeWeightedHr = (from: number, to: number): number => {
+    let weight = 0;
+    let sum = 0;
+    for (let k = from + 1; k <= to; k++) {
+      const dt = Math.max(0, points[k].t - points[k - 1].t);
+      if (points[k].hr > 0 && dt > 0) {
+        sum += points[k].hr * dt;
+        weight += dt;
+      }
+    }
+    return weight > 0 ? sum / weight : 0;
+  };
+
+  const climbs: ClimbSegment[] = [];
+
+  for (const [start, end] of merged) {
+    if (end <= start) continue;
+
+    const distanceM = points[end].d - points[start].d;
+    const durationSec = points[end].t - points[start].t;
+    const accumulatedGainM = accumulatedGain(start, end);
+    const netGainM = Math.max(0, smoothAlt[end] - smoothAlt[start]);
+
+    // Require a real net rise, not oscillating altimeter noise that only
+    // accumulates positive deltas.
+    if (netGainM < 30 || netGainM < accumulatedGainM * 0.6) continue;
+    if (distanceM < 300 || durationSec < 60) continue;
+
+    const gainM = netGainM;
+
+    let ascentTimeSec = 0;
+    for (let k = start + 1; k <= end; k++) {
+      if (grade[k] >= 0.02) {
+        ascentTimeSec += Math.max(0, points[k].t - points[k - 1].t);
+      }
+    }
+    ascentTimeSec = Math.min(durationSec, Math.max(ascentTimeSec, durationSec * 0.5));
+    if (ascentTimeSec < 60) continue;
+
+    const avgGrade = gainM / Math.max(1, distanceM);
+    const vamMh = Math.round(Math.min(2500, gainM / (ascentTimeSec / 3600)));
+    if (vamMh <= 0) continue;
+
+    const paceSecPerKm = Math.round(durationSec / (distanceM / 1000));
+    const gapPaceSecPerKm = Math.round(
+      paceSecPerKm * (3.6 / Math.max(0.5, minettiRunCost(avgGrade)))
+    );
+
+    const avgHr = Math.round(timeWeightedHr(start, end));
+    let maxHr = 0;
+    for (let k = start; k <= end; k++) {
+      if (points[k].hr > maxHr) maxHr = points[k].hr;
+    }
+
+    const midTime = (points[start].t + points[end].t) / 2;
+    let midIndex = start;
+    for (let k = start + 1; k <= end; k++) {
+      if (points[k].t <= midTime) midIndex = k;
+      else break;
+    }
+
+    let hrDriftPct = 0;
+    if (avgHr > 0 && durationSec >= 300 && midIndex > start && midIndex < end) {
+      const halfEf = (from: number, to: number): number => {
+        const d = points[to].d - points[from].d;
+        const t = points[to].t - points[from].t;
+        const hr = timeWeightedHr(from, to);
+        if (d <= 0 || t <= 0 || hr <= 0) return 0;
+        const g = accumulatedGain(from, to) / d;
+        const flatEquivalent = d * (minettiRunCost(g) / 3.6);
+        return flatEquivalent / t / hr;
+      };
+      const ef1 = halfEf(start, midIndex);
+      const ef2 = halfEf(midIndex, end);
+      if (ef1 > 0 && ef2 > 0) {
+        hrDriftPct = Math.round(Math.max(-25, Math.min(40, ((ef2 - ef1) / ef1) * 100)) * 10) / 10;
+      }
+    }
+
+    const segmentGrades: number[] = [];
+    for (let k = start; k <= end; k++) segmentGrades.push(grade[k] * 100);
+    segmentGrades.sort((a, b) => a - b);
+    const p95Index = Math.min(segmentGrades.length - 1, Math.floor(segmentGrades.length * 0.95));
+    const maxGradePct = Math.max(0, Math.min(60, segmentGrades[p95Index] || 0));
+
+    const hasHr = avgHr > 0;
+    const hasEnhancedAlt = points[start].enhancedAlt && points[end].enhancedAlt;
+    // FIT `altitude` is barometric but quantised to 5 m; `enhanced_altitude`
+    // carries finer resolution. Neither is GPS-derived.
+    let quality = hasEnhancedAlt ? 1.0 : 0.9;
+    if (!hasHr) quality *= 0.6;
+    if (durationSec < 120) quality *= 0.8;
+
+    climbs.push({
+      idx: climbs.length + 1,
+      startDistM: Math.round(points[start].d),
+      endDistM: Math.round(points[end].d),
+      distanceM: Math.round(distanceM),
+      gainM: Math.round(gainM),
+      lossM: 0,
+      durationSec: Math.round(durationSec),
+      ascentTimeSec: Math.round(ascentTimeSec),
+      avgGradePct: Math.round(avgGrade * 1000) / 10,
+      maxGradePct: Math.round(maxGradePct * 10) / 10,
+      vamMh,
+      paceSecPerKm,
+      gapPaceSecPerKm,
+      avgHr,
+      maxHr,
+      hrDriftPct,
+      ascentFraction: Math.round((ascentTimeSec / durationSec) * 100) / 100,
+      isSteep: avgGrade * 100 >= 8,
+      isLong: durationSec >= 900,
+      quality: Math.round(quality * 100) / 100,
+    });
+
+    if (climbs.length >= 60) break;
+  }
+
+  return climbs;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function weightedPercentile(entries: Array<{ value: number; weight: number }>, p: number): number {
+  const sorted = entries
+    .filter((e) => isFinite(e.value) && e.value > 0)
+    .sort((a, b) => a.value - b.value);
+  if (sorted.length === 0) return 0;
+
+  const totalWeight = sorted.reduce((sum, e) => sum + Math.max(0.1, e.weight), 0);
+  const target = clamp(p, 0, 1) * totalWeight;
+  let accumulated = 0;
+
+  for (const entry of sorted) {
+    accumulated += Math.max(0.1, entry.weight);
+    if (accumulated >= target) return entry.value;
+  }
+  return sorted[sorted.length - 1].value;
+}
+
+/**
+ * Converts VAM at threshold HR into a grade-10%-equivalent climbing rate.
+ * HR-reserve linear scaling follows the %HRR ≈ %VO2R relationship.
+ */
+function normaliseClimbVam(climb: ClimbSegment, lthr: number, restingHr: number): number {
+  let intensityFactor = 1;
+
+  if (climb.avgHr > 0 && lthr > 0 && restingHr > 0 && lthr > restingHr) {
+    const hrr = (climb.avgHr - restingHr) / (lthr - restingHr);
+    // Square-root compression of the HR-reserve ratio. Linear 1/HRR
+    // over-extrapolates easy hikes (HR ~65% LTHR) to threshold VAM.
+    const compressed = Math.sqrt(1 / clamp(hrr, 0.55, 1.15));
+    intensityFactor = clamp(compressed, 0.85, 1.2);
+  }
+
+  const grade = clamp(climb.avgGradePct, 5, 20);
+  const gradeFactor = Math.pow(grade / 10, 0.3);
+
+  return climb.vamMh * intensityFactor * gradeFactor;
+}
+
+function mapToScore(value: number, min: number, max: number): number {
+  if (!isFinite(value) || value <= 0) return 0;
+  const raw = 5 + (95 * (Math.log(value) - Math.log(min))) / (Math.log(max) - Math.log(min));
+  return Math.round(clamp(raw, 0, 100));
+}
+
+/**
+ * Volume sufficiency multiplier (0.92–1.00) based on total climb gain in the
+ * window. It only discounts low-volume samples; it never inflates a score.
+ * 1,000 m of climb gain gets the floor, 8,000 m saturates the factor.
+ */
+function climbingVolumeMultiplier(gainM: number): number {
+  const gain = Math.max(100, gainM);
+  const scaled = 0.92 + 0.08 * (Math.log10(gain / 1000) / Math.log10(8));
+  return clamp(scaled, 0.92, 1);
+}
+
+export function classifyUphillBand(score: number): UphillScoreResult["band"] {
+  if (score >= 85) return "elite";
+  if (score >= 70) return "advanced";
+  if (score >= 50) return "trained";
+  if (score >= 30) return "developing";
+  return "recreational";
+}
+
+function computeWindowScores(
+  climbs: ScoredClimb[],
+  lthr: number,
+  restingHr: number
+): {
+  strength: number | null;
+  endurance: number | null;
+  score: number | null;
+  sample: number;
+  quality: number;
+  volumeGainM: number;
+} {
+  const strengthEntries: Array<{ value: number; weight: number }> = [];
+  const enduranceEntries: Array<{ value: number; weight: number }> = [];
+  let qualitySum = 0;
+  let sample = 0;
+  let driftSum = 0;
+  let driftCount = 0;
+  let volumeGainM = 0;
+
+  for (const climb of climbs) {
+    if (!climb || climb.gainM < 30 || climb.vamMh <= 0) continue;
+
+    const normalised = normaliseClimbVam(climb, lthr, restingHr);
+    if (!isFinite(normalised) || normalised <= 0) continue;
+
+    // Volume counts all real climbs, including easy ones that are excluded
+    // from the strength percentile below.
+    volumeGainM += climb.gainM;
+
+    const isStrength = climb.durationSec >= 120 && climb.durationSec <= 900 && climb.avgGradePct >= 6;
+    const isEndurance = climb.durationSec >= 900;
+    // Easy climbs/hikes still build endurance volume, but they should not set
+    // the strength benchmark. v1.2 excludes them from the strength percentile.
+    const isEasy = climb.avgHr > 0 && lthr > 0 && climb.avgHr < 0.75 * lthr;
+    const contributesStrength = isStrength && !isEasy;
+
+    if (!contributesStrength && !isEndurance) continue;
+
+    sample++;
+    qualitySum += climb.quality;
+
+    // Cap the duration weight so one very long easy hike cannot dominate the
+    // percentile over shorter, harder climbs.
+    const weightMinutes = Math.min(climb.durationSec / 60, 60);
+
+    if (contributesStrength) {
+      strengthEntries.push({ value: normalised, weight: weightMinutes });
+    }
+    if (isEndurance) {
+      enduranceEntries.push({ value: normalised, weight: weightMinutes });
+      if (climb.avgHr > 0) {
+        driftSum += climb.hrDriftPct;
+        driftCount++;
+      }
+    }
+  }
+
+  // P80 instead of P90: with 5–10 climbs P90 is effectively the single best
+  // effort, which made the strength sub-score swing ~10 points on one climb.
+  // At least 3 climbs are required, matching the overall score gate.
+  const strength =
+    strengthEntries.length >= 3
+      ? mapToScore(weightedPercentile(strengthEntries, 0.8), 300, 1300)
+      : null;
+
+  let endurance: number | null = null;
+  if (enduranceEntries.length > 0) {
+    const driftFactor = driftCount > 0 ? clamp(1 + driftSum / driftCount / 100, 0.85, 1.05) : 1;
+    endurance = mapToScore(weightedPercentile(enduranceEntries, 0.75) * driftFactor, 250, 1050);
+  }
+
+  let baseScore: number | null = null;
+  if (strength !== null && endurance !== null) {
+    baseScore = Math.round(0.55 * strength + 0.45 * endurance);
+  } else if (strength !== null) {
+    baseScore = strength;
+  } else if (endurance !== null) {
+    baseScore = endurance;
+  }
+
+  // Volume is applied only to the headline composite, so strength/endurance
+  // remain pure performance sub-scores.
+  const score =
+    baseScore !== null
+      ? Math.round(clamp(baseScore * climbingVolumeMultiplier(volumeGainM), 0, 100))
+      : null;
+
+  return {
+    strength,
+    endurance,
+    score,
+    sample,
+    quality: sample > 0 ? qualitySum / sample : 0,
+    volumeGainM,
+  };
+}
+
+/**
+ * Aggregates cached climb segments into the Uphill Score.
+ * Requires 3+ eligible climbs in the last 90 days for a reliable value.
+ */
+export function calculateUphillScore(
+  climbs: ScoredClimb[],
+  options: { lthr?: number; restingHr?: number; now?: number } = {}
+): UphillScoreResult {
+  const now = options.now ?? Date.now();
+  const lthr = options.lthr && options.lthr > 0 ? options.lthr : 162;
+  const restingHr = options.restingHr && options.restingHr > 0 ? options.restingHr : 50;
+
+  const recent = (climbs || []).filter(
+    (c) => c && c.startTime >= now - 90 * DAY_MS && c.startTime <= now + DAY_MS
+  );
+
+  const current = computeWindowScores(recent, lthr, restingHr);
+  const lastClimbAt =
+    recent.length > 0 ? Math.max(...recent.map((c) => Number(c.startTime) || 0)) : null;
+
+  // Confidence: sample volume × recency × data quality
+  const volume = clamp(current.sample / 8, 0, 1);
+  let recency = 0.7;
+  if (lastClimbAt) {
+    const ageDays = (now - lastClimbAt) / DAY_MS;
+    recency = ageDays <= 14 ? 1 : ageDays >= 90 ? 0.7 : 1 - ((ageDays - 14) / 76) * 0.3;
+  } else {
+    recency = 0;
+  }
+  const confidence = Math.round(100 * volume * clamp(recency, 0, 1) * clamp(current.quality, 0, 1));
+
+  let status: UphillStatus = "insufficient";
+  if (current.sample >= 3 && current.score !== null) {
+    status = confidence >= 60 ? "established" : "provisional";
+  }
+
+  // 28-day delta: compare the 90-day score now with the 90-day score 28 days
+  // ago. Comparing two short 28-day windows made the delta switch to an
+  // endurance-only composite whenever a window had too few strength climbs.
+  const previousWindow = computeWindowScores(
+    (climbs || []).filter(
+      (c) => c && c.startTime >= now - 118 * DAY_MS && c.startTime <= now - 28 * DAY_MS
+    ),
+    lthr,
+    restingHr
+  );
+  const delta28d =
+    current.score !== null &&
+    previousWindow.score !== null &&
+    current.sample >= 3 &&
+    previousWindow.sample >= 3
+      ? current.score - previousWindow.score
+      : null;
+
+  // 8-week rolling trend (90-day windows sampled weekly). Using the same
+  // window as the headline keeps the latest trend point comparable to the
+  // score and avoids strength dropping out of short windows.
+  const trend: UphillTrendPoint[] = [];
+  for (let week = 7; week >= 0; week--) {
+    const windowEnd = now - week * 7 * DAY_MS;
+    const windowStart = windowEnd - 90 * DAY_MS;
+    const subset = (climbs || []).filter(
+      (c) => c && c.startTime >= windowStart && c.startTime <= windowEnd
+    );
+    const window = computeWindowScores(subset, lthr, restingHr);
+    trend.push({
+      weekStart: new Date(windowEnd - 7 * DAY_MS).toISOString().slice(0, 10),
+      score: window.sample >= 3 ? window.score : null,
+      strength: window.sample >= 3 ? window.strength : null,
+      endurance: window.sample >= 3 ? window.endurance : null,
+    });
+  }
+
+  const bestClimbs: UphillBestClimb[] = recent
+    .slice()
+    .sort((a, b) => b.gainM * (1 + b.avgGradePct / 20) - a.gainM * (1 + a.avgGradePct / 20))
+    .slice(0, 5)
+    .map((c) => ({
+      activityId: c.activityId,
+      activityName: c.activityName,
+      startTime: c.startTime,
+      gainM: c.gainM,
+      distanceM: c.distanceM,
+      avgGradePct: c.avgGradePct,
+      vamMh: c.vamMh,
+      gapPaceSecPerKm: c.gapPaceSecPerKm,
+    }));
+
+  const score = status === "insufficient" ? null : current.score;
+
+  return {
+    score,
+    strength: status === "insufficient" ? null : current.strength,
+    endurance: status === "insufficient" ? null : current.endurance,
+    band: classifyUphillBand(score ?? 0),
+    confidence,
+    status,
+    sampleClimbs: current.sample,
+    volumeGainM: current.volumeGainM,
+    delta28d,
+    lastClimbAt,
+    formulaVersion: UPHILL_FORMULA_VERSION,
+    trend,
+    bestClimbs: status === "insufficient" ? [] : bestClimbs,
+  };
+}
+
+export function parseClimbSegments(raw: string | null | undefined): ClimbSegment[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as ClimbSegment[]) : [];
+  } catch {
+    return [];
+  }
+}

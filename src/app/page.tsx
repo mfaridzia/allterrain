@@ -293,6 +293,7 @@ export default function DashboardPage() {
                   savedTargetRaceElev={dashboardData.trail?.targetRaceElev}
                   savedWeeklyVertTarget={dashboardData.trail?.weeklyVertTarget}
                   savedTrainingTier={dashboardData.trail?.trainingTier}
+                  uphill={dashboardData.trail?.uphill}
                 />
               </div>
 

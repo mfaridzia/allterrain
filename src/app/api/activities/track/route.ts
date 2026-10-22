@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { callCorosMcpTool } from "@/lib/coros-mcp";
 import { getCurrentAthleteId } from "@/lib/session";
-import { calculateDecouplingFromLaps, LapSplitItem } from "@/lib/analytics";
+import { calculateDecouplingFromLaps, extractClimbSegments, LapSplitItem, ClimbSegment } from "@/lib/analytics";
 // @ts-ignore
 import FitParserModule from "fit-file-parser";
 const FitParser = (FitParserModule as any).default || FitParserModule;
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   try {
     // 1. Check if activity exists in database
     const actRes = await db.execute({
-      sql: `SELECT id, coros_id, sport_type, raw_data, gps_track, lap_splits, decoupling_pct, athlete_id FROM activities WHERE id = ? LIMIT 1`,
+      sql: `SELECT id, coros_id, sport_type, raw_data, gps_track, lap_splits, climb_segments, climbs_analyzed_at, decoupling_pct, athlete_id FROM activities WHERE id = ? LIMIT 1`,
       args: [activityId],
     });
 
@@ -97,12 +97,23 @@ export async function GET(req: NextRequest) {
       } catch {}
     }
 
+    let cachedClimbs: ClimbSegment[] = [];
+    if (act.climb_segments) {
+      try {
+        const parsed = JSON.parse(act.climb_segments);
+        if (Array.isArray(parsed)) cachedClimbs = parsed;
+      } catch {}
+    }
+
     if (cachedGps && cachedLaps) {
+      // Never block the existing activity-detail path on climb extraction.
+      // Climb segments are filled by the backfill endpoint and cached separately.
       return NextResponse.json({
         success: true,
         isRealGps: true,
         points: cachedGps,
         laps: cachedLaps,
+        climbs: cachedClimbs,
         decouplingPct: Number(act.decoupling_pct || 0),
         cached: true,
         isAuthentic: true,
@@ -153,6 +164,7 @@ export async function GET(req: NextRequest) {
           isRealGps: true,
           points: cachedGps,
           laps: cachedLaps,
+          climbs: cachedClimbs,
           cached: true,
         });
       }
@@ -177,7 +189,7 @@ export async function GET(req: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     // 7. Parse FIT file with fit-file-parser (extracting GPS points, authentic laps, and records)
-    const fitResult: { gpsPoints: LatLng[]; laps: LapSplitItem[] } = await new Promise((resolve, reject) => {
+    const fitResult: { gpsPoints: LatLng[]; laps: LapSplitItem[]; climbs: ClimbSegment[] } = await new Promise((resolve, reject) => {
       const fitParser = new FitParser({
         force: true,
         mode: "list",
@@ -289,11 +301,17 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        resolve({ gpsPoints: pts, laps: parsedLaps });
+        const climbs =
+          ["run", "trail_run", "track_run", "running", "trail"].includes(sportType) &&
+          records.length <= 30000
+            ? extractClimbSegments(records)
+            : [];
+
+        resolve({ gpsPoints: pts, laps: parsedLaps, climbs });
       });
     });
 
-    const { gpsPoints: rawGpsPoints, laps } = fitResult;
+    const { gpsPoints: rawGpsPoints, laps, climbs } = fitResult;
 
     // 8. Simplify trajectory using RDP if GPS points exist
     let simplifiedGps: LatLng[] = [];
@@ -316,6 +334,12 @@ export async function GET(req: NextRequest) {
       updates.push("lap_splits = ?");
       args.push(JSON.stringify(laps));
     }
+    updates.push("climb_segments = ?");
+    args.push(JSON.stringify(climbs));
+    updates.push("ascent_time_sec = ?");
+    args.push(climbs.reduce((sum, c) => sum + (Number(c.ascentTimeSec) || 0), 0));
+    updates.push("climbs_analyzed_at = ?");
+    args.push(Date.now());
     if (authenticDecoupling !== null) {
       updates.push("decoupling_pct = ?");
       args.push(authenticDecoupling);
@@ -334,6 +358,7 @@ export async function GET(req: NextRequest) {
       isRealGps: simplifiedGps.length > 0,
       points: simplifiedGps.length > 0 ? simplifiedGps : null,
       laps: laps.length > 0 ? laps : null,
+      climbs,
       decouplingPct: authenticDecoupling ?? Number(act.decoupling_pct || 0),
       cached: false,
       isAuthentic: laps.length > 0,

@@ -12,6 +12,9 @@ import {
   calculateAthleteHrZones,
   estimateActivityHrZones,
   calculateDecouplingFromLaps,
+  calculateUphillScore,
+  parseClimbSegments,
+  ScoredClimb,
   HrZoneCalcMethod,
   PmcPoint,
 } from "@/lib/analytics";
@@ -50,7 +53,7 @@ export async function GET(req: NextRequest) {
       monotony: { monotony: 0, strain: 0, monotonyAlert: false },
       tid: { z1z2Pct: 80, z3Pct: 15, z4z5Pct: 5, isPolarized: true },
       weeklyZoneProgression: calculateWeeklyZoneProgression([], 162, 14),
-      trail: { totalGainM: 0, totalLossM: 0, trailRunsCount: 0, avgVam: 0, avgDecoupling: 0, specificTrailHours: 0, totalHours: 0, specificityPct: 0 },
+      trail: { totalGainM: 0, totalLossM: 0, trailRunsCount: 0, avgVam: 0, avgDecoupling: 0, specificTrailHours: 0, totalHours: 0, specificityPct: 0, uphill: calculateUphillScore([]) },
       recovery: { hrvStatus: "NORMAL", recoveryScore: 100, restingHr: 50, avgSleepDurationMin: 480, sleepRegularityScore: 90, daysLogged: 0 },
       modes: {},
     });
@@ -713,6 +716,27 @@ export async function GET(req: NextRequest) {
     userTimezone
   );
 
+  // Uphill Score: aggregate cached climb segments across the running family
+  const scoredClimbs: ScoredClimb[] = [];
+  for (const a of activities) {
+    const sportType = String(a.sport_type || "").toLowerCase();
+    if (!["run", "trail_run", "track_run", "running", "trail"].includes(sportType)) continue;
+
+    for (const climb of parseClimbSegments(a.climb_segments)) {
+      scoredClimbs.push({
+        ...climb,
+        activityId: String(a.id),
+        activityName: String(a.name || "Activity"),
+        startTime: Number(a.start_time || 0),
+      });
+    }
+  }
+
+  const uphill = calculateUphillScore(scoredClimbs, {
+    lthr: effectiveLthr,
+    restingHr: effectiveRestingHr,
+  });
+
   return NextResponse.json({
     connected: isConnected,
     hasData: dailyRows.length > 0 || activities.length > 0,
@@ -749,6 +773,10 @@ export async function GET(req: NextRequest) {
       targetRaceElev,
       weeklyVertTarget,
       trainingTier,
+      uphill: {
+        ...uphill,
+        vo2max: Number((racePredictor as { vo2max?: number }).vo2max) || null,
+      },
     },
     periodization: {
       mode: periodizationMode,

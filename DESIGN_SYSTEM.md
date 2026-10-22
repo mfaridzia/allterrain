@@ -192,6 +192,16 @@ For charts (Bannister PMC, Altimetry Profile, HR Distributions):
 - **Semantic Link Sub-grouping:** Navigation links in the footer must be grouped semantically into sub-containers (e.g. Product Links vs Legal Links) with an internal bullet divider and a responsive inter-group divider (`hidden sm:inline`). This prevents awkward bullet wrapping or orphaned bullet points on mobile viewports.
 - **Single-Line Legal Disclaimer:** The copyright and trademark disclaimer (`footer.disclaimer`) uses `max-w-none sm:whitespace-nowrap` to ensure it renders as a clean, unified single line on desktop/laptop displays without prematurely breaking "COROS Wearables Inc." onto an orphaned second line, while allowing natural wrapping on narrow mobile devices.
 
+### 6.6 Uphill Score Instrument Card (`src/components/UphillScoreCard.tsx`)
+- **Composition:** Full-width card rendered inside the Trail Suite below the KPI row. Two-column grid on `md` (`160px` score block + fluid sub-score panel); stacks on mobile.
+- **Score Block:** `bg-[#FAF9F5]` sub-well with `text-5xl font-black font-mono` score, `/100` suffix, band chip (`border-2 border-zinc-950`), and 28-day delta with `TrendingUp` / `TrendingDown` / `Minus`.
+- **Sub-score Bars:** Two `h-2.5` rails with `bg-zinc-100 border border-zinc-300`; fill uses the band accent (`lime-500` default, `orange-500` advanced, `rose-500` elite). Bars expose `role="progressbar"` with `aria-valuenow/min/max`.
+- **Trend:** Inline SVG polyline (`stroke="#65a30d"`, `strokeWidth="2"`) — no Recharts dependency for the 8-week sparkline.
+- **Confidence Badge:** `established` → emerald, `provisional` → amber, `insufficient` → zinc. Always shows the numeric confidence percentage and formula version.
+- **Best Climbs:** Compact `divide-y-2` table: activity name + date/distance/grade, gain (`+NNN m`), VAM (`m/h`), and GAP (`m:ss/km`). Hidden VAM/GAP columns on mobile.
+- **Empty State:** Dashed `border-zinc-400` well with `AlertCircle`, bilingual explanation of the 3-climb gate, and a lime `Analyse my activities` button that loops `POST /api/activities/backfill-climbs` (max 5 per request) and invalidates the dashboard query.
+- **Formula Drawer:** Opt-in `How it is calculated` toggle revealing the strength/endurance/composite explanation, Minetti/Swain attribution, and the explicit note that this is an internal estimate — not Garmin's Hill Score.
+
 ---
 
 ## 7. Strict Anti-Patterns & Quality Rules
@@ -231,6 +241,7 @@ When maintaining or extending this interface, adhere to these rules:
   - Weekly Zone Progression: `src/components/WeeklyZoneProgressionCard.tsx`
   - EvoLab & Race Predictor: `src/components/EvoLabSuite.tsx`
   - Ultra Mountain & Trail Suite: `src/components/TrailSuite.tsx`
+  - Uphill Score (Hill Strength & Endurance): `src/components/UphillScoreCard.tsx`
   - Activity Feed & Inspector: `src/components/ActivityFeed.tsx`
   - Activity Compare Modal: `src/components/ActivityCompareModal.tsx`
   - Social Share Card Modal: `src/components/ActivityShareModal.tsx`

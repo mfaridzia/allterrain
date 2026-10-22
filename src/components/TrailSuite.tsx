@@ -53,7 +53,9 @@ import {
   calculateGradientEfficiencyCurve,
   GradientEfficiencyAnalysis,
   GradientEfficiencyPoint,
+  UphillScoreResult,
 } from "@/lib/analytics";
+import { UphillScoreCard } from "@/components/UphillScoreCard";
 
 interface TrailSuiteProps {
   totalGain: number;
@@ -72,6 +74,7 @@ interface TrailSuiteProps {
   savedTargetRaceElev?: number;
   savedWeeklyVertTarget?: number;
   savedTrainingTier?: "finisher" | "elite";
+  uphill?: (UphillScoreResult & { vo2max?: number | null }) | null;
 }
 
 export const TrailSuite: React.FC<TrailSuiteProps> = ({
@@ -91,6 +94,7 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
   savedTargetRaceElev,
   savedWeeklyVertTarget,
   savedTrainingTier,
+  uphill,
 }) => {
   const { language } = useTranslation();
   // Custom Trail Race Estimator interactive state
@@ -370,6 +374,9 @@ export const TrailSuite: React.FC<TrailSuiteProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Uphill Score: Hill Strength & Hill Endurance */}
+      <UphillScoreCard uphill={uphill} />
 
       {/* Interactive Custom Trail Race Predictor & ITRA Km-Effort */}
       <div className="p-5 sm:p-6 rounded-2xl bg-white border-2 border-zinc-950 space-y-5 shadow-[4px_4px_0px_0px_#09090b]">
